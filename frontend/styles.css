@@ -480,7 +480,7 @@
 
 /* Light Mode: Use off_w_Lev */
 html[data-theme="light"] .brand-logo {
-  background-image: url("/images/off_w_Lev.png");
+  background-image: url("/images/off_w_Lev_webp.webp");
   /* Ensure content property doesn't interfere if it was cached */
   content: none;
   mix-blend-mode: multiply;
@@ -488,7 +488,7 @@ html[data-theme="light"] .brand-logo {
 
 /* Dark Mode: Use off_b_Lev */
 html[data-theme="dark"] .brand-logo {
-  background-image: url("/images/off_b_Lev.png");
+  background-image: url("/images/off_b_Lev_webp.webp");
   content: none;
   mix-blend-mode: screen;
 }
