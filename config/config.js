@@ -32,30 +32,73 @@ module.exports = {
   },
   businessHours: {
     daysOpen: [1, 2, 3, 4, 5, 6], // lunedì-sabato
-    // Orari martedì-venerdì
-    weekday: {
-      morning: {
-        start: '08:30',
-        end: '13:00',
-        slots: ['08:30', '09:15', '10:00', '10:45', '11:30', '12:15']
+    // Orari per giorno della settimana (1=lunedì ... 6=sabato)
+    days: {
+      // Lunedì: solo pomeriggio 14:00-18:00 (ultimo appuntamento 17:00)
+      1: {
+        morning: null,
+        afternoon: {
+          start: '14:00',
+          end: '18:00',
+          slots: ['14:00', '14:45', '15:30', '16:15', '17:00']
+        }
       },
-      afternoon: {
-        start: '14:00',
-        end: '18:00',
-        slots: ['14:00', '14:45', '15:30', '16:15', '17:00']
-      }
-    },
-    // Orari sabato (giorno 6)
-    saturday: {
-      morning: {
-        start: '08:30',
-        end: '13:00',
-        slots: ['08:30', '09:15', '10:00', '10:45', '11:30', '12:15']
+      // Martedì: mattina 8:30-12:15 + pomeriggio 14:00-17:00 (ultimo appuntamento 16:15)
+      2: {
+        morning: {
+          start: '08:30',
+          end: '12:15',
+          slots: ['08:30', '09:15', '10:00', '10:45', '11:30']
+        },
+        afternoon: {
+          start: '14:00',
+          end: '17:00',
+          slots: ['14:00', '14:45', '15:30', '16:15']
+        }
       },
-      afternoon: {
-        start: '14:00',
-        end: '15:30',
-        slots: ['14:00', '14:45']
+      // Mercoledì: solo pomeriggio 14:00-17:00 (ultimo appuntamento 16:15)
+      3: {
+        morning: null,
+        afternoon: {
+          start: '14:00',
+          end: '17:00',
+          slots: ['14:00', '14:45', '15:30', '16:15']
+        }
+      },
+      // Giovedì: mattina 8:30-12:15 + pomeriggio 14:00-16:15 (ultimo appuntamento 15:30)
+      4: {
+        morning: {
+          start: '08:30',
+          end: '12:15',
+          slots: ['08:30', '09:15', '10:00', '10:45', '11:30']
+        },
+        afternoon: {
+          start: '14:00',
+          end: '16:15',
+          slots: ['14:00', '14:45', '15:30']
+        }
+      },
+      // Venerdì: solo pomeriggio 14:00-16:15 (ultimo appuntamento 15:30)
+      5: {
+        morning: null,
+        afternoon: {
+          start: '14:00',
+          end: '16:15',
+          slots: ['14:00', '14:45', '15:30']
+        }
+      },
+      // Sabato: mattina 9:15-12:15 + pomeriggio 14:00-14:45 (ultimo appuntamento 14:00)
+      6: {
+        morning: {
+          start: '09:15',
+          end: '12:15',
+          slots: ['09:15', '10:00', '10:45', '11:30']
+        },
+        afternoon: {
+          start: '14:00',
+          end: '14:45',
+          slots: ['14:00']
+        }
       }
     }
   },

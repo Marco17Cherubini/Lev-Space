@@ -26,11 +26,13 @@ function isHolidaySlot(date, time) {
 // Ottieni gli slot per un giorno specifico (sabato ha orari diversi)
 function getSlotsForDay(date, includeExtraSlots = false) {
   const dayOfWeek = new Date(date).getDay();
-  const hours = dayOfWeek === 6 ? config.businessHours.saturday : config.businessHours.weekday;
+  const hours = config.businessHours.days[dayOfWeek];
+
+  if (!hours) return [];
 
   let slots = [
-    ...hours.morning.slots,
-    ...hours.afternoon.slots
+    ...(hours.morning ? hours.morning.slots : []),
+    ...(hours.afternoon ? hours.afternoon.slots : [])
   ];
 
   // Se VIP o admin, aggiungi orari extra (pre-orario + straordinari serali)
