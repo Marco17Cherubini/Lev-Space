@@ -155,11 +155,9 @@ app.get('/api/slots/:date', (req, res) => {
           const jwt = require('jsonwebtoken');
           const decoded = jwt.verify(cookies.token, config.jwt.secret);
 
-          // Admin o VIP possono vedere orari extra
+          // Admin può vedere orari extra
           if (decoded.isAdmin) {
             includeExtraSlots = true;
-          } else if (decoded.email) {
-            includeExtraSlots = isVip(decoded.email);
           }
         } catch (e) {
           // Token invalido, ignora

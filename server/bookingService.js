@@ -108,8 +108,8 @@ function createBooking(userEmail, bookingData) {
     throw new Error('Il giorno selezionato non è disponibile');
   }
 
-  // Ottieni tutti gli slot per il giorno
-  const allSlots = getSlotsForDay(data, true);
+  // Ottieni tutti gli slot per il giorno (i clienti/VIP non accedono agli slot extra)
+  const allSlots = getSlotsForDay(data, false);
   const startIndex = allSlots.indexOf(orario);
 
   if (startIndex === -1) {
