@@ -34,13 +34,13 @@ module.exports = {
     daysOpen: [1, 2, 3, 4, 5, 6], // lunedì-sabato
     // Orari per giorno della settimana (1=lunedì ... 6=sabato)
     days: {
-      // Lunedì: solo pomeriggio 14:00-18:00 (ultimo appuntamento 17:00)
+      // Lunedì: solo pomeriggio (ultimo appuntamento 16:15, chiusura 17:00)
       1: {
         morning: null,
         afternoon: {
           start: '14:00',
-          end: '18:00',
-          slots: ['14:00', '14:45', '15:30', '16:15', '17:00']
+          end: '17:00',
+          slots: ['14:00', '14:45', '15:30', '16:15']
         }
       },
       // Martedì: mattina 8:30-12:15 + pomeriggio 14:00-17:00 (ultimo appuntamento 16:15)
@@ -78,27 +78,23 @@ module.exports = {
           slots: ['14:00', '14:45', '15:30']
         }
       },
-      // Venerdì: solo pomeriggio 14:00-16:15 (ultimo appuntamento 15:30)
+      // Venerdì: solo pomeriggio (ultimo appuntamento 14:45, chiusura 15:30)
       5: {
         morning: null,
         afternoon: {
           start: '14:00',
-          end: '16:15',
-          slots: ['14:00', '14:45', '15:30']
+          end: '15:30',
+          slots: ['14:00', '14:45']
         }
       },
-      // Sabato: mattina 9:15-12:15 + pomeriggio 14:00-14:45 (ultimo appuntamento 14:00)
+      // Sabato: solo mattina 9:15-12:15
       6: {
         morning: {
           start: '09:15',
           end: '12:15',
           slots: ['09:15', '10:00', '10:45', '11:30']
         },
-        afternoon: {
-          start: '14:00',
-          end: '14:45',
-          slots: ['14:00']
-        }
+        afternoon: null
       }
     }
   },
