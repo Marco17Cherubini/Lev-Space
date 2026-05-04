@@ -1,7 +1,13 @@
-const { bookingsDB, usersDB, holidaysDB } = require('./database');
+const { bookingsDB, usersDB, holidaysDB, globalSettingsDB } = require('./database');
 const { generateId } = require('./authService');
 const config = require('../config/config');
 const crypto = require('crypto');
+
+// Helper
+function getBusinessHours() {
+  const customHours = globalSettingsDB.get('businessHours');
+  return customHours || config.businessHours;
+}
 
 // Genera token univoco per gestione prenotazione (32 caratteri hex)
 function generateBookingToken() {
@@ -11,10 +17,9 @@ function generateBookingToken() {
 // Durata standard appuntamento (minuti)
 const APPOINTMENT_DURATION = config.appointmentDuration || 45;
 
-// Verifica se un giorno è disponibile (martedì-sabato)
 function isDayAvailable(date) {
   const dayOfWeek = new Date(date).getDay();
-  return config.businessHours.daysOpen.includes(dayOfWeek);
+  return getBusinessHours().daysOpen.includes(dayOfWeek);
 }
 
 // Verifica se uno slot è in ferie
@@ -26,7 +31,7 @@ function isHolidaySlot(date, time) {
 // Ottieni gli slot per un giorno specifico (sabato ha orari diversi)
 function getSlotsForDay(date, includeExtraSlots = false) {
   const dayOfWeek = new Date(date).getDay();
-  const hours = config.businessHours.days[dayOfWeek];
+  const hours = getBusinessHours().days[dayOfWeek];
 
   if (!hours) return [];
 
@@ -35,16 +40,26 @@ function getSlotsForDay(date, includeExtraSlots = false) {
     ...(hours.afternoon ? hours.afternoon.slots : [])
   ];
 
-  // Se VIP o admin, aggiungi orari extra (pre-orario + straordinari serali)
-  if (includeExtraSlots) {
-    // Slot pre-orario (08:00) disponibile tutti i giorni lavorativi
+  // Se VIP o admin, aggiungi orari extra
+  if (includeExtraSlots && hours.vip) {
+    const extraSlots = hours.vip.slots || [];
+    // Mantieni pre-orario 08:00 fisso o se nel JSON
+    if (dayOfWeek !== 0 && !slots.includes('08:00') && !extraSlots.includes('08:00')) {
+         slots = ['08:00', ...slots];
+    }
+    // Aggiungi straordinari
+    slots = [...slots, ...extraSlots];
+  } else if (includeExtraSlots && !hours.vip) {
+    // Fallback legacy se il JSON VIP non è ancora stato salvato tramite la nuova UI
     const preOpeningSlot = ['08:00'];
     const extraSlotsWeekday = ['18:00', '18:45', '19:30', '20:15', '21:00', '21:45', '22:30', '23:15'];
     const extraSlotsSaturday = ['15:30', '16:15', '17:00', '17:45', '18:30', '19:15', '20:00', '20:45', '21:30', '22:15', '23:00'];
     const extraSlots = dayOfWeek === 6 ? extraSlotsSaturday : extraSlotsWeekday;
-    // Aggiungi pre-orario all'inizio, poi slot normali, poi straordinari
     slots = [...preOpeningSlot, ...slots, ...extraSlots];
   }
+
+  // Deduplica array e ordina per stringa ("08:00", "09:00" ecc)
+  slots = [...new Set(slots)].sort();
 
   return slots;
 }

@@ -163,7 +163,7 @@
         renderCalendar();
     }
 
-    function renderCalendar() {
+    async function renderCalendar() {
         const year = currentMonth.getFullYear();
         const month = currentMonth.getMonth();
 

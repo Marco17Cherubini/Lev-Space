@@ -25,54 +25,52 @@ let longPressTimer = null;
 let touchStartX = 0;
 let touchStartY = 0;
 
-// Orari di lavoro - martedì-venerdì (45 min per appuntamento)
-const timeSlotsWeekday = [
-  '08:30', '09:15', '10:00', '10:45', '11:30', '12:15',
-  '14:00', '14:45', '15:30', '16:15', '17:00'
-];
-
-// Orari di lavoro - sabato (45 min per appuntamento)
-const timeSlotsSaturday = [
-  '08:30', '09:15', '10:00', '10:45', '11:30', '12:15',
-  '14:00', '14:45'
-];
-
-// Slot pre-orario (08:00) disponibile per admin/VIP
-const preOpeningSlot = ['08:00'];
-
-// Slot straordinario (solo admin/VIP) - dopo orario chiusura fino a mezzanotte
-const extraSlotsWeekday = [
-  '18:00', '18:45', '19:30', '20:15', '21:00', '21:45', '22:30', '23:15'
-];
-
-const extraSlotsSaturday = [
-  '15:30', '16:15', '17:00', '17:45', '18:30', '19:15', '20:00', '20:45', '21:30', '22:15', '23:00'
-];
+let businessHours = null;
+let allTimeSlots = [];
 
 // Funzione per ottenere gli slot per un giorno (inclusi extra per admin)
 function getTimeSlotsForDate(date, includeExtra = true) {
   const dayOfWeek = new Date(date).getDay();
-  const normalSlots = dayOfWeek === 6 ? timeSlotsSaturday : timeSlotsWeekday;
-  if (includeExtra) {
+  const hours = businessHours.days[dayOfWeek];
+
+  if (!hours) return [];
+
+  let slots = [
+    ...(hours.morning ? hours.morning.slots : []),
+    ...(hours.afternoon ? hours.afternoon.slots : [])
+  ];
+
+  if (includeExtra && hours.vip) {
+    const extraSlots = hours.vip.slots || [];
+    if (dayOfWeek !== 0 && !slots.includes('08:00') && !extraSlots.includes('08:00')) {
+      slots = ['08:00', ...slots];
+    }
+    slots = [...slots, ...extraSlots];
+  } else if (includeExtra && !hours.vip) {
+    const preOpeningSlot = ['08:00'];
+    const extraSlotsWeekday = ['18:00', '18:45', '19:30', '20:15', '21:00', '21:45', '22:30', '23:15'];
+    const extraSlotsSaturday = ['15:30', '16:15', '17:00', '17:45', '18:30', '19:15', '20:00', '20:45', '21:30', '22:15', '23:00'];
     const extraSlots = dayOfWeek === 6 ? extraSlotsSaturday : extraSlotsWeekday;
-    // Includi pre-orario + slot normali + straordinari
-    return [...preOpeningSlot, ...normalSlots, ...extraSlots];
+    slots = [...preOpeningSlot, ...slots, ...extraSlots];
   }
-  return normalSlots;
+  
+  slots = [...new Set(slots)].sort();
+  return slots;
 }
 
-// Tutti gli slot possibili (unione per visualizzazione griglia admin)
-// Include lo slot pre-orario 08:00 per admin/VIP
-const allTimeSlots = [
-  '08:00', '08:30', '09:15', '10:00', '10:45', '11:30', '12:15',
-  '14:00', '14:45', '15:30', '16:15', '17:00',
-  '18:00', '18:45', '19:30', '20:15', '21:00', '21:45', '22:30', '23:15'
-];
-
-// Slot normali (per controllo visualizzazione)
-const normalEndTimeWeekday = '17:00';
-const normalEndTimeSaturday = '14:45';
-
+// Inizializza logicamente allTimeSlots
+function initAllTimeSlots() {
+  const tempSet = new Set();
+  businessHours.daysOpen.forEach(day => {
+      const d = new Date();
+      const currentDay = d.getDay();
+      const distance = day - currentDay;
+      d.setDate(d.getDate() + distance);
+      const slots = getTimeSlotsForDate(d, true);
+      slots.forEach(s => tempSet.add(s));
+  });
+  allTimeSlots = Array.from(tempSet).sort();
+}
 // Giorni lavorativi (Lun-Sab = indici 0-5 nel nostro array)
 const workDays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
 
@@ -90,6 +88,14 @@ async function init() {
 
     // Imposta settimana corrente (inizia da lunedì)
     currentWeekStart = getMonday(new Date());
+
+    const settingsRes = await apiRequest('/admin/settings/hours');
+    if (settingsRes && settingsRes.success) {
+      businessHours = settingsRes.businessHours;
+      initAllTimeSlots();
+    } else {
+      console.error('Impossibile caricare businessHours');
+    }
 
     // Carica utenti per autocompletamento
     await loadUsers();
@@ -220,7 +226,7 @@ function renderCalendar() {
       const dateStr = formatDate(date);
       const dayOfWeek = date.getDay();
       const daySlots = getTimeSlotsForDate(date, true); // Include extra
-      const normalSlots = dayOfWeek === 6 ? timeSlotsSaturday : timeSlotsWeekday;
+      const normalSlots = getTimeSlotsForDate(date, false);
       const isValidSlot = daySlots.includes(time);
       const isExtraSlot = isValidSlot && !normalSlots.includes(time);
       const booking = findBooking(dateStr, time);
@@ -237,12 +243,7 @@ function renderCalendar() {
       }
 
       // Se lo slot non è valido per questo giorno (es. sabato dopo le 23:00)
-      if (!isValidSlot) {
-        cell.classList.add('invalid-slot');
-        cell.innerHTML = '<div class="no-booking">—</div>';
-        grid.appendChild(cell);
-        return;
-      }
+      // Removed isValidSlot block for admin freedom
 
       if (holidayMode) {
         // ===== MODALITÀ FERIE =====

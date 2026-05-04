@@ -111,7 +111,7 @@
         }
     }
 
-    function renderCalendar() {
+    async function renderCalendar() {
         const grid = document.getElementById('calendar-grid');
         const monthLabel = document.getElementById('current-month');
 
@@ -147,7 +147,16 @@
             grid.appendChild(emptyCell);
         }
 
+        
+        let availability = {};
+        try {
+            const resp = await fetch(`/api/availability/${year}/${month + 1}`);
+            const data = await resp.json();
+            if (data.success) availability = data.availability;
+        } catch(e) { console.error(e); }
+
         // Day cells
+
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const cell = document.createElement('div');
@@ -159,10 +168,13 @@
 
             // Check if past or Sunday
             const dayOfWeek = date.getDay();
+            
             const isPast = date < today;
             const isSunday = dayOfWeek === 0;
+            const isAvailable = availability[day] !== false; // false = no orari, true = si/unknown
 
-            if (isPast || isSunday) {
+
+            if (isPast || isSunday || !isAvailable) {
                 cell.classList.add('disabled');
             } else {
                 cell.addEventListener('click', () => selectDate(dateStr, date));
@@ -172,7 +184,7 @@
         }
     }
 
-    function changeMonth(delta) {
+    async function changeMonth(delta) {
         currentMonth.setMonth(currentMonth.getMonth() + delta);
         renderCalendar();
 

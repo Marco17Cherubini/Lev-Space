@@ -87,6 +87,13 @@ async function initDatabase() {
     )
   `);
 
+    db.run(`
+    CREATE TABLE IF NOT EXISTS global_settings (
+      key TEXT PRIMARY KEY,
+      json_data TEXT NOT NULL
+    )
+  `);
+
     // Aggiungi colonna vip se non esiste (migrazione)
     try {
         db.run(`ALTER TABLE users ADD COLUMN vip INTEGER DEFAULT 0`);
@@ -165,10 +172,30 @@ async function initDatabase() {
     // Salva struttura iniziale
     saveDatabase();
 
+    // Inizializza impostazioni globali se mancano
+    initializeSettings();
+
     // Inizializza admin
     initializeDefaultAdmin();
 
     console.log('📦 Database SQLite inizializzato');
+}
+
+// ==================== INIZIALIZZA SETTINGS (SEED) ====================
+function initializeSettings() {
+    if (!db) return;
+    const currentHours = globalSettingsDB.get('businessHours');
+    if (!currentHours) {
+        try {
+            const config = require('../config/config');
+            if (config.businessHours) {
+                globalSettingsDB.set('businessHours', config.businessHours);
+                console.log('⚙️ Impostazioni businessHours migrate da config.js');
+            }
+        } catch(e) {
+            console.error('Errore durante la migrazione di businessHours:', e);
+        }
+    }
 }
 
 // ==================== CLASSE DB WRAPPER ====================
@@ -304,11 +331,44 @@ const userColumns = ['nome', 'cognome', 'email', 'telefono', 'password', 'vip', 
 const bookingColumns = ['nome', 'cognome', 'email', 'telefono', 'giorno', 'ora', 'token'];
 const adminColumns = ['email', 'password'];
 const holidayColumns = ['giorno', 'ora'];
+const globalSettingsColumns = ['key', 'json_data'];
 
 const usersDB = new SQLiteTable('users', userColumns);
 const bookingsDB = new SQLiteTable('bookings', bookingColumns);
 const adminDB = new SQLiteTable('admins', adminColumns);
 const holidaysDB = new SQLiteTable('holidays', holidayColumns);
+
+const globalSettingsDB = {
+    get: function(key) {
+        if (!db) return null;
+        try {
+            const stmt = db.prepare(`SELECT json_data FROM global_settings WHERE key = ?`);
+            stmt.bind([key]);
+            if (stmt.step()) {
+                const rs = stmt.getAsObject();
+                stmt.free();
+                return JSON.parse(rs.json_data);
+            }
+            stmt.free();
+            return null;
+        } catch (e) {
+            console.error(`Errore in globalSettingsDB.get(${key}):`, e);
+            return null;
+        }
+    },
+    set: function(key, data) {
+        if (!db) return;
+        try {
+            const stringData = JSON.stringify(data);
+            const stmt = db.prepare(`INSERT INTO global_settings (key, json_data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET json_data = excluded.json_data`);
+            stmt.run([key, stringData]);
+            stmt.free();
+            saveDatabase();
+        } catch (e) {
+            console.error(`Errore in globalSettingsDB.set(${key}):`, e);
+        }
+    }
+};
 
 // ==================== INIZIALIZZA ADMIN ====================
 
@@ -341,6 +401,7 @@ module.exports = {
     bookingsDB,
     adminDB,
     holidaysDB,
+    globalSettingsDB,
     initDatabase,
     saveDatabase
 };

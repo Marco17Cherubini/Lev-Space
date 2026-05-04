@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Orari - Lev Space</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/styles/pages/admin-orari.css">
+</head>
+
+<body>
+    <!-- Sidebar Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- Sidebar Menu -->
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <span>Menu Admin</span>
+            <button id="close-sidebar" class="sidebar-close">&times;</button>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/admin" class="sidebar-item">Menu Admin</a>
+            <a href="/admin/reports" class="sidebar-item">Resoconto Clientela</a>
+            <a href="/admin/clienti" class="sidebar-item">Gestione Clienti</a>
+            <a href="/admin/orari" class="sidebar-item active">Gestione Orari</a>
+            <button id="sidebar-logout" class="sidebar-item sidebar-logout">Logout</button>
+        </nav>
+    </div>
+
+    <div class="header">
+        <div class="header-left">
+            <button id="hamburger-btn" class="hamburger-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="header-title">Lev Space</div>
+        </div>
+        <div class="header-right">
+        </div>
+    </div>
+
+    <div class="container main-content orari-container">
+        <h2>Gestione Orari Lavorativi</h2>
+        <p class="subtitle">Modifica i giorni e i turni disponibili per le prenotazioni dei clienti e dei clienti VIP. Le tue modifiche al calendario non verranno limitate da questi orari.</p>
+        
+        <div id="orari-list">
+            <!-- CARDS GENERATE VIA JS -->
+        </div>
+        
+    </div>
+    
+    <div class="save-btn-container">
+        <button id="save-orari-btn" class="save-btn">Salva Impostazioni</button>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/admin-orari.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const hamburgerBtn = document.getElementById('hamburger-btn');
+            const closeSidebarBtn = document.getElementById('close-sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            const sidebar = document.getElementById('sidebar');
+
+            function openSidebar() {
+                sidebar.classList.add('active');
+                sidebarOverlay.classList.add('active');
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+            }
+
+            hamburgerBtn.addEventListener('click', openSidebar);
+            closeSidebarBtn.addEventListener('click', closeSidebar);
+            sidebarOverlay.addEventListener('click', closeSidebar);
+        });
+    </script>
+</body>
+
+</html>

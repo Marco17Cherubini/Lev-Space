@@ -136,6 +136,64 @@ app.post('/api/auth/reset-password', async (req, res) => {
 // ==================== BOOKING ROUTES ====================
 
 // GET /api/slots/:date - Ottieni slot disponibili per una data
+// GET /api/availability/:year/:month - Ottieni la disponibilità per un intero mese
+app.get('/api/availability/:year/:month', (req, res) => {
+  try {
+    const year = parseInt(req.params.year);
+    const month = parseInt(req.params.month) - 1; // getMonth() returns 0-11
+    
+    let includeExtraSlots = false;
+    const authHeader = req.headers.cookie;
+    if (authHeader) {
+      const cookies = authHeader.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        acc[key] = value;
+        return acc;
+      }, {});
+
+      if (cookies.token) {
+        try {
+          const { verifyToken, isVip } = require('./authService');
+          const decoded = verifyToken(cookies.token);
+          if (isVip(decoded.email) || decoded.isAdmin) {
+            includeExtraSlots = true;
+          }
+        } catch (e) {}
+      }
+    }
+
+    const { getAvailableSlots } = require('./bookingService');
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const availability = {};
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d);
+      
+      // Se è nel passato, è false e non calcoliamo
+      if (date < today) {
+        availability[d] = false;
+        continue;
+      }
+      
+      // Calcoliamo la disponibilità vera
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const slots = getAvailableSlots(dateStr, includeExtraSlots);
+      
+      // Controllo che ci sia almeno uno slot disponibile per essere considerato aperto ai click
+      avail = slots.some(slot => slot.available);
+      availability[d] = avail;
+    }
+
+    res.json({ success: true, availability });
+  } catch(e) {
+    res.status(400).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/slots/:date - Ottieni slot disponibili per una data
 // Se l'utente è VIP o admin, include anche gli orari extra
 app.get('/api/slots/:date', (req, res) => {
   try {
@@ -312,6 +370,42 @@ app.post('/api/bookings/guest', (req, res) => {
 
 
 // ==================== ADMIN ROUTES ====================
+
+// GET /api/admin/settings/hours - Ottieni configurazione orari lavorativi (solo admin)
+app.get('/api/admin/settings/hours', authenticateToken, (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ success: false, error: 'Accesso negato' });
+    }
+    const { globalSettingsDB } = require('./database');
+    const config = require('../config/config');
+    const customHours = globalSettingsDB.get('businessHours');
+    res.json({ success: true, businessHours: customHours || config.businessHours });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/admin/settings/hours - Salva configurazione orari lavorativi (solo admin)
+app.post('/api/admin/settings/hours', authenticateToken, (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ success: false, error: 'Accesso negato' });
+    }
+    const { globalSettingsDB } = require('./database');
+    const newHours = req.body;
+    
+    // validazione base
+    if (!newHours || !newHours.daysOpen || !newHours.days) {
+         return res.status(400).json({ success: false, error: 'Formato inviato non valido' });
+    }
+
+    globalSettingsDB.set('businessHours', newHours);
+    res.json({ success: true, message: 'Orari aggiornati con successo!' });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
 
 // GET /api/admin/bookings - Ottieni tutte le prenotazioni (solo admin)
 app.get('/api/admin/bookings', authenticateToken, (req, res) => {
@@ -567,6 +661,11 @@ app.get('/admin/banned', (req, res) => {
 // Admin Unified Client Management page
 app.get('/admin/clienti', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin-clienti.html'));
+});
+
+// Admin Gestione Oraria page
+app.get('/admin/orari', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/admin-orari.html'));
 });
 
 // ==================== REPORTS API ====================
