@@ -34,7 +34,7 @@ async function init() {
       selectedGroupSize = 1;
       document.getElementById('group-modal').classList.add('hidden');
       document.getElementById('calendar-section').classList.remove('hidden');
-      renderCalendar();
+      await renderCalendar();
       return;
     }
 
@@ -73,7 +73,7 @@ function showGroupModal() {
       }
 
       // Render calendar
-      renderCalendar();
+      await renderCalendar();
     });
   });
 }
@@ -224,7 +224,7 @@ function bookRecurringAppointment() {
 
 
 // Render calendario
-function renderCalendar() {
+async function renderCalendar() {
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
@@ -259,6 +259,16 @@ function renderCalendar() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Recupera la disponibilità del mese dalle impostazioni admin (Gestione Orari).
+  // Stesso endpoint usato dal flusso guest, così login e guest restano allineati.
+  let availability = {};
+  try {
+    const resp = await apiRequest(`/availability/${year}/${month + 1}`);
+    if (resp && resp.success) availability = resp.availability;
+  } catch (e) {
+    console.error('Errore caricamento disponibilità:', e);
+  }
+
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
     // Formato data locale YYYY-MM-DD (evita problemi UTC)
@@ -273,16 +283,15 @@ function renderCalendar() {
     dayElement.textContent = day;
     dayElement.dataset.date = dateString;
 
-    // Disabilita giorni passati
-    if (date < today) {
+    // I giorni aperti derivano dalle impostazioni admin (Gestione Orari).
+    // La domenica resta sempre chiusa (non gestita dall'admin, giorni 1-6).
+    const isPast = date < today;
+    const isSunday = dayOfWeek === 0;
+    const isAvailable = availability[day] !== false; // false = nessun orario disponibile
+
+    if (isPast || isSunday || !isAvailable) {
       dayElement.classList.add('disabled');
-    }
-    // Disabilita domenica (0) e lunedì (1)
-    else if (dayOfWeek === 0 || dayOfWeek === 1) {
-      dayElement.classList.add('disabled');
-    }
-    // Giorni disponibili
-    else {
+    } else {
       dayElement.addEventListener('click', () => selectDate(dateString, dayElement));
     }
 
@@ -402,15 +411,15 @@ function selectTimeSlot(element) {
 }
 
 // Navigation calendario
-document.getElementById('prev-month').addEventListener('click', () => {
+document.getElementById('prev-month').addEventListener('click', async () => {
   currentMonth.setMonth(currentMonth.getMonth() - 1);
-  renderCalendar();
+  await renderCalendar();
   hideTimeSlots();
 });
 
-document.getElementById('next-month').addEventListener('click', () => {
+document.getElementById('next-month').addEventListener('click', async () => {
   currentMonth.setMonth(currentMonth.getMonth() + 1);
-  renderCalendar();
+  await renderCalendar();
   hideTimeSlots();
 });
 
