@@ -124,14 +124,22 @@
           </div>
         </div>
 
-        <!-- Prenotazione ricorrente -->
+        <!-- Prenotazione ricorrente (opzioni mutuamente esclusive) -->
         <div class="form-recurrence">
           <label class="form-recurrence__toggle">
-            <input type="checkbox" id="input-ricorrente" class="form-recurrence__checkbox">
+            <input type="checkbox" id="input-ricorrente" class="form-recurrence__checkbox" data-interval="1">
             <span>Prenotazione ricorrente</span>
           </label>
+          <label class="form-recurrence__toggle">
+            <input type="checkbox" id="input-ricorrente-2w" class="form-recurrence__checkbox" data-interval="2">
+            <span>Prenotazione ricorrente (2 w)</span>
+          </label>
+          <label class="form-recurrence__toggle">
+            <input type="checkbox" id="input-ricorrente-3w" class="form-recurrence__checkbox" data-interval="3">
+            <span>Prenotazione ricorrente (3 w)</span>
+          </label>
           <div id="recurrence-options" class="form-recurrence__options hidden">
-            <label class="form-label" for="input-mesi">Ripeti ogni settimana per</label>
+            <label class="form-label" for="input-mesi">Ripeti per</label>
             <select id="input-mesi" class="form-input">
               <option value="1">1 mese</option>
               <option value="2">2 mesi</option>

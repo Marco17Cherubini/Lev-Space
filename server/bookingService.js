@@ -286,24 +286,34 @@ function createAdminBooking(bookingData) {
   return booking;
 }
 
-// Crea una serie di prenotazioni ricorrenti (settimanali) da admin.
-// Ripete lo stesso giorno della settimana e stessa ora per (mesi * 4) settimane.
-// Salta (senza sovrascrivere) le settimane il cui slot è già occupato o in ferie.
+// Crea una serie di prenotazioni ricorrenti da admin.
+// Ripete lo stesso giorno della settimana e stessa ora ogni `intervalloSettimane` (1/2/3)
+// settimane, all'interno di una finestra di (mesi * 4) settimane.
+// Salta (senza sovrascrivere) le occorrenze il cui slot è già occupato o in ferie.
 function createRecurringBooking(bookingData) {
-  const { nome, cognome, email, telefono, giorno, ora, mesiRicorrenza } = bookingData;
+  const { nome, cognome, email, telefono, giorno, ora, mesiRicorrenza, intervalloSettimane } = bookingData;
 
   // Validazione base (come per la prenotazione admin normale)
   if (!cognome || !giorno || !ora) {
     throw new Error('Cognome, giorno e ora sono obbligatori');
   }
 
-  // Validazione numero di mesi (1-12): 1 mese = 4 settimane
+  // Validazione numero di mesi (1-12): 1 mese = 4 settimane (finestra temporale)
   const mesi = parseInt(mesiRicorrenza, 10);
   if (!Number.isInteger(mesi) || mesi < 1 || mesi > 12) {
     throw new Error('Numero di mesi non valido (deve essere tra 1 e 12)');
   }
 
-  const settimane = mesi * 4;
+  // Intervallo tra le occorrenze in settimane: 1 (ogni settimana), 2 o 3.
+  // Default a 1 per retro-compatibilità se il campo non è fornito.
+  const intervallo = [1, 2, 3].includes(parseInt(intervalloSettimane, 10))
+    ? parseInt(intervalloSettimane, 10)
+    : 1;
+
+  // I mesi definiscono la finestra temporale (mesi * 4 settimane); dentro la finestra
+  // l'appuntamento si ripete ogni `intervallo` settimane.
+  const settimaneOrizzonte = mesi * 4;
+  const totaleOccorrenze = Math.ceil(settimaneOrizzonte / intervallo);
 
   // Dati cliente condivisi da tutte le occorrenze
   const datiCliente = {
@@ -319,8 +329,8 @@ function createRecurringBooking(bookingData) {
   const inserite = [];
   let saltate = 0;
 
-  for (let i = 0; i < settimane; i++) {
-    const dataOccorrenza = addDaysToDateString(giorno, i * 7);
+  for (let i = 0; i < totaleOccorrenze; i++) {
+    const dataOccorrenza = addDaysToDateString(giorno, i * intervallo * 7);
 
     // Salta se lo slot è in ferie o già occupato: non sovrascrivere l'appuntamento esistente
     const occupato =
@@ -344,7 +354,7 @@ function createRecurringBooking(bookingData) {
     inserite.push(occorrenza);
   }
 
-  // Se ogni settimana era occupata/in ferie, non è stata creata nessuna occorrenza
+  // Se ogni occorrenza era occupata/in ferie, non è stata creata nessuna prenotazione
   if (inserite.length === 0) {
     throw new Error('Nessuna occorrenza inserita: tutte le date selezionate sono già occupate o in ferie');
   }
@@ -354,7 +364,7 @@ function createRecurringBooking(bookingData) {
     booking: inserite[0],
     inserite: inserite.length,
     saltate,
-    totale: settimane
+    totale: totaleOccorrenze
   };
 }
 

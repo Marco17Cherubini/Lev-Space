@@ -604,8 +604,8 @@ function openBookingModal(date, time) {
   document.getElementById('form-error').classList.add('hidden');
   document.getElementById('suggestions-list').classList.add('hidden');
 
-  // Reset opzioni ricorrenza (checkbox spenta, dropdown nascosto)
-  document.getElementById('input-ricorrente').checked = false;
+  // Reset opzioni ricorrenza (tutte le modalità spente, dropdown nascosto)
+  document.querySelectorAll('.form-recurrence__checkbox').forEach(cb => { cb.checked = false; });
   document.getElementById('recurrence-options').classList.add('hidden');
 
   // Imposta titolo e sottotitolo
@@ -825,17 +825,29 @@ function setupModalListeners() {
   document.getElementById('delete-cancel').addEventListener('click', () => deleteConfirmModal.close());
   document.getElementById('delete-confirm').addEventListener('click', executeDelete);
 
-  // Toggle opzioni ricorrenza: mostra/nascondi il dropdown dei mesi
-  document.getElementById('input-ricorrente').addEventListener('change', (e) => {
-    const options = document.getElementById('recurrence-options');
-    options.classList.toggle('hidden', !e.target.checked);
+  // Opzioni ricorrenza mutuamente esclusive: selezionandone una si deselezionano le altre.
+  // Il dropdown dei mesi appare se almeno una modalità è attiva.
+  const recurrenceCheckboxes = document.querySelectorAll('.form-recurrence__checkbox');
+  recurrenceCheckboxes.forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        recurrenceCheckboxes.forEach(other => {
+          if (other !== e.target) other.checked = false;
+        });
+      }
+      const anyChecked = Array.from(recurrenceCheckboxes).some(c => c.checked);
+      document.getElementById('recurrence-options').classList.toggle('hidden', !anyChecked);
+    });
   });
 
   // Submit form inserimento
   document.getElementById('booking-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const ricorrente = document.getElementById('input-ricorrente').checked;
+    // Modalità ricorrente selezionata (se presente) e relativo intervallo in settimane
+    const selectedRecurrence = document.querySelector('.form-recurrence__checkbox:checked');
+    const ricorrente = !!selectedRecurrence;
+    const intervalloSettimane = selectedRecurrence ? parseInt(selectedRecurrence.dataset.interval, 10) : 1;
     const mesiRicorrenza = parseInt(document.getElementById('input-mesi').value, 10);
 
     const formData = {
@@ -846,7 +858,8 @@ function setupModalListeners() {
       giorno: selectedSlot.date,
       ora: selectedSlot.time,
       ricorrente,
-      mesiRicorrenza: ricorrente ? mesiRicorrenza : null
+      mesiRicorrenza: ricorrente ? mesiRicorrenza : null,
+      intervalloSettimane: ricorrente ? intervalloSettimane : null
     };
 
     // Validazione (solo cognome obbligatorio per admin)
