@@ -118,6 +118,23 @@
     display: none;
 }
 
+/* Prenotazione ricorrente: verde chiaro con bordo verde scuro */
+.booking-item--recurring {
+    background-color: var(--admin-recurring-item-bg);
+    border: 1px solid var(--admin-recurring-item-border);
+    border-left: 3px solid var(--admin-recurring-item-left-border);
+}
+
+.booking-item .recurring-badge {
+    font-weight: 700;
+    font-size: 0.55rem;
+    color: var(--admin-recurring-badge-text);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .booking-delete-btn {
     position: absolute;
     top: 5px;
@@ -176,7 +193,7 @@
 .admin-calendar__legend {
     display: flex;
     align-items: center;
-    gap: 25px;
+    gap: var(--space-4);
     margin-bottom: var(--space-4);
     padding: var(--space-3) var(--space-4);
     background-color: var(--admin-legend-bg);
@@ -188,16 +205,16 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
+    padding: 5px 10px;
+    border: 2px solid transparent;
+    border-radius: var(--radius-xs);
     font-size: 0.9rem;
     color: var(--color-text-primary);
 }
 
 .admin-calendar__legend-item--selectable {
     cursor: pointer;
-    padding: 5px 10px;
-    border: 2px solid transparent;
     transition: all 0.2s;
-    border-radius: var(--radius-xs);
 }
 
 .admin-calendar__legend-item--selectable:hover {
@@ -224,6 +241,11 @@
 .admin-calendar__legend-box--holiday {
     background-color: var(--admin-holiday-bg);
     border-color: var(--admin-holiday-bg);
+}
+
+.admin-calendar__legend-box--recurring {
+    background-color: var(--admin-recurring-item-bg);
+    border-color: var(--admin-recurring-item-left-border);
 }
 
 /* ==================== HOLIDAY MODE ==================== */
@@ -311,6 +333,37 @@
 
 /* ==================== ADMIN SIDEBAR ==================== */
 /* Styles inherited from global styles.css */
+
+/* ==================== FORM PRENOTAZIONE RICORRENTE ==================== */
+
+.form-recurrence {
+    margin-bottom: var(--space-4);
+}
+
+.form-recurrence__toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--color-text-primary);
+    user-select: none;
+}
+
+.form-recurrence__checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--admin-recurring-item-border);
+}
+
+.form-recurrence__options {
+    margin-top: var(--space-3);
+}
+
+.form-recurrence__options.hidden {
+    display: none;
+}
 
 /* ==================== ADMIN MODAL OVERRIDES ==================== */
 

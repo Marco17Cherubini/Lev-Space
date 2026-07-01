@@ -237,13 +237,31 @@ function getAllBookings() {
   return bookingsDB.readAll();
 }
 
+// Aggiunge N giorni a una data 'YYYY-MM-DD' restituendo una nuova stringa 'YYYY-MM-DD'.
+// Costruisce la data a partire dai componenti (mezzanotte locale) per evitare
+// spostamenti di giorno dovuti al fuso orario, coerentemente con formatDate() del frontend.
+function addDaysToDateString(dateStr, days) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  d.setDate(d.getDate() + days);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 // Crea prenotazione da admin (senza verifica utente)
 function createAdminBooking(bookingData) {
-  const { nome, cognome, email, telefono, giorno, ora } = bookingData;
+  const { nome, cognome, email, telefono, giorno, ora, ricorrente } = bookingData;
 
   // Validazione (solo cognome, giorno, ora obbligatori per admin)
   if (!cognome || !giorno || !ora) {
     throw new Error('Cognome, giorno e ora sono obbligatori');
+  }
+
+  // Se richiesta una prenotazione ricorrente, delega alla logica dedicata
+  if (ricorrente) {
+    return createRecurringBooking(bookingData);
   }
 
   // Verifica slot non già occupato
@@ -259,12 +277,85 @@ function createAdminBooking(bookingData) {
     email: email ? email.trim().toLowerCase() : '',
     telefono: telefono ? telefono.trim() : '',
     giorno,
-    ora
+    ora,
+    tipo: 'normale'
   };
 
   bookingsDB.insert(booking);
 
   return booking;
+}
+
+// Crea una serie di prenotazioni ricorrenti (settimanali) da admin.
+// Ripete lo stesso giorno della settimana e stessa ora per (mesi * 4) settimane.
+// Salta (senza sovrascrivere) le settimane il cui slot è già occupato o in ferie.
+function createRecurringBooking(bookingData) {
+  const { nome, cognome, email, telefono, giorno, ora, mesiRicorrenza } = bookingData;
+
+  // Validazione base (come per la prenotazione admin normale)
+  if (!cognome || !giorno || !ora) {
+    throw new Error('Cognome, giorno e ora sono obbligatori');
+  }
+
+  // Validazione numero di mesi (1-12): 1 mese = 4 settimane
+  const mesi = parseInt(mesiRicorrenza, 10);
+  if (!Number.isInteger(mesi) || mesi < 1 || mesi > 12) {
+    throw new Error('Numero di mesi non valido (deve essere tra 1 e 12)');
+  }
+
+  const settimane = mesi * 4;
+
+  // Dati cliente condivisi da tutte le occorrenze
+  const datiCliente = {
+    nome: nome ? nome.trim() : '',
+    cognome: cognome.trim(),
+    email: email ? email.trim().toLowerCase() : '',
+    telefono: telefono ? telefono.trim() : ''
+  };
+
+  // Token condiviso: identifica logicamente tutte le occorrenze della serie
+  const token = generateBookingToken();
+
+  const inserite = [];
+  let saltate = 0;
+
+  for (let i = 0; i < settimane; i++) {
+    const dataOccorrenza = addDaysToDateString(giorno, i * 7);
+
+    // Salta se lo slot è in ferie o già occupato: non sovrascrivere l'appuntamento esistente
+    const occupato =
+      isHolidaySlot(dataOccorrenza, ora) ||
+      bookingsDB.findOne(b => b.giorno === dataOccorrenza && b.ora === ora);
+
+    if (occupato) {
+      saltate++;
+      continue;
+    }
+
+    const occorrenza = {
+      ...datiCliente,
+      giorno: dataOccorrenza,
+      ora,
+      token,
+      tipo: 'ricorrente'
+    };
+
+    bookingsDB.insert(occorrenza);
+    inserite.push(occorrenza);
+  }
+
+  // Se ogni settimana era occupata/in ferie, non è stata creata nessuna occorrenza
+  if (inserite.length === 0) {
+    throw new Error('Nessuna occorrenza inserita: tutte le date selezionate sono già occupate o in ferie');
+  }
+
+  // Ritorna un riepilogo: prima occorrenza + conteggi inserite/saltate/totale
+  return {
+    booking: inserite[0],
+    inserite: inserite.length,
+    saltate,
+    totale: settimane
+  };
 }
 
 // Cancella prenotazione da admin (senza verifica proprietario)
@@ -412,6 +503,7 @@ module.exports = {
   cancelBooking,
   getAllBookings,
   createAdminBooking,
+  createRecurringBooking,
   adminCancelBooking,
   moveBooking,
   getBookingByToken,

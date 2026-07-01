@@ -33,6 +33,12 @@
     --admin-holiday-selected-bg: #d4f1f9;
     --admin-holiday-selected-border: #87ceeb;
 
+    /* Ricorrente (Recurring Booking) - verde chiaro con bordo verde scuro */
+    --admin-recurring-item-bg: #dcfce7;
+    --admin-recurring-item-border: #16a34a;
+    --admin-recurring-item-left-border: #15803d;
+    --admin-recurring-badge-text: #15803d;
+
     /* Legenda */
     --admin-legend-bg: #f5f5f5;
     --admin-legend-border: #ddd;
@@ -114,6 +120,12 @@
     --admin-holiday-btn-border: #64D2FF;
     --admin-holiday-selected-bg: #1F4551;
     --admin-holiday-selected-border: #64D2FF;
+
+    /* Ricorrente (Recurring Booking) - verde scuro con accento verde chiaro */
+    --admin-recurring-item-bg: #14442A;
+    --admin-recurring-item-border: #22c55e;
+    --admin-recurring-item-left-border: #4ade80;
+    --admin-recurring-badge-text: #4ade80;
 
     /* Legenda */
     --admin-legend-bg: #1C1C1E;

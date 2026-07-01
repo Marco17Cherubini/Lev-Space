@@ -61,6 +61,10 @@
           <span class="admin-calendar__legend-box admin-calendar__legend-box--holiday"></span>
           <span>Ferie (clicca per attivare)</span>
         </div>
+        <div class="admin-calendar__legend-item">
+          <span class="admin-calendar__legend-box admin-calendar__legend-box--recurring"></span>
+          <span>Ricorrente</span>
+        </div>
         <div class="admin-calendar__nav">
           <button id="prev-week" class="admin-calendar__nav-btn">←</button>
           <button id="next-week" class="admin-calendar__nav-btn">→</button>
@@ -117,6 +121,31 @@
           <div class="form-group">
             <label class="form-label">Telefono</label>
             <input type="tel" id="input-telefono" class="form-input" placeholder="+39 123 456 7890">
+          </div>
+        </div>
+
+        <!-- Prenotazione ricorrente -->
+        <div class="form-recurrence">
+          <label class="form-recurrence__toggle">
+            <input type="checkbox" id="input-ricorrente" class="form-recurrence__checkbox">
+            <span>Prenotazione ricorrente</span>
+          </label>
+          <div id="recurrence-options" class="form-recurrence__options hidden">
+            <label class="form-label" for="input-mesi">Ripeti ogni settimana per</label>
+            <select id="input-mesi" class="form-input">
+              <option value="1">1 mese</option>
+              <option value="2">2 mesi</option>
+              <option value="3">3 mesi</option>
+              <option value="4">4 mesi</option>
+              <option value="5">5 mesi</option>
+              <option value="6">6 mesi</option>
+              <option value="7">7 mesi</option>
+              <option value="8">8 mesi</option>
+              <option value="9">9 mesi</option>
+              <option value="10">10 mesi</option>
+              <option value="11">11 mesi</option>
+              <option value="12">12 mesi</option>
+            </select>
           </div>
         </div>
 

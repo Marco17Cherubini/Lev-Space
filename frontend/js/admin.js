@@ -387,8 +387,13 @@ function findBooking(date, time) {
 
 // Render singolo appuntamento
 function renderBookingItem(booking, time) {
+  const isRecurring = booking.tipo === 'ricorrente';
+  const itemClass = isRecurring ? 'booking-item booking-item--recurring' : 'booking-item';
+  const recurringBadge = isRecurring ? '<div class="recurring-badge">↻ Ricorrente</div>' : '';
+
   return `
-    <div class="booking-item" data-giorno="${booking.giorno}" data-ora="${booking.ora}">
+    <div class="${itemClass}" data-giorno="${booking.giorno}" data-ora="${booking.ora}">
+      ${recurringBadge}
       <div class="name">${booking.nome} ${booking.cognome}</div>
       <div class="duration">Durata: 30 min.</div>
       <div class="service">Orario: ${time}</div>
@@ -599,6 +604,10 @@ function openBookingModal(date, time) {
   document.getElementById('form-error').classList.add('hidden');
   document.getElementById('suggestions-list').classList.add('hidden');
 
+  // Reset opzioni ricorrenza (checkbox spenta, dropdown nascosto)
+  document.getElementById('input-ricorrente').checked = false;
+  document.getElementById('recurrence-options').classList.add('hidden');
+
   // Imposta titolo e sottotitolo
   document.getElementById('modal-title').textContent = 'Nuovo Appuntamento';
   document.getElementById('modal-date-display').textContent = formatDateStringDisplay(date);
@@ -622,12 +631,17 @@ function closeBookingModal() {
 function showDetailModal(booking) {
   selectedBooking = booking;
 
+  const tipoRow = booking.tipo === 'ricorrente'
+    ? '<div><strong>Tipo:</strong> Ricorrente</div>'
+    : '';
+
   document.getElementById('detail-content').innerHTML = `
     <div><strong>Nome:</strong> ${booking.nome} ${booking.cognome}</div>
     <div><strong>Data:</strong> ${formatDateStringDisplay(booking.giorno)}</div>
     <div><strong>Ora:</strong> ${booking.ora}</div>
     <div><strong>Email:</strong> ${booking.email}</div>
     <div><strong>Telefono:</strong> ${booking.telefono}</div>
+    ${tipoRow}
   `;
 
   detailModal.open();
@@ -785,9 +799,18 @@ function setupModalListeners() {
   document.getElementById('delete-cancel').addEventListener('click', () => deleteConfirmModal.close());
   document.getElementById('delete-confirm').addEventListener('click', executeDelete);
 
+  // Toggle opzioni ricorrenza: mostra/nascondi il dropdown dei mesi
+  document.getElementById('input-ricorrente').addEventListener('change', (e) => {
+    const options = document.getElementById('recurrence-options');
+    options.classList.toggle('hidden', !e.target.checked);
+  });
+
   // Submit form inserimento
   document.getElementById('booking-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    const ricorrente = document.getElementById('input-ricorrente').checked;
+    const mesiRicorrenza = parseInt(document.getElementById('input-mesi').value, 10);
 
     const formData = {
       nome: document.getElementById('input-nome').value.trim(),
@@ -795,12 +818,21 @@ function setupModalListeners() {
       email: document.getElementById('input-email').value.trim(),
       telefono: document.getElementById('input-telefono').value.trim(),
       giorno: selectedSlot.date,
-      ora: selectedSlot.time
+      ora: selectedSlot.time,
+      ricorrente,
+      mesiRicorrenza: ricorrente ? mesiRicorrenza : null
     };
 
     // Validazione (solo cognome obbligatorio per admin)
     if (!formData.cognome) {
       document.getElementById('form-error').textContent = 'Il cognome è obbligatorio';
+      document.getElementById('form-error').classList.remove('hidden');
+      return;
+    }
+
+    // Validazione ricorrenza: numero di mesi valido (1-12)
+    if (ricorrente && (!Number.isInteger(mesiRicorrenza) || mesiRicorrenza < 1 || mesiRicorrenza > 12)) {
+      document.getElementById('form-error').textContent = 'Seleziona per quanti mesi ripetere la prenotazione';
       document.getElementById('form-error').classList.remove('hidden');
       return;
     }
@@ -820,6 +852,14 @@ function setupModalListeners() {
         const saveBtn = document.getElementById('modal-save');
         saveBtn.disabled = false;
         saveBtn.textContent = 'Conferma';
+
+        // Riepilogo per le prenotazioni ricorrenti (inserite / saltate per sovrapposizione)
+        if (response.ricorrente) {
+          const saltateMsg = response.saltate > 0
+            ? `, ${response.saltate} saltate per sovrapposizione`
+            : '';
+          showDropFeedback(`Ricorrente: ${response.inserite} occorrenze inserite${saltateMsg}`);
+        }
 
         closeBookingModal();
         await loadBookings();

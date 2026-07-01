@@ -122,6 +122,14 @@ async function initDatabase() {
         // Colonna gia esiste
     }
 
+    // Aggiungi colonna tipo a bookings se non esiste (migrazione per Prenotazioni Ricorrenti)
+    // Valori: 'normale' (default) | 'ricorrente'
+    try {
+        db.run(`ALTER TABLE bookings ADD COLUMN tipo TEXT DEFAULT 'normale'`);
+    } catch (e) {
+        // Colonna gia esiste
+    }
+
     // Migrazione: ricrea tabella bookings se servizio è NOT NULL
     // Questo è necessario perché SQLite non supporta ALTER COLUMN
     try {
@@ -328,7 +336,7 @@ class SQLiteTable {
 // ==================== INIZIALIZZA TABELLE ====================
 
 const userColumns = ['nome', 'cognome', 'email', 'telefono', 'password', 'vip', 'banned', 'isGuest'];
-const bookingColumns = ['nome', 'cognome', 'email', 'telefono', 'giorno', 'ora', 'token'];
+const bookingColumns = ['nome', 'cognome', 'email', 'telefono', 'giorno', 'ora', 'token', 'tipo'];
 const adminColumns = ['email', 'password'];
 const holidayColumns = ['giorno', 'ora'];
 const globalSettingsColumns = ['key', 'json_data'];

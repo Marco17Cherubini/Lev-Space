@@ -439,9 +439,13 @@ app.post('/api/admin/bookings', authenticateToken, (req, res) => {
     if (!req.user.isAdmin) {
       return res.status(403).json({ success: false, error: 'Accesso negato' });
     }
-    const booking = createAdminBooking(req.body);
+    const isRecurring = !!req.body.ricorrente;
+    const bookingResult = createAdminBooking(req.body);
+    // Per le ricorrenti il servizio ritorna un riepilogo { booking, inserite, saltate, totale }
+    const booking = isRecurring ? bookingResult.booking : bookingResult;
 
     // Invia email di conferma in background (fire-and-forget)
+    // Per le serie ricorrenti si conferma la prima occorrenza inserita
     sendBookingConfirmation(booking)
       .then(result => {
         if (!result.success) {
@@ -451,6 +455,18 @@ app.post('/api/admin/bookings', authenticateToken, (req, res) => {
       .catch(err => {
         console.error('Errore invio email:', err.message);
       });
+
+    if (isRecurring) {
+      return res.status(201).json({
+        success: true,
+        booking,
+        ricorrente: true,
+        inserite: bookingResult.inserite,
+        saltate: bookingResult.saltate,
+        totale: bookingResult.totale,
+        emailSent: 'pending'
+      });
+    }
 
     res.status(201).json({ success: true, booking, emailSent: 'pending' });
   } catch (error) {
