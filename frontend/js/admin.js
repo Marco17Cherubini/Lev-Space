@@ -666,6 +666,21 @@ function showDeleteConfirmModal() {
     <div><strong>Ora:</strong> ${selectedBooking.ora}</div>
   `;
 
+  // Mostra la scelta singolo/serie solo per le prenotazioni ricorrenti
+  const scopeOptions = document.getElementById('delete-scope-options');
+  if (selectedBooking.tipo === 'ricorrente') {
+    const seriesCount = allBookings.filter(
+      b => b.token && b.token === selectedBooking.token && b.tipo === 'ricorrente'
+    ).length;
+    document.getElementById('delete-scope-series-label').textContent =
+      `Tutta la serie ricorrente (${seriesCount} appuntamenti)`;
+    // Default sull'opzione più sicura
+    document.querySelector('input[name="delete-scope"][value="single"]').checked = true;
+    scopeOptions.classList.remove('hidden');
+  } else {
+    scopeOptions.classList.add('hidden');
+  }
+
   // Chiudi modal dettaglio e apri conferma
   detailModal.close();
   deleteConfirmModal.open();
@@ -683,12 +698,18 @@ async function executeDelete() {
     deleteBtn.disabled = true;
     deleteBtn.textContent = 'Cancellazione...';
 
+    // Determina l'ambito: per le ricorrenti l'admin può scegliere singolo o intera serie
+    const scopeInput = document.querySelector('input[name="delete-scope"]:checked');
+    const deleteSeries =
+      selectedBooking.tipo === 'ricorrente' && scopeInput && scopeInput.value === 'series';
+
+    const body = deleteSeries
+      ? { token: selectedBooking.token, scope: 'series' }
+      : { giorno: selectedBooking.giorno, ora: selectedBooking.ora };
+
     const response = await apiRequest('/admin/bookings', {
       method: 'DELETE',
-      body: JSON.stringify({
-        giorno: selectedBooking.giorno,
-        ora: selectedBooking.ora
-      })
+      body: JSON.stringify(body)
     });
 
     if (response.success) {
@@ -696,6 +717,11 @@ async function executeDelete() {
       const deleteBtn = document.getElementById('delete-confirm');
       deleteBtn.disabled = false;
       deleteBtn.textContent = 'Sì, Cancella';
+
+      // Riepilogo per la cancellazione dell'intera serie ricorrente
+      if (deleteSeries) {
+        showDropFeedback(`Serie ricorrente cancellata: ${response.eliminate} appuntamenti`);
+      }
 
       closeDeleteConfirmModal();
       selectedBooking = null;

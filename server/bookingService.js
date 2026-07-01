@@ -374,6 +374,23 @@ function adminCancelBooking(giorno, ora) {
   return true;
 }
 
+// Cancella l'intera serie ricorrente identificata dal token condiviso (solo admin).
+// Ritorna il numero di occorrenze eliminate.
+function adminCancelRecurringSeries(token) {
+  if (!token) {
+    throw new Error('Token serie non valido');
+  }
+
+  const occorrenze = bookingsDB.findMany(b => b.token === token && b.tipo === 'ricorrente');
+  if (occorrenze.length === 0) {
+    throw new Error('Nessuna prenotazione trovata per la serie');
+  }
+
+  bookingsDB.delete(b => b.token === token && b.tipo === 'ricorrente');
+
+  return occorrenze.length;
+}
+
 // Sposta prenotazione da admin (cambia giorno/ora)
 function moveBooking(oldGiorno, oldOra, newGiorno, newOra) {
   if (!oldGiorno || !oldOra || !newGiorno || !newOra) {
@@ -505,6 +522,7 @@ module.exports = {
   createAdminBooking,
   createRecurringBooking,
   adminCancelBooking,
+  adminCancelRecurringSeries,
   moveBooking,
   getBookingByToken,
   updateBookingByToken,

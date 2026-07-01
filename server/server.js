@@ -13,6 +13,7 @@ const {
   getAllBookings,
   createAdminBooking,
   adminCancelBooking,
+  adminCancelRecurringSeries,
   moveBooking
 } = require('./bookingService');
 const { getAllUsers, toggleVip, isVip, toggleBanned, generateResetToken, resetPassword } = require('./authService');
@@ -480,7 +481,15 @@ app.delete('/api/admin/bookings', authenticateToken, (req, res) => {
     if (!req.user.isAdmin) {
       return res.status(403).json({ success: false, error: 'Accesso negato' });
     }
-    const { giorno, ora } = req.body;
+    const { giorno, ora, token, scope } = req.body;
+
+    // Cancellazione dell'intera serie ricorrente (scope 'series' + token condiviso)
+    if (scope === 'series' && token) {
+      const eliminate = adminCancelRecurringSeries(token);
+      return res.json({ success: true, message: 'Serie ricorrente cancellata', eliminate });
+    }
+
+    // Cancellazione della singola occorrenza (comportamento predefinito)
     adminCancelBooking(giorno, ora);
     res.json({ success: true, message: 'Prenotazione cancellata' });
   } catch (error) {

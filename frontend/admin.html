@@ -187,6 +187,17 @@
       <div class="modal-details" id="delete-booking-details">
         <!-- Dettagli inseriti via JS -->
       </div>
+      <!-- Scelta ambito cancellazione (solo per prenotazioni ricorrenti) -->
+      <div id="delete-scope-options" class="delete-scope hidden">
+        <label class="delete-scope__option">
+          <input type="radio" name="delete-scope" value="single" checked>
+          <span>Solo questo appuntamento</span>
+        </label>
+        <label class="delete-scope__option">
+          <input type="radio" name="delete-scope" value="series">
+          <span id="delete-scope-series-label">Tutta la serie ricorrente</span>
+        </label>
+      </div>
       <p class="modal-question">Sei sicuro di voler procedere?</p>
       <div class="modal-buttons">
         <button type="button" id="delete-cancel" class="btn modal-btn-cancel">No, Annulla</button>
