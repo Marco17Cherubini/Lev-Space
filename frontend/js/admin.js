@@ -932,6 +932,13 @@ document.getElementById('next-week').addEventListener('click', async () => {
   renderCalendar();
 });
 
+// Torna rapidamente alla settimana che ospita il giorno di oggi
+document.getElementById('today-week').addEventListener('click', async () => {
+  currentWeekStart = getMonday(new Date());
+  await loadBookings();
+  renderCalendar();
+});
+
 // ==================== SIDEBAR MENU ====================
 
 function setupSidebar() {

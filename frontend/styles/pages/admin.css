@@ -188,6 +188,29 @@
     background-color: var(--admin-nav-btn-hover-bg);
 }
 
+/* Gruppo legenda "Ricorrente" + bottone "Oggi" impilati verticalmente */
+.admin-calendar__legend-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.admin-calendar__today-btn {
+    padding: var(--space-1) var(--space-3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    min-width: auto;
+    border: 2px solid var(--admin-nav-btn-border);
+    background-color: var(--admin-nav-btn-bg);
+    color: var(--admin-nav-btn-text);
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+}
+
+.admin-calendar__today-btn:hover {
+    background-color: var(--admin-nav-btn-hover-bg);
+}
+
 /* ==================== CALENDAR LEGEND ==================== */
 
 .admin-calendar__legend {
