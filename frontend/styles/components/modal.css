@@ -43,6 +43,20 @@
     box-shadow: var(--shadow-2xl);
 }
 
+/* Micro-animazione di apertura (fade + scale) */
+@keyframes modalIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to { opacity: 1; transform: none; }
+}
+
+.modal:not(.hidden) .modal-content {
+    animation: modalIn var(--transition-normal) ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal:not(.hidden) .modal-content { animation: none; }
+}
+
 .modal-large {
     max-width: 600px;
 }

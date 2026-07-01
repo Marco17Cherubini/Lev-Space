@@ -172,16 +172,20 @@
 }
 
 .theme-switch-icon {
-  font-size: var(--font-size-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: opacity var(--transition-fast);
 }
 
+/* Chicca: interno del sole in corallo, luna in lime */
 .theme-switch-icon.sun {
-  display: block;
+  color: var(--brand-coral);
 }
 
 .theme-switch-icon.moon {
   display: none;
+  color: var(--brand-lime);
 }
 
 [data-theme="dark"] .theme-switch-icon.sun {
@@ -189,8 +193,7 @@
 }
 
 [data-theme="dark"] .theme-switch-icon.moon {
-  display: block;
-  color: #FFFFFF;
+  display: flex;
 }
 
 /* ============================================================================

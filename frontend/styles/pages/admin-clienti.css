@@ -57,23 +57,23 @@
 
 /* Pending states */
 .user-item.pending-vip-add {
-    background-color: #fffbe6;
-    border-left: 4px solid #d4a800;
+    background-color: var(--color-vip-bg);
+    border-left: 4px solid var(--color-vip-border);
 }
 
 .user-item.pending-vip-remove {
     background-color: var(--color-bg-secondary);
-    border-left: 4px solid #999;
+    border-left: 4px solid var(--color-neutral-solid);
 }
 
 .user-item.pending-ban-add {
-    background-color: #ffe6e6;
-    border-left: 4px solid #cc0000;
+    background-color: var(--color-ban-bg);
+    border-left: 4px solid var(--color-ban-border);
 }
 
 .user-item.pending-ban-remove {
-    background-color: #e6ffe6;
-    border-left: 4px solid #00aa00;
+    background-color: var(--color-pos-bg);
+    border-left: 4px solid var(--color-pos-border);
 }
 
 .user-info {
@@ -101,15 +101,15 @@
 }
 
 .badge-vip {
-    background-color: #fffbe6;
-    color: #8b7000;
-    border: 1px solid #d4a800;
+    background-color: var(--color-vip-bg);
+    color: var(--color-vip-text);
+    border: 1px solid var(--color-vip-border);
 }
 
 .badge-banned {
-    background-color: #ffe6e6;
-    color: #cc0000;
-    border: 1px solid #cc0000;
+    background-color: var(--color-ban-bg);
+    color: var(--color-ban-text);
+    border: 1px solid var(--color-ban-border);
 }
 
 /* ==================== USER ACTIONS ==================== */
@@ -132,11 +132,11 @@
 }
 
 .action-label.vip {
-    color: #8b7000;
+    color: var(--color-vip-text);
 }
 
 .action-label.ban {
-    color: #cc0000;
+    color: var(--color-ban-text);
 }
 
 .action-checkbox {
@@ -146,11 +146,11 @@
 }
 
 .action-checkbox.vip {
-    accent-color: #d4a800;
+    accent-color: var(--color-vip-solid);
 }
 
 .action-checkbox.ban {
-    accent-color: #cc0000;
+    accent-color: var(--color-ban-solid);
 }
 
 .no-users {
@@ -176,22 +176,22 @@
 }
 
 .pending-badge.vip-add {
-    background-color: #d4a800;
+    background-color: var(--color-vip-solid);
     color: #fff;
 }
 
 .pending-badge.vip-remove {
-    background-color: #999;
+    background-color: var(--color-neutral-solid);
     color: #fff;
 }
 
 .pending-badge.ban-add {
-    background-color: #cc0000;
+    background-color: var(--color-ban-solid);
     color: #fff;
 }
 
 .pending-badge.ban-remove {
-    background-color: #00aa00;
+    background-color: var(--color-pos-solid);
     color: #fff;
 }
 

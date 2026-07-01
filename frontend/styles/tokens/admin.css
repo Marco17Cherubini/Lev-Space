@@ -64,7 +64,7 @@
 
     /* Pulsanti Navigazione */
     --admin-nav-btn-bg: #fff;
-    --admin-nav-btn-border: #000;
+    --admin-nav-btn-border: var(--color-border-primary);
     --admin-nav-btn-text: #000;
     --admin-nav-btn-hover-bg: #f0f0f0;
 
@@ -89,19 +89,33 @@
     --admin-drop-invalid-border: #ef4444;
     --admin-toast-success-bg: #10b981;
     --admin-toast-error-bg: #ef4444;
+
+    /* Stati gestione clienti (VIP / Ban / pending) — Light */
+    --color-vip-bg: #fffbe6;
+    --color-vip-border: #d4a800;
+    --color-vip-text: #8b7000;
+    --color-vip-solid: #d4a800;
+    --color-ban-bg: #ffe6e6;
+    --color-ban-border: #cc0000;
+    --color-ban-text: #cc0000;
+    --color-ban-solid: #cc0000;
+    --color-pos-bg: #e6ffe6;
+    --color-pos-border: #00aa00;
+    --color-pos-solid: #00aa00;
+    --color-neutral-solid: #999999;
 }
 
 /* ==================== ADMIN DARK MODE ==================== */
 [data-theme="dark"] {
     /* Struttura Calendario */
-    --admin-calendar-border: #FFFFFF;
+    --admin-calendar-border: rgba(255, 255, 255, 0.16);
     --admin-header-bg: #1C1C1E;
     --admin-header-text: #EBEBF5;
-    --admin-header-border: #FFFFFF;
+    --admin-header-border: rgba(255, 255, 255, 0.12);
     --admin-time-bg: #1C1C1E;
     --admin-time-text: rgba(235, 235, 245, 0.6);
     --admin-cell-bg: #000000;
-    --admin-cell-border: #FFFFFF;
+    --admin-cell-border: rgba(255, 255, 255, 0.10);
     --admin-cell-hover-bg: #2C2C2E;
     --admin-no-booking-text: #636366;
 
@@ -152,7 +166,7 @@
 
     /* Pulsanti Navigazione */
     --admin-nav-btn-bg: #1C1C1E;
-    --admin-nav-btn-border: #FFFFFF;
+    --admin-nav-btn-border: rgba(255, 255, 255, 0.18);
     --admin-nav-btn-text: #FFFFFF;
     --admin-nav-btn-hover-bg: #2C2C2E;
 
@@ -177,4 +191,18 @@
     --admin-drop-invalid-border: #FF453A;
     --admin-toast-success-bg: #30D158;
     --admin-toast-error-bg: #FF453A;
+
+    /* Stati gestione clienti (VIP / Ban / pending) — Dark */
+    --color-vip-bg: rgba(212, 168, 0, 0.16);
+    --color-vip-border: #E5B800;
+    --color-vip-text: #E5C24D;
+    --color-vip-solid: #B8901F;
+    --color-ban-bg: rgba(255, 69, 58, 0.16);
+    --color-ban-border: #FF453A;
+    --color-ban-text: #FF6A61;
+    --color-ban-solid: #C0392B;
+    --color-pos-bg: rgba(48, 209, 88, 0.16);
+    --color-pos-border: #30D158;
+    --color-pos-solid: #248A3D;
+    --color-neutral-solid: #8E8E93;
 }

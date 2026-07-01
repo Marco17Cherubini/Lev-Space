@@ -142,11 +142,22 @@
     --color-border-secondary: var(--system-gray5);
     --color-border-strong: var(--label);
 
-    --color-accent: var(--system-blue);
-    --color-accent-hover: #0056b3;
+    /* Brand accent — monocromo + 1 accento: corallo in light, lime in dark */
+    --brand-coral: #FF6B57;
+    --brand-coral-hover: #F0563F;
+    --brand-lime: #C6F24E;
+    --brand-lime-hover: #B6E62E;
+
+    --color-accent: var(--brand-coral);
+    --color-accent-hover: var(--brand-coral-hover);
+    --brand-accent-tint: rgba(255, 107, 87, 0.12);
+    --on-accent: #ffffff;
+    --focus-ring: 0 0 0 3px var(--brand-accent-tint);
+
     --color-success: var(--system-green);
     --color-warning: var(--system-orange);
     --color-error: var(--system-red);
+    --color-error-hover: #d62d23;
 
     --color-overlay: rgba(0, 0, 0, 0.4);
     --color-shadow: rgba(0, 0, 0, 0.15);
@@ -195,9 +206,9 @@
     --tertiary-system-fill: rgba(118, 118, 128, 0.24);
     --quaternary-system-fill: rgba(116, 116, 128, 0.18);
 
-    /* === APPLE SEPARATORS (Dark Mode) === */
-    --separator: #FFFFFF;
-    --opaque-separator: #FFFFFF;
+    /* === APPLE SEPARATORS (Dark Mode) — hairline morbide invece del bianco pieno === */
+    --separator: rgba(255, 255, 255, 0.12);
+    --opaque-separator: rgba(255, 255, 255, 0.14);
 
     /* === SEMANTIC COLORS (Dark Mode) === */
     --color-bg-primary: var(--system-background);
@@ -211,14 +222,18 @@
     --color-text-disabled: var(--quaternary-label);
 
     --color-border-primary: var(--opaque-separator);
-    --color-border-secondary: #FFFFFF;
-    --color-border-strong: var(--label);
+    --color-border-secondary: rgba(255, 255, 255, 0.12);
+    --color-border-strong: rgba(255, 255, 255, 0.28);
 
-    --color-accent: var(--system-blue);
-    --color-accent-hover: #409cff;
+    /* Accento dark = lime, con testo scuro sopra l'accento */
+    --color-accent: var(--brand-lime);
+    --color-accent-hover: var(--brand-lime-hover);
+    --brand-accent-tint: rgba(198, 242, 78, 0.16);
+    --on-accent: #10140A;
     --color-success: var(--system-green);
     --color-warning: var(--system-orange);
     --color-error: var(--system-red);
+    --color-error-hover: #FF6A61;
 
     --color-overlay: rgba(0, 0, 0, 0.6);
     --color-shadow: rgba(0, 0, 0, 0.5);

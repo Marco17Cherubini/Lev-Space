@@ -90,8 +90,26 @@
         toggle.className = 'theme-toggle';
         toggle.innerHTML = `
       <button class="theme-switch" aria-label="Cambia tema" title="Cambia tema">
-        <span class="theme-switch-icon sun">☀</span>
-        <span class="theme-switch-icon moon">☾</span>
+        <span class="theme-switch-icon sun" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22">
+            <circle cx="12" cy="12" r="5" fill="currentColor"></circle>
+            <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="12" y1="2" x2="12" y2="5"></line>
+              <line x1="12" y1="19" x2="12" y2="22"></line>
+              <line x1="2" y1="12" x2="5" y2="12"></line>
+              <line x1="19" y1="12" x2="22" y2="12"></line>
+              <line x1="4.9" y1="4.9" x2="7" y2="7"></line>
+              <line x1="17" y1="17" x2="19.1" y2="19.1"></line>
+              <line x1="4.9" y1="19.1" x2="7" y2="17"></line>
+              <line x1="17" y1="7" x2="19.1" y2="4.9"></line>
+            </g>
+          </svg>
+        </span>
+        <span class="theme-switch-icon moon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22">
+            <path fill="currentColor" d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"></path>
+          </svg>
+        </span>
       </button>
     `;
 

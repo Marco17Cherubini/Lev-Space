@@ -38,6 +38,11 @@
     box-shadow: var(--shadow-xs);
 }
 
+.btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -58,7 +63,7 @@
 
 .btn-accent {
     background-color: var(--color-accent);
-    color: #ffffff;
+    color: var(--on-accent);
 }
 
 .btn-accent:hover {
@@ -82,7 +87,7 @@
 }
 
 .btn-danger:hover {
-    background-color: #d62d23;
+    background-color: var(--color-error-hover);
 }
 
 /* ==================== BUTTON SIZES ==================== */
