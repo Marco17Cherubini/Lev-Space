@@ -12,6 +12,9 @@
     position: relative;
     border: 1px solid var(--admin-calendar-border);
     border-radius: 8px;
+    /* Sfondo uniforme: riempie gli spazi scoperti (a destra della legenda e
+       sotto la griglia su mobile) con lo stesso colore della legenda. */
+    background-color: var(--admin-legend-bg);
 }
 
 .admin-calendar__grid {
@@ -80,6 +83,16 @@
 }
 
 .admin-cell.has-booking:hover {
+    background-color: var(--admin-cell-hover-bg);
+}
+
+/* Cella di una prenotazione ricorrente: sfondo verde tenue coerente con la card
+   (sovrascrive .has-booking, quindi definito dopo). */
+.admin-cell.has-recurring {
+    background-color: var(--admin-recurring-cell-bg);
+}
+
+.admin-cell.has-recurring:hover {
     background-color: var(--admin-cell-hover-bg);
 }
 
@@ -203,6 +216,12 @@
         flex-direction: column;
         align-items: flex-start;
         gap: var(--space-1);
+    }
+
+    /* La legenda si fonde col contenitore (stesso colore): niente linea di bordo
+       a metà pannello quando la griglia è più larga del viewport. */
+    .admin-calendar__legend {
+        border-color: transparent;
     }
 }
 

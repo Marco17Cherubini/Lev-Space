@@ -256,6 +256,7 @@ function renderCalendar() {
         } else if (booking) {
           // Prenotazione esistente - non può essere ferie
           cell.classList.add('has-booking');
+          if (booking.tipo === 'ricorrente') cell.classList.add('has-recurring');
           cell.innerHTML = renderBookingItem(booking, time);
         } else {
           cell.innerHTML = '<div class="no-booking">+ Ferie</div>';
@@ -282,6 +283,7 @@ function renderCalendar() {
         cell.innerHTML = '<div class="holiday-label">FERIE</div>';
       } else if (booking) {
         cell.classList.add('has-booking');
+        if (booking.tipo === 'ricorrente') cell.classList.add('has-recurring');
         cell.innerHTML = renderBookingItem(booking, time);
 
         // Drag-and-drop: inizia drag su mousedown sulla prenotazione
