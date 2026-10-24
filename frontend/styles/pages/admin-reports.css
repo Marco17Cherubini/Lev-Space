@@ -45,6 +45,29 @@
     border-radius: var(--radius-md);
 }
 
+.period-nav {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--color-border-primary);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+.period-nav:hover:not(:disabled) {
+    background-color: var(--color-bg-secondary);
+}
+
+.period-nav:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 /* ==================== CHART ==================== */
 
 .chart-container {

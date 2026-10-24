@@ -47,10 +47,12 @@
         <div class="reports-container">
             <div class="filter-container">
                 <span class="filter-label">Periodo:</span>
+                <button id="previous-period" class="period-nav" type="button" aria-label="Periodo precedente" title="Periodo precedente">&larr;</button>
                 <select id="period-filter" class="filter-select">
                     <option value="weekly">Settimana</option>
                     <option value="monthly">Mese</option>
                 </select>
+                <button id="next-period" class="period-nav" type="button" aria-label="Periodo successivo" title="Periodo successivo">&rarr;</button>
             </div>
 
             <div class="chart-container">
@@ -80,6 +82,11 @@
         // Global state
         let chart = null;
         let currentChartData = null;
+        let currentPeriodOffset = 0;
+
+        function updatePeriodNavigation() {
+            document.getElementById('next-period').disabled = currentPeriodOffset >= 0;
+        }
 
         // Sidebar functionality
         function setupSidebar() {
@@ -109,9 +116,9 @@
             });
         }
 
-        async function loadStats(period = 'weekly') {
+        async function loadStats(period = 'weekly', offset = currentPeriodOffset) {
             try {
-                const response = await fetch(`/api/admin/reports/bookings-stats?period=${period}`, {
+                const response = await fetch(`/api/admin/reports/bookings-stats?period=${period}&offset=${offset}`, {
                     credentials: 'include'
                 });
 
@@ -217,8 +224,24 @@
             document.getElementById('max-bookings').textContent = max;
         }
 
-        // Filter change
+        // Period navigation
+        document.getElementById('previous-period').addEventListener('click', () => {
+            currentPeriodOffset -= 1;
+            updatePeriodNavigation();
+            loadStats(document.getElementById('period-filter').value);
+        });
+
+        document.getElementById('next-period').addEventListener('click', () => {
+            if (currentPeriodOffset < 0) {
+                currentPeriodOffset += 1;
+                updatePeriodNavigation();
+                loadStats(document.getElementById('period-filter').value);
+            }
+        });
+
         document.getElementById('period-filter').addEventListener('change', (e) => {
+            currentPeriodOffset = 0;
+            updatePeriodNavigation();
             loadStats(e.target.value);
         });
 
@@ -240,6 +263,7 @@
 
         // Init
         setupSidebar();
+        updatePeriodNavigation();
         loadStats('weekly');
     </script>
 </body>

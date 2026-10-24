@@ -705,9 +705,17 @@ app.get('/api/admin/reports/bookings-stats', authenticateToken, (req, res) => {
     }
 
     const period = req.query.period || 'weekly';
+    const parsedOffset = Number.parseInt(req.query.offset, 10);
+    const offset = Number.isFinite(parsedOffset) ? Math.min(parsedOffset, 0) : 0;
     const allBookings = bookingsDB.readAll();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    if (period === 'weekly') {
+      today.setDate(today.getDate() + offset * 7);
+    } else if (period === 'monthly') {
+      today.setDate(today.getDate() + offset * 30);
+    }
 
     let startDate, labels = [], dateFormat;
 
@@ -738,7 +746,11 @@ app.get('/api/admin/reports/bookings-stats', authenticateToken, (req, res) => {
     const counts = labels.map((_, index) => {
       const targetDate = new Date(startDate);
       targetDate.setDate(targetDate.getDate() + index);
-      const dateStr = targetDate.toISOString().split('T')[0];
+      const dateStr = [
+        targetDate.getFullYear(),
+        String(targetDate.getMonth() + 1).padStart(2, '0'),
+        String(targetDate.getDate()).padStart(2, '0')
+      ].join('-');
 
       return allBookings.filter(b => b.giorno === dateStr).length;
     });
