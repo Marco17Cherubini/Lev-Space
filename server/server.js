@@ -159,7 +159,9 @@ app.get('/api/availability/:year/:month', (req, res) => {
           if (isVip(decoded.email) || decoded.isAdmin) {
             includeExtraSlots = true;
           }
-        } catch (e) {}
+        } catch (e) {
+          // Token non valido: si prosegue senza slot extra
+        }
       }
     }
 
@@ -184,8 +186,7 @@ app.get('/api/availability/:year/:month', (req, res) => {
       const slots = getAvailableSlots(dateStr, includeExtraSlots);
       
       // Controllo che ci sia almeno uno slot disponibile per essere considerato aperto ai click
-      avail = slots.some(slot => slot.available);
-      availability[d] = avail;
+      availability[d] = slots.some(slot => slot.available);
     }
 
     res.json({ success: true, availability });
@@ -794,7 +795,7 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint non trovato' });
 });
 
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Errore interno del server' });
 });

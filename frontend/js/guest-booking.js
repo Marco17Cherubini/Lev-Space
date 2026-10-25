@@ -50,7 +50,7 @@
             btn.addEventListener('click', () => {
                 selectedGroupSize = parseInt(btn.dataset.group);
                 guestData.numPersone = selectedGroupSize;
-                goToStep(1);
+                window.goToStep(1);
                 renderCalendar();
             });
         });
@@ -306,7 +306,7 @@
         guestData.ora = time;
 
         // Auto-advance to step 2 (personal data)
-        setTimeout(() => goToStep(2), 300);
+        setTimeout(() => window.goToStep(2), 300);
     }
 
     // ==================== STEP 2: CONFERMA PRENOTAZIONE ====================

@@ -14,3 +14,7 @@ build/
 # Ignore database files
 *.db
 data/
+
+# Lockfile e documenti/asset non di codice
+package-lock.json
+docs/
