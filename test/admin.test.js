@@ -277,3 +277,40 @@ test('gli orari salvati vengono validati prima di essere applicati', async () =>
   // Ripristina gli orari originali per gli altri test
   assert.equal((await save(current)).status, 200);
 });
+
+test('report: conteggi per giorno e navigazione nei periodi precedenti', async () => {
+  const { toDateString } = require('./helpers');
+  const daysAgo = n => {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return toDateString(d);
+  };
+  // L'admin può registrare anche appuntamenti passati
+  for (const [giorno, ora] of [
+    [daysAgo(1), '09:15'],
+    [daysAgo(1), '10:00'],
+    [daysAgo(9), '09:15']
+  ]) {
+    await api.request('POST', '/api/admin/bookings', {
+      cookie: admin,
+      body: { cognome: 'Report', giorno, ora }
+    });
+  }
+
+  const stats = async query =>
+    (await api.request('GET', `/api/admin/reports/bookings-stats?${query}`, { cookie: admin }))
+      .data;
+
+  const week = await stats('period=weekly');
+  assert.equal(week.labels.length, 7);
+  assert.equal(week.counts[5], 2); // ieri: penultimo giorno della finestra
+  assert.match(week.labels[6], /^(Dom|Lun|Mar|Mer|Gio|Ven|Sab) \d+$/);
+
+  const previousWeek = await stats('period=weekly&offset=-1');
+  assert.equal(previousWeek.counts[4], 1); // 9 giorni fa
+
+  const month = await stats('period=monthly');
+  assert.equal(month.labels.length, 30);
+  assert.equal(month.counts[28], 2);
+  assert.match(month.labels[0], /^\d+\/\d+$/);
+});

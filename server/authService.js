@@ -7,6 +7,10 @@ const config = require('../config/config');
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function isValidEmail(email) {
+  return typeof email === 'string' && EMAIL_PATTERN.test(email.trim().toLowerCase());
+}
+
 // I flag vip/banned sono salvati come '0'/'1'
 const isFlagOn = value => value === '1' || value === 1;
 
@@ -77,6 +81,40 @@ async function registerUser(userData) {
   // Ritorna utente senza password
   const { password: _, ...userWithoutPassword } = user;
   return userWithoutPassword;
+}
+
+// Profilo usato dal checkout ospite: lo crea se l'email è nuova (senza password),
+// lo riusa se è già un ospite, rifiuta se appartiene a un account registrato
+function ensureGuestProfile({ nome, cognome, email }) {
+  if ([nome, cognome, email].some(value => typeof value !== 'string' || !value.trim())) {
+    throw new HttpError(400, 'Nome, cognome e email sono obbligatori');
+  }
+  if (!isValidEmail(email)) {
+    throw new HttpError(400, 'Formato email non valido');
+  }
+
+  const emailLower = email.trim().toLowerCase();
+  const existingUser = usersDB.findOne(u => u.email === emailLower);
+
+  if (existingUser && existingUser.password) {
+    // Senza login chiunque potrebbe prenotare a nome di quel cliente
+    throw new HttpError(409, 'Esiste già un account con questa email: accedi per prenotare');
+  }
+
+  if (!existingUser) {
+    usersDB.insert({
+      nome: nome.trim(),
+      cognome: cognome.trim(),
+      email: emailLower,
+      telefono: '',
+      password: '',
+      vip: '0',
+      banned: '0',
+      isGuest: '1'
+    });
+  }
+
+  return emailLower;
 }
 
 // Login utente
@@ -290,6 +328,8 @@ module.exports = {
   loginUser,
   getSessionUser,
   isFlagOn,
+  isValidEmail,
+  ensureGuestProfile,
   getAllUsers,
   toggleVip,
   toggleBanned,

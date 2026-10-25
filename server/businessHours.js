@@ -3,6 +3,8 @@
 // (es. giorni come stringhe, turni senza slot) chiuderebbe il salone o farebbe
 // fallire ogni richiesta, quindi si accetta solo la forma attesa.
 const { isValidTime } = require('./dates');
+const { globalSettingsDB } = require('./database');
+const config = require('../config/config');
 const { HttpError } = require('./errors');
 
 const SHIFTS = ['morning', 'afternoon', 'vip'];
@@ -53,4 +55,15 @@ function normalizeBusinessHours(input) {
   return { daysOpen: [...new Set(input.daysOpen)].sort(), days };
 }
 
-module.exports = { normalizeBusinessHours };
+// Orari in vigore: quelli salvati da Gestione Orari o, al primo avvio, quelli di config.js
+function getBusinessHours() {
+  return globalSettingsDB.get('businessHours') || config.businessHours;
+}
+
+function saveBusinessHours(input) {
+  const hours = normalizeBusinessHours(input);
+  globalSettingsDB.set('businessHours', hours);
+  return hours;
+}
+
+module.exports = { normalizeBusinessHours, getBusinessHours, saveBusinessHours };

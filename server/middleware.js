@@ -1,3 +1,5 @@
+const rateLimit = require('express-rate-limit');
+const config = require('../config/config');
 const { getSessionUser } = require('./authService');
 const { HttpError } = require('./errors');
 
@@ -29,4 +31,24 @@ function isAdminRequest(req) {
   }
 }
 
-module.exports = { authenticateToken, requireAdmin, isAdminRequest };
+// Rate limiting per IP sugli endpoint esposti ad abusi (tentativi di login, spam di email/prenotazioni)
+function createLimiter(limit, error) {
+  return rateLimit({
+    windowMs: config.rateLimit.windowMs,
+    limit,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { success: false, error }
+  });
+}
+
+const authLimiter = createLimiter(
+  config.rateLimit.authMax,
+  'Troppi tentativi, riprova tra qualche minuto'
+);
+const guestLimiter = createLimiter(
+  config.rateLimit.guestMax,
+  'Troppe prenotazioni dallo stesso dispositivo, riprova più tardi'
+);
+
+module.exports = { authenticateToken, requireAdmin, isAdminRequest, authLimiter, guestLimiter };

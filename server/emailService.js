@@ -200,8 +200,22 @@ async function sendPasswordResetEmail(email, resetLink) {
   }
 }
 
+// Invio senza attendere l'esito: la risposta all'utente non dipende dal provider email
+function sendConfirmationInBackground(booking) {
+  sendBookingConfirmation(booking)
+    .then(result => {
+      if (!result.success) {
+        console.log('Email non inviata:', result.message);
+      }
+    })
+    .catch(err => {
+      console.error('Errore invio email:', err.message);
+    });
+}
+
 module.exports = {
   initializeEmailService,
+  sendConfirmationInBackground,
   sendBookingConfirmation,
   sendPasswordResetEmail
 };

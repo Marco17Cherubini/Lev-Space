@@ -1,21 +1,11 @@
-const {
-  bookingsDB,
-  usersDB,
-  holidaysDB,
-  globalSettingsDB,
-  withTransaction
-} = require('./database');
-const { HttpError } = require('./errors');
-const { isFlagOn } = require('./authService');
-const config = require('../config/config');
 const crypto = require('crypto');
+const { bookingsDB, usersDB, withTransaction } = require('./database');
+const { HttpError } = require('./errors');
+const { isFlagOn, ensureGuestProfile } = require('./authService');
+const { getBusinessHours } = require('./businessHours');
+const { getHolidays, isHolidaySlot } = require('./holidayService');
 const { parseDate, isValidTime, slotStart, toMinutes } = require('./dates');
-
-// Helper
-function getBusinessHours() {
-  const customHours = globalSettingsDB.get('businessHours');
-  return customHours || config.businessHours;
-}
+const config = require('../config/config');
 
 // Genera token univoco per gestione prenotazione (32 caratteri hex)
 function generateBookingToken() {
@@ -28,12 +18,6 @@ const APPOINTMENT_DURATION = config.appointmentDuration || 45;
 function isDayAvailable(date) {
   const parsed = parseDate(date);
   return !!parsed && getBusinessHours().daysOpen.includes(parsed.getDay());
-}
-
-// Verifica se uno slot è in ferie
-function isHolidaySlot(date, time) {
-  const holidays = holidaysDB.readAll();
-  return holidays.some(h => h.giorno === date && h.ora === time);
 }
 
 // Ottieni gli slot per un giorno specifico (sabato ha orari diversi)
@@ -109,8 +93,9 @@ function getAvailableSlots(date, includeExtraSlots = false) {
   const bookedSlots = existingBookings.map(b => b.ora);
 
   // Trova ferie per questa data
-  const holidays = holidaysDB.readAll();
-  const holidaySlots = holidays.filter(h => h.giorno === date).map(h => h.ora);
+  const holidaySlots = getHolidays()
+    .filter(h => h.giorno === date)
+    .map(h => h.ora);
 
   // Ritorna slot con stato (disponibile, occupato, o ferie)
   const now = new Date(); // Orario server attuale
@@ -224,6 +209,42 @@ function createBooking(userEmail, bookingData) {
 
   // Ritorna la prima prenotazione (principale)
   return createdBookings[0];
+}
+
+// Prenotazione senza account: profilo ospite e prenotazione nella stessa transazione,
+// così una prenotazione rifiutata non lascia profili ospite orfani
+function createGuestBooking({ nome, cognome, email, giorno, ora, numPersone }) {
+  if (!giorno || !ora) {
+    throw new HttpError(400, 'Dati prenotazione incompleti (giorno, ora)');
+  }
+
+  return withTransaction(() => {
+    const guestEmail = ensureGuestProfile({ nome, cognome, email });
+    return createBooking(guestEmail, { data: giorno, orario: ora, numPersone });
+  });
+}
+
+// Per ogni giorno del mese: true se resta almeno uno slot prenotabile
+// (month 1-12; i giorni passati sono sempre false)
+function getMonthAvailability(year, month, includeExtraSlots = false) {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    throw new HttpError(400, 'Anno o mese non validi');
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const availability = {};
+  const daysInMonth = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    if (new Date(year, month - 1, d) < today) {
+      availability[d] = false;
+      continue;
+    }
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    availability[d] = getAvailableSlots(dateStr, includeExtraSlots).some(slot => slot.available);
+  }
+  return availability;
 }
 
 // Ottieni prenotazioni di un utente
@@ -492,6 +513,8 @@ function moveBooking(oldGiorno, oldOra, newGiorno, newOra) {
 
 module.exports = {
   getAvailableSlots,
+  getMonthAvailability,
+  createGuestBooking,
   createBooking,
   getUserBookings,
   cancelBooking,
