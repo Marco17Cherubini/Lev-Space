@@ -225,6 +225,10 @@ server/        app, routes, services, database, seed and backup scripts
 test/          node:test suites and helpers
 ```
 
+## Author
+
+Designed and built by **Marco Cherubini** — [github.com/Marco17Cherubini](https://github.com/Marco17Cherubini).
+
 ## License
 
 [MIT](LICENSE) © Marco Cherubini
