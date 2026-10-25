@@ -8,13 +8,13 @@
   </head>
 
   <body>
-    <div class="header">
+    <header class="header">
       <a href="/home" class="header-title header-link">Lev Space</a>
       <button id="back-btn" class="btn header-btn">← Indietro</button>
-    </div>
+    </header>
 
-    <div class="container">
-      <h2 class="text-center mb-3">Riepilogo Prenotazione</h2>
+    <main class="container">
+      <h1 class="text-center mb-3 h2">Riepilogo Prenotazione</h1>
 
       <div class="card">
         <h3 class="mb-2">Dettagli Prenotazione</h3>
@@ -49,10 +49,10 @@
         </div>
       </div>
 
-      <div id="error-message" class="form-error hidden mt-2"></div>
+      <div id="error-message" role="alert" class="form-error hidden mt-2"></div>
 
       <button id="complete-booking-btn" class="btn btn-full">Completa Prenotazione</button>
-    </div>
+    </main>
 
     <!-- Modal di Conferma -->
     <div id="confirm-modal" class="modal hidden">
@@ -180,6 +180,7 @@
 
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
+    <script src="/js/components/dialog.js"></script>
     <script src="/js/summary.js"></script>
   </body>
 </html>

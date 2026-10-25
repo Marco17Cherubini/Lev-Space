@@ -12,6 +12,7 @@
 /* ==================== 2. BASE (Reset & Primitives) ==================== */
 @import 'styles/base/reset.css';
 @import 'styles/base/typography.css';
+@import 'styles/base/accessibility.css';
 
 /* ==================== 3. LAYOUT (Structure) ==================== */
 @import 'styles/layout/containers.css';
@@ -22,6 +23,7 @@
 @import 'styles/components/cards.css';
 @import 'styles/components/calendar.css';
 @import 'styles/components/modal.css';
+@import 'styles/components/toast.css';
 
 /* ==================== 5. PAGES (Page-specific styles) ==================== */
 @import 'styles/pages/admin.css';

@@ -174,6 +174,7 @@
         cell.classList.add('disabled');
       } else {
         cell.addEventListener('click', () => selectDate(dateStr, date));
+        makeSelectable(cell, formatDate(dateStr), { toggle: true });
       }
 
       grid.appendChild(cell);
@@ -283,6 +284,7 @@
           slotEl.innerHTML = `${slotTime}<small>${groupLabel}</small>`;
           slotEl.dataset.time = slotTime;
           slotEl.addEventListener('click', () => selectTimeSlot(slotTime));
+          makeSelectable(slotEl, `Ore ${slotTime}`, { toggle: true });
           grid.appendChild(slotEl);
         });
       } else {
@@ -404,7 +406,7 @@
         errorEl.classList.add('hidden');
       }, 5000);
     } else {
-      alert(message);
+      showToast(message);
     }
   }
 })();

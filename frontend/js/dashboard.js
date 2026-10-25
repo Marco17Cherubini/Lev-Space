@@ -283,6 +283,7 @@ async function renderCalendar() {
       dayElement.classList.add('disabled');
     } else {
       dayElement.addEventListener('click', () => selectDate(dateString, dayElement));
+      makeSelectable(dayElement, formatDate(dateString), { toggle: true });
     }
 
     calendarGrid.appendChild(dayElement);
@@ -383,13 +384,14 @@ async function loadTimeSlots(date) {
     // Aggiungi event listener per slot disponibili (non ferie, non occupati)
     document.querySelectorAll('.time-slot:not(.disabled):not(.holiday)').forEach(slot => {
       slot.addEventListener('click', () => selectTimeSlot(slot));
+      makeSelectable(slot, `Ore ${slot.dataset.time}`, { toggle: true });
     });
 
     // Disabilita pulsante conferma
     document.getElementById('confirm-datetime-btn').disabled = true;
   } catch (error) {
     console.error('Errore caricamento slot:', error);
-    alert('Errore nel caricamento degli orari disponibili');
+    showToast('Errore nel caricamento degli orari disponibili');
   }
 }
 

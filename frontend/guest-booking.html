@@ -8,14 +8,14 @@
   </head>
 
   <body>
-    <div class="header">
+    <header class="header">
       <div class="header-title">Lev Space</div>
       <div class="header-actions">
         <a href="/guest-home" class="btn header-btn">Indietro</a>
       </div>
-    </div>
+    </header>
 
-    <div class="guest-container">
+    <main class="guest-container">
       <div class="guest-header">
         <h1>Prenotazione Rapida</h1>
         <p>Prenota in pochi secondi, senza creare un account</p>
@@ -123,7 +123,7 @@
               placeholder="La tua email"
             />
           </div>
-          <div id="form-error" class="form-error hidden"></div>
+          <div id="form-error" role="alert" class="form-error hidden"></div>
           <div class="btn-group" style="gap: var(--space-3)">
             <button type="button" class="btn btn-outline" data-go-to-step="1">Indietro</button>
             <button type="submit" class="btn btn-large">Conferma Prenotazione</button>
@@ -146,7 +146,7 @@
           <a href="/" class="btn btn-large">Torna alla Home</a>
         </div>
       </div>
-    </div>
+    </main>
 
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>

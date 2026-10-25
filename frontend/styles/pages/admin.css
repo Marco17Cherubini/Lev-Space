@@ -663,3 +663,22 @@ body.is-dragging-booking * {
   transform: translateX(-50%) translateY(10px);
   transition: all 0.3s ease;
 }
+
+/* Spostamento appuntamento dal dettaglio (alternativa al trascinamento) */
+.move-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--space-3);
+  align-items: end;
+  margin-bottom: var(--space-4);
+}
+
+.move-form .form-group {
+  margin-bottom: 0;
+}
+
+@media (max-width: 480px) {
+  .move-form {
+    grid-template-columns: 1fr;
+  }
+}

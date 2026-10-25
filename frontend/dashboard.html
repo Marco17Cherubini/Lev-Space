@@ -12,32 +12,41 @@
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <!-- Sidebar Menu -->
-    <div id="sidebar" class="sidebar">
+    <aside id="sidebar" class="sidebar" aria-label="Menu">
       <div class="sidebar-header">
         <span>Menu</span>
-        <button id="close-sidebar" class="sidebar-close">&times;</button>
+        <button type="button" id="close-sidebar" class="sidebar-close" aria-label="Chiudi menu">
+          &times;
+        </button>
       </div>
       <nav class="sidebar-nav">
         <a href="/bookings" class="sidebar-item">Gestione Prenotazioni</a>
         <a href="/subscriptions" class="sidebar-item">Prenotazioni di lungo periodo</a>
         <button id="sidebar-logout" class="sidebar-item sidebar-logout">Logout</button>
       </nav>
-    </div>
+    </aside>
 
-    <div class="header">
+    <header class="header">
       <div class="header-left">
-        <button id="hamburger-btn" class="hamburger-btn">
+        <button
+          type="button"
+          id="hamburger-btn"
+          class="hamburger-btn"
+          aria-label="Apri menu"
+          aria-controls="sidebar"
+          aria-expanded="false"
+        >
           <span></span>
           <span></span>
           <span></span>
         </button>
         <a href="/home" class="header-title header-link">Lev Space</a>
       </div>
-    </div>
+    </header>
 
-    <div class="container">
+    <main class="container">
       <div id="welcome-section" class="mb-3">
-        <h2 id="welcome-message">Bentornato</h2>
+        <h1 id="welcome-message" class="h2">Bentornato</h1>
       </div>
 
       <!-- Sezione calendario -->
@@ -46,9 +55,23 @@
 
         <div class="calendar">
           <div class="calendar-header">
-            <button id="prev-month" class="btn calendar-nav-btn">←</button>
+            <button
+              type="button"
+              id="prev-month"
+              class="btn calendar-nav-btn"
+              aria-label="Mese precedente"
+            >
+              ←
+            </button>
             <div id="current-month" class="calendar-month"></div>
-            <button id="next-month" class="btn calendar-nav-btn">→</button>
+            <button
+              type="button"
+              id="next-month"
+              class="btn calendar-nav-btn"
+              aria-label="Mese successivo"
+            >
+              →
+            </button>
           </div>
 
           <div id="calendar-grid" class="calendar-grid">
@@ -72,7 +95,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
     <!-- Modal Selezione Gruppo (Quanti si presenteranno?) -->
     <div id="group-modal" class="modal">
@@ -121,6 +144,7 @@
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/layout.js"></script>
+    <script src="/js/components/dialog.js"></script>
     <script src="/js/dashboard.js"></script>
   </body>
 </html>

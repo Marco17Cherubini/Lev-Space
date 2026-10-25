@@ -30,18 +30,32 @@ function initSidebar() {
   if (!sidebar) return;
 
   const overlay = document.getElementById('sidebar-overlay');
+  const hamburger = document.getElementById('hamburger-btn');
+
+  // Da chiuso il menu è fuori schermo: inert lo toglie anche dal Tab e dagli screen reader
+  const setOpen = isOpen => {
+    sidebar.classList.toggle('active', isOpen);
+    overlay.classList.toggle('active', isOpen);
+    sidebar.inert = !isOpen;
+    hamburger.setAttribute('aria-expanded', String(isOpen));
+  };
   const open = () => {
-    sidebar.classList.add('active');
-    overlay.classList.add('active');
+    setOpen(true);
+    document.getElementById('close-sidebar').focus();
   };
   const close = () => {
-    sidebar.classList.remove('active');
-    overlay.classList.remove('active');
+    if (!sidebar.classList.contains('active')) return;
+    setOpen(false);
+    hamburger.focus();
   };
 
-  document.getElementById('hamburger-btn').addEventListener('click', open);
+  setOpen(false);
+  hamburger.addEventListener('click', open);
   document.getElementById('close-sidebar').addEventListener('click', close);
   overlay.addEventListener('click', close);
+  sidebar.addEventListener('keydown', event => {
+    if (event.key === 'Escape') close();
+  });
 
   const logoutButton = document.getElementById('sidebar-logout');
   if (logoutButton) {

@@ -26,6 +26,9 @@ class Modal {
       return;
     }
 
+    // Escape e chiusura sono gestiti da questa classe (vedi components/dialog.js)
+    this.element.setAttribute('data-modal-managed', '');
+
     this.overlay = this.element.querySelector('.modal-overlay');
     this.content = this.element.querySelector('.modal-content');
 

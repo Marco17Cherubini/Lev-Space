@@ -180,6 +180,9 @@
             selectDate(dateStr, cell);
           }
         });
+        if (!cell.classList.contains('disabled')) {
+          makeSelectable(cell, formatDate(dateStr), { toggle: true });
+        }
       }
 
       calendarGrid.appendChild(cell);
@@ -305,6 +308,7 @@
 
     timeSlotsGrid.querySelectorAll('.time-slot:not(.disabled)').forEach(slot => {
       slot.addEventListener('click', () => selectTime(slot.dataset.time));
+      makeSelectable(slot, `Ore ${slot.dataset.time}`);
     });
   }
 
@@ -448,7 +452,7 @@
       document.getElementById('success-modal').classList.remove('hidden');
     } catch (error) {
       console.error('Errore conferma abbonamento:', error);
-      alert('Errore nella conferma: ' + error.message);
+      showToast('Errore nella conferma: ' + error.message);
       confirmBtn.disabled = false;
       confirmBtn.textContent = 'Conferma Abbonamento';
     }

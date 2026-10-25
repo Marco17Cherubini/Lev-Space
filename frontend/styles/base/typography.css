@@ -25,6 +25,13 @@ h2 {
   margin-bottom: var(--space-6);
 }
 
+/* Titolo principale (h1) con l'aspetto di un h2: gerarchia corretta senza cambiare la grafica */
+.h2 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-6);
+}
+
 h3 {
   font-size: var(--font-size-2xl);
   margin-bottom: var(--space-4);

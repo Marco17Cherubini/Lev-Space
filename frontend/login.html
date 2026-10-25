@@ -8,12 +8,12 @@
   </head>
 
   <body>
-    <div class="center-container">
+    <main class="center-container">
       <div class="form">
-        <h2 class="text-center">Accedi</h2>
+        <h1 class="text-center h2">Accedi</h1>
 
-        <div id="success-message" class="form-success hidden"></div>
-        <div id="error-message" class="form-error hidden"></div>
+        <div id="success-message" role="status" class="form-success hidden"></div>
+        <div id="error-message" role="alert" class="form-error hidden"></div>
 
         <form id="login-form">
           <div class="form-group">
@@ -50,7 +50,7 @@
           <a href="/reset-password" class="link">Password dimenticata?</a>
         </p>
       </div>
-    </div>
+    </main>
 
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>

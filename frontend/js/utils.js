@@ -70,6 +70,25 @@ const MONTHS_IT = [
 ];
 const DAYS_IT = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
 
+// Messaggio breve non bloccante (al posto di alert()): gli errori sono annunciati subito
+// dagli screen reader (role="alert"), le conferme con cortesia (role="status")
+function showToast(message, type = 'error') {
+  const regionId = `toast-region-${type}`;
+  let region = document.getElementById(regionId);
+  if (!region) {
+    region = document.createElement('div');
+    region.id = regionId;
+    region.className = 'toast-region';
+    region.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    document.body.appendChild(region);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast toast--${type}`;
+  toast.textContent = message;
+  region.appendChild(toast);
+  setTimeout(() => toast.remove(), 6000);
+}
+
 // I messaggi restano visibili finché l'utente non agisce di nuovo (hideMessage)
 function showError(elementId, message) {
   const errorElement = document.getElementById(elementId);
@@ -113,3 +132,44 @@ async function getCurrentUser() {
 function redirectToLogin() {
   window.location.href = '/login';
 }
+
+// Elementi non nativi resi cliccabili con role="button" (giorni e slot del calendario,
+// celle admin): Invio e Spazio li attivano come un vero pulsante
+document.addEventListener('keydown', event => {
+  const target = event.target;
+  if (
+    (event.key === 'Enter' || event.key === ' ') &&
+    target.getAttribute &&
+    target.getAttribute('role') === 'button' &&
+    target.tagName !== 'BUTTON'
+  ) {
+    event.preventDefault();
+    target.click();
+  }
+});
+
+// Rende un elemento del calendario attivabile da tastiera con un nome leggibile.
+// Con toggle: true è un elemento selezionabile (aria-pressed segue la classe .selected).
+function makeSelectable(element, label, { toggle = false } = {}) {
+  element.setAttribute('role', 'button');
+  element.setAttribute('tabindex', '0');
+  element.setAttribute('aria-label', label);
+  if (toggle) {
+    element.dataset.pressedFromClass = '';
+    element.setAttribute('aria-pressed', String(element.classList.contains('selected')));
+  }
+}
+
+// Gli script delle pagine segnano la selezione con la classe .selected:
+// lo stato viene riportato su aria-pressed senza toccare ogni punto del codice
+new MutationObserver(records => {
+  for (const { target } of records) {
+    if (target.dataset && 'pressedFromClass' in target.dataset) {
+      target.setAttribute('aria-pressed', String(target.classList.contains('selected')));
+    }
+  }
+}).observe(document.documentElement, {
+  subtree: true,
+  attributes: true,
+  attributeFilter: ['class']
+});

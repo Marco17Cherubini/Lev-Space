@@ -12,10 +12,12 @@
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <!-- Sidebar Menu -->
-    <div id="sidebar" class="sidebar">
+    <aside id="sidebar" class="sidebar" aria-label="Menu">
       <div class="sidebar-header">
         <span>Menu Admin</span>
-        <button id="close-sidebar" class="sidebar-close">&times;</button>
+        <button type="button" id="close-sidebar" class="sidebar-close" aria-label="Chiudi menu">
+          &times;
+        </button>
       </div>
       <nav class="sidebar-nav">
         <a href="/admin/reports" class="sidebar-item">
@@ -31,20 +33,28 @@
           <span>Logout</span>
         </button>
       </nav>
-    </div>
+    </aside>
 
-    <div class="header">
+    <header class="header">
       <div class="header-left">
-        <button id="hamburger-btn" class="hamburger-btn">
+        <button
+          type="button"
+          id="hamburger-btn"
+          class="hamburger-btn"
+          aria-label="Apri menu"
+          aria-controls="sidebar"
+          aria-expanded="false"
+        >
           <span></span>
           <span></span>
           <span></span>
         </button>
         <div class="header-title">Lev Space</div>
       </div>
-    </div>
+    </header>
 
-    <div class="container">
+    <main class="container">
+      <h1 class="sr-only">Calendario appuntamenti</h1>
       <div class="admin-calendar">
         <!-- Legenda con selezione modalità ferie -->
         <div class="admin-calendar__legend">
@@ -55,6 +65,9 @@
           <div
             class="admin-calendar__legend-item admin-calendar__legend-item--selectable"
             id="holiday-mode-toggle"
+            role="button"
+            tabindex="0"
+            aria-pressed="false"
           >
             <span class="admin-calendar__legend-box admin-calendar__legend-box--holiday"></span>
             <span>Ferie (clicca per attivare)</span>
@@ -73,8 +86,22 @@
             </button>
           </div>
           <div class="admin-calendar__nav">
-            <button id="prev-week" class="admin-calendar__nav-btn">←</button>
-            <button id="next-week" class="admin-calendar__nav-btn">→</button>
+            <button
+              type="button"
+              id="prev-week"
+              class="admin-calendar__nav-btn"
+              aria-label="Settimana precedente"
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              id="next-week"
+              class="admin-calendar__nav-btn"
+              aria-label="Settimana successiva"
+            >
+              →
+            </button>
           </div>
           <div id="holiday-mode-indicator" class="admin-calendar__holiday-mode hidden">
             <span>MODALITÀ FERIE ATTIVA - Clicca sulle celle per selezionare/deselezionare</span>
@@ -99,7 +126,7 @@
           <!-- Le righe degli orari verranno generate da JavaScript -->
         </div>
       </div>
-    </div>
+    </main>
 
     <!-- Modal Inserimento/Modifica Appuntamento -->
     <div id="booking-modal" class="modal hidden">
@@ -113,7 +140,7 @@
         <form id="booking-form">
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Cognome *</label>
+              <label class="form-label" for="input-cognome">Cognome *</label>
               <input
                 type="text"
                 id="input-cognome"
@@ -125,14 +152,14 @@
               <div id="suggestions-list" class="suggestions-list hidden"></div>
             </div>
             <div class="form-group">
-              <label class="form-label">Nome</label>
+              <label class="form-label" for="input-nome">Nome</label>
               <input type="text" id="input-nome" class="form-input" placeholder="Inserisci nome" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Email</label>
+              <label class="form-label" for="input-email">Email</label>
               <input
                 type="email"
                 id="input-email"
@@ -141,7 +168,7 @@
               />
             </div>
             <div class="form-group">
-              <label class="form-label">Telefono</label>
+              <label class="form-label" for="input-telefono">Telefono</label>
               <input
                 type="tel"
                 id="input-telefono"
@@ -199,7 +226,7 @@
             </div>
           </div>
 
-          <div id="form-error" class="form-error hidden"></div>
+          <div id="form-error" role="alert" class="form-error hidden"></div>
 
           <div class="modal-buttons">
             <button type="button" id="modal-cancel" class="btn modal-btn-cancel">Annulla</button>
@@ -217,6 +244,18 @@
         <div class="modal-details" id="detail-content">
           <!-- Dettagli inseriti via JS -->
         </div>
+        <!-- Alternativa al trascinamento (utilizzabile anche da tastiera) -->
+        <form id="move-form" class="move-form">
+          <div class="form-group">
+            <label class="form-label" for="move-date">Sposta al giorno</label>
+            <input type="date" id="move-date" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="move-time">Orario</label>
+            <input type="time" id="move-time" class="form-input" required />
+          </div>
+          <button type="submit" class="btn">Sposta</button>
+        </form>
         <div class="modal-buttons">
           <button type="button" id="detail-close" class="btn modal-btn-cancel">Chiudi</button>
           <button type="button" id="detail-delete" class="btn modal-btn-delete">Cancella</button>
@@ -262,6 +301,7 @@
     <script src="/js/utils.js"></script>
     <script src="/js/layout.js"></script>
     <script src="/js/components/Modal.js"></script>
+    <script src="/js/components/dialog.js"></script>
     <script src="/js/admin.js"></script>
   </body>
 </html>

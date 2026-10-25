@@ -67,7 +67,9 @@
         "MONTHS_IT": "readonly",
         "DAYS_IT": "readonly",
         "requireAuth": "readonly",
-        "logout": "readonly"
+        "logout": "readonly",
+        "makeSelectable": "readonly",
+        "showToast": "readonly"
       }
     }
   ]

@@ -105,12 +105,14 @@ function renderUsers(users) {
                           <span class="action-label vip">VIP</span>
                           <input type="checkbox" class="action-checkbox vip" 
                                  data-email="${escapeHtml(user.email)}" data-type="vip"
+                                 aria-label="VIP: ${escapeHtml(user.cognome)} ${escapeHtml(user.nome)}"
                                  ${current.vip ? 'checked' : ''}>
                       </div>
                       <div class="action-group">
                           <span class="action-label ban">BAN</span>
                           <input type="checkbox" class="action-checkbox ban" 
                                  data-email="${escapeHtml(user.email)}" data-type="banned"
+                                 aria-label="BAN: ${escapeHtml(user.cognome)} ${escapeHtml(user.nome)}"
                                  ${current.banned ? 'checked' : ''}>
                       </div>
                   </div>
@@ -198,7 +200,7 @@ async function confirmChanges() {
     await loadUsers();
   } catch (error) {
     console.error('Errore:', error);
-    alert('Errore nel salvataggio delle modifiche: ' + error.message);
+    showToast('Errore nel salvataggio delle modifiche: ' + error.message);
   } finally {
     confirmBtn.disabled = false;
     confirmBtn.textContent = 'Conferma';

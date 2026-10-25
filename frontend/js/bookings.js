@@ -145,7 +145,7 @@ async function executeDelete() {
     await loadBookings();
   } catch (error) {
     console.error('Errore cancellazione:', error);
-    alert('Errore nella cancellazione: ' + error.message);
+    showToast('Errore nella cancellazione: ' + error.message);
     deleteBtn.disabled = false;
     deleteBtn.textContent = 'Sì, Cancella';
   }

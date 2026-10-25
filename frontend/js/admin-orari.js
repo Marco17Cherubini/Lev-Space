@@ -55,11 +55,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentSettings = res.businessHours;
       renderCards();
     } else {
-      alert('Errore nel caricamento degli orari');
+      showToast('Errore nel caricamento degli orari');
     }
   } catch (err) {
     console.error(err);
-    alert(err.message);
+    showToast(err.message);
   }
 
   const saveBtn = document.getElementById('save-orari-btn');
@@ -301,12 +301,12 @@ async function saveSettings() {
     });
 
     if (res.success) {
-      alert('Orari salvati con successo!');
+      showToast('Orari salvati con successo!', 'success');
     } else {
-      alert('Errore: ' + res.error);
+      showToast('Errore: ' + res.error);
     }
   } catch (e) {
-    alert('Errore di comunicazione col server: ' + e);
+    showToast('Errore nel salvataggio: ' + e.message);
   }
 
   btn.disabled = false;

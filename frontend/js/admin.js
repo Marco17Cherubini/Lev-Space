@@ -291,6 +291,17 @@ function renderCalendar() {
               addToDragSelection(dateStr, time, isHoliday);
             }
           });
+
+          // Da tastiera (Invio/Spazio) si seleziona una cella alla volta
+          cell.addEventListener('click', e => {
+            if (e.detail !== 0) return;
+            startDrag(dateStr, time, isHoliday);
+            endDrag();
+          });
+          makeSelectable(
+            cell,
+            `${isHoliday ? 'Rimuovi ferie' : 'Segna come ferie'}: ${formatDate(dateStr)} ore ${time}`
+          );
         }
       } else if (isHoliday) {
         // ===== MODALITÀ NORMALE - FERIE =====
@@ -300,6 +311,10 @@ function renderCalendar() {
         cell.classList.add('has-booking');
         if (booking.tipo === 'ricorrente') cell.classList.add('has-recurring');
         cell.innerHTML = renderBookingItem(booking, time);
+        makeSelectable(
+          cell,
+          `Appuntamento di ${booking.cognome} ${booking.nome}, ${formatDate(dateStr)} ore ${time}`
+        );
 
         // Drag-and-drop: inizia drag su mousedown sulla prenotazione
         cell.addEventListener('mousedown', e => {
@@ -370,6 +385,7 @@ function renderCalendar() {
         // ===== CELLA VUOTA - MODALITÀ NORMALE =====
         cell.innerHTML = '<div class="no-booking">+ Aggiungi</div>';
         cell.classList.add('droppable');
+        makeSelectable(cell, `Aggiungi appuntamento: ${formatDate(dateStr)} ore ${time}`);
 
         // Drop target: evidenzia durante drag
         cell.addEventListener('mouseenter', () => {
@@ -515,6 +531,39 @@ function showDropFeedback(message, isError = false) {
     feedback.classList.add('fade-out');
     setTimeout(() => feedback.remove(), 300);
   }, 1500);
+}
+
+// Sposta l'appuntamento aperto nel dettaglio: alternativa al trascinamento
+async function moveSelectedBooking(event) {
+  event.preventDefault();
+  if (!selectedBooking) return;
+
+  const newGiorno = document.getElementById('move-date').value;
+  const newOra = document.getElementById('move-time').value;
+  if (newGiorno === selectedBooking.giorno && newOra === selectedBooking.ora) {
+    detailModal.close();
+    return;
+  }
+
+  try {
+    await apiRequest('/admin/bookings', {
+      method: 'PUT',
+      body: JSON.stringify({
+        oldGiorno: selectedBooking.giorno,
+        oldOra: selectedBooking.ora,
+        newGiorno,
+        newOra
+      })
+    });
+    detailModal.close();
+    showToast('Prenotazione spostata', 'success');
+    await loadBookings();
+    renderCalendar();
+    // Il calendario è stato ridisegnato: il focus va sulla cella di arrivo (se visibile)
+    document.querySelector(`.admin-cell[data-date="${newGiorno}"][data-time="${newOra}"]`)?.focus();
+  } catch (error) {
+    showToast('Spostamento non riuscito: ' + error.message);
+  }
 }
 
 async function dropBooking(newGiorno, newOra) {
@@ -678,6 +727,8 @@ function showDetailModal(booking) {
     ${tipoRow}
   `;
 
+  document.getElementById('move-date').value = booking.giorno;
+  document.getElementById('move-time').value = booking.ora;
   detailModal.open();
 }
 
@@ -758,7 +809,7 @@ async function executeDelete() {
       renderCalendar();
     }
   } catch (error) {
-    alert('Errore nella cancellazione: ' + error.message);
+    showToast('Errore nella cancellazione: ' + error.message);
     const deleteBtn = document.getElementById('delete-confirm');
     deleteBtn.disabled = false;
     deleteBtn.textContent = 'Sì, Cancella';
@@ -856,6 +907,7 @@ function setupModalListeners() {
   document.getElementById('modal-cancel').addEventListener('click', () => bookingModal.close());
   document.getElementById('detail-close').addEventListener('click', () => detailModal.close());
   document.getElementById('detail-delete').addEventListener('click', showDeleteConfirmModal);
+  document.getElementById('move-form').addEventListener('submit', moveSelectedBooking);
   document
     .getElementById('delete-cancel')
     .addEventListener('click', () => deleteConfirmModal.close());
@@ -1005,6 +1057,7 @@ function setupHolidayMode() {
 
 function enterHolidayMode() {
   holidayMode = true;
+  document.getElementById('holiday-mode-toggle').setAttribute('aria-pressed', 'true');
   selectedHolidaySlots = [];
 
   document.getElementById('holiday-mode-toggle').classList.add('active');
@@ -1016,6 +1069,7 @@ function enterHolidayMode() {
 
 function exitHolidayMode() {
   holidayMode = false;
+  document.getElementById('holiday-mode-toggle').setAttribute('aria-pressed', 'false');
   selectedHolidaySlots = [];
 
   document.getElementById('holiday-mode-toggle').classList.remove('active');
@@ -1065,7 +1119,7 @@ async function saveHolidays() {
     exitHolidayMode();
   } catch (error) {
     console.error('Errore salvataggio ferie:', error);
-    alert('Errore nel salvataggio delle ferie: ' + error.message);
+    showToast('Errore nel salvataggio delle ferie: ' + error.message);
   } finally {
     saveBtn.disabled = false;
     saveBtn.textContent = 'Salva Ferie';
