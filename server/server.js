@@ -576,9 +576,6 @@ app.put('/api/admin/users/:email/vip', authenticateToken, (req, res) => {
   }
 });
 
-// GET /api/auth/me - includi info VIP nell'utente corrente
-// (già gestito da authenticateToken + info utente)
-
 // ==================== HOLIDAYS (FERIE) ROUTES ====================
 
 const { holidaysDB } = require('./database');
@@ -696,11 +693,6 @@ app.get('/bookings', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/bookings.html'));
 });
 
-// Service selection page
-app.get('/services', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/services.html'));
-});
-
 // Booking summary page
 app.get('/summary', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/summary.html'));
@@ -721,19 +713,9 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin.html'));
 });
 
-// Admin VIP page (legacy)
-app.get('/admin/vip', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/admin-vip.html'));
-});
-
 // Admin Reports page
 app.get('/admin/reports', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin-reports.html'));
-});
-
-// Admin Banned Users page (legacy)
-app.get('/admin/banned', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/admin-banned.html'));
 });
 
 // Admin Unified Client Management page
@@ -770,9 +752,8 @@ app.get('/api/admin/reports/bookings-stats', authenticateToken, (req, res) => {
       today.setDate(today.getDate() + offset * 30);
     }
 
-    let startDate,
-      labels = [],
-      dateFormat;
+    let startDate;
+    const labels = [];
 
     if (period === 'weekly') {
       // Ultimi 7 giorni

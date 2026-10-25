@@ -6,11 +6,6 @@ const config = require('../config/config');
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Genera ID univoco
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
 // Verifica se è admin (tabella admins)
 function isAdmin(email) {
   const admin = adminDB.findOne(a => a.email === email.trim().toLowerCase());
@@ -22,13 +17,8 @@ async function verifyAdminPassword(email, password) {
   const admin = adminDB.findOne(a => a.email === email.trim().toLowerCase());
   if (!admin) return false;
 
-  // Confronta password (hash bcrypt)
-  try {
-    return await bcrypt.compare(password, admin.password);
-  } catch {
-    // Se la password nel file non è hashata, confronta direttamente
-    return admin.password === password;
-  }
+  // Le password admin sono sempre hash bcrypt (vedi initializeDefaultAdmin)
+  return bcrypt.compare(password, admin.password);
 }
 
 // Registrazione utente
@@ -173,13 +163,6 @@ function toggleVip(email) {
   return newVipStatus === '1';
 }
 
-// Verifica se un utente è VIP
-function isVip(email) {
-  const user = usersDB.findOne(u => u.email === email);
-  if (!user) return false;
-  return user.vip === '1' || user.vip === 1;
-}
-
 // Toggle banned status per un utente
 function toggleBanned(email) {
   const user = usersDB.findOne(u => u.email === email);
@@ -191,13 +174,6 @@ function toggleBanned(email) {
   usersDB.update(u => u.email === email, { banned: newBannedStatus });
 
   return newBannedStatus === '1';
-}
-
-// Verifica se un utente è bannato
-function isBanned(email) {
-  const user = usersDB.findOne(u => u.email === email);
-  if (!user) return false;
-  return user.banned === '1' || user.banned === 1;
 }
 
 // Impronta della password attuale: inserita nel token di reset, lo invalida
@@ -277,13 +253,10 @@ module.exports = {
   loginUser,
   verifyToken,
   getUserByEmail,
-  generateId,
   isAdmin,
   getAllUsers,
   toggleVip,
-  isVip,
   toggleBanned,
-  isBanned,
   generateResetToken,
   resetPassword
 };

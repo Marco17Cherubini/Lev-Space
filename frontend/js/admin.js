@@ -14,7 +14,6 @@ let deleteConfirmModal = null;
 
 // Variabili per drag-select ferie
 let isDragging = false;
-let dragStartCell = null;
 let dragMode = null; // 'add' o 'remove' - determina se stiamo aggiungendo o rimuovendo ferie
 
 // Variabili per drag-and-drop prenotazioni
@@ -246,7 +245,6 @@ function renderCalendar() {
       cell.className = 'admin-cell';
 
       const dateStr = formatDate(date);
-      const dayOfWeek = date.getDay();
       const daySlots = getTimeSlotsForDate(date, true); // Include extra
       const normalSlots = getTimeSlotsForDate(date, false);
       const isValidSlot = daySlots.includes(time);
@@ -690,11 +688,6 @@ function showDetailModal(booking) {
   detailModal.open();
 }
 
-function closeDetailModal() {
-  detailModal.close();
-  selectedBooking = null;
-}
-
 // ==================== MODAL CONFERMA CANCELLAZIONE ====================
 
 function showDeleteConfirmModal() {
@@ -1036,10 +1029,8 @@ setupSidebar();
 
 function setupHolidayMode() {
   const holidayToggle = document.getElementById('holiday-mode-toggle');
-  const holidayIndicator = document.getElementById('holiday-mode-indicator');
   const saveBtn = document.getElementById('save-holidays-btn');
   const cancelBtn = document.getElementById('cancel-holidays-btn');
-  const calendarContainer = document.querySelector('.admin-calendar');
 
   // Toggle modalità ferie
   holidayToggle.addEventListener('click', () => {
@@ -1073,20 +1064,6 @@ function exitHolidayMode() {
   document.getElementById('holiday-mode-toggle').classList.remove('active');
   document.getElementById('holiday-mode-indicator').classList.add('hidden');
   document.querySelector('.admin-calendar').classList.remove('holiday-mode');
-
-  renderCalendar();
-}
-
-function toggleHolidaySelection(date, time, isCurrentlyHoliday) {
-  const slotIndex = selectedHolidaySlots.findIndex(s => s.giorno === date && s.ora === time);
-
-  if (slotIndex >= 0) {
-    // Rimuovi dalla selezione
-    selectedHolidaySlots.splice(slotIndex, 1);
-  } else {
-    // Aggiungi alla selezione (con flag per indicare se è da rimuovere o aggiungere)
-    selectedHolidaySlots.push({ giorno: date, ora: time, isRemove: isCurrentlyHoliday });
-  }
 
   renderCalendar();
 }
@@ -1142,7 +1119,6 @@ async function saveHolidays() {
 
 function startDrag(date, time, isHoliday) {
   isDragging = true;
-  dragStartCell = { date, time };
 
   // Determina la modalità: se clicco su ferie esistente -> rimuovo, altrimenti -> aggiungo
   dragMode = isHoliday ? 'remove' : 'add';
@@ -1171,7 +1147,6 @@ function addToDragSelection(date, time, isHoliday) {
 
 function endDrag() {
   isDragging = false;
-  dragStartCell = null;
   dragMode = null;
 }
 

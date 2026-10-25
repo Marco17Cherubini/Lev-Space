@@ -5,7 +5,6 @@
   'use strict';
 
   // State
-  let currentStep = 0;
   let selectedGroupSize = 1;
   let guestData = {
     nome: '',
@@ -17,7 +16,6 @@
   };
   let currentMonth = new Date();
   let holidays = [];
-  let allSlotsForDay = []; // Cached for consecutive filtering
 
   // DOM Elements
   let stepIndicators, sections;
@@ -87,8 +85,6 @@
     if (sections[step]) {
       sections[step].classList.add('active');
     }
-
-    currentStep = step;
 
     // Update summary for step 2 (personal data)
     if (step === 2) {
@@ -240,7 +236,6 @@
         grid.innerHTML = '';
 
         // Cache all slots for consecutive filtering
-        allSlotsForDay = data.slots;
         const allSlotTimes = data.slots.map(s => (typeof s === 'object' ? s.time : s));
 
         // Build set of available times

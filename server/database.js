@@ -361,18 +361,6 @@ class SQLiteTable {
     if (deleted) saveDatabase();
     return deleted;
   }
-
-  // Riscrivi tutti i dati (per compatibilità)
-  writeAll(data) {
-    if (!db) return;
-    db.run(`DELETE FROM ${this.tableName}`);
-
-    for (const record of data) {
-      this.insert(record);
-    }
-
-    saveDatabase();
-  }
 }
 
 // ==================== INIZIALIZZA TABELLE ====================
@@ -390,7 +378,6 @@ const userColumns = [
 const bookingColumns = ['nome', 'cognome', 'email', 'telefono', 'giorno', 'ora', 'token', 'tipo'];
 const adminColumns = ['email', 'password'];
 const holidayColumns = ['giorno', 'ora'];
-const globalSettingsColumns = ['key', 'json_data'];
 
 const usersDB = new SQLiteTable('users', userColumns);
 const bookingsDB = new SQLiteTable('bookings', bookingColumns);
@@ -464,6 +451,5 @@ module.exports = {
   holidaysDB,
   globalSettingsDB,
   initDatabase,
-  saveDatabase,
   withTransaction
 };

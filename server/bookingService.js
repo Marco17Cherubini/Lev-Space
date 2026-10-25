@@ -5,7 +5,6 @@ const {
   globalSettingsDB,
   withTransaction
 } = require('./database');
-const { generateId } = require('./authService');
 const config = require('../config/config');
 const crypto = require('crypto');
 const { parseDate, isValidTime, slotStart, toMinutes } = require('./dates');
@@ -228,28 +227,6 @@ function createBooking(userEmail, bookingData) {
 // Ottieni prenotazioni di un utente
 function getUserBookings(userEmail) {
   return bookingsDB.findMany(b => b.email === userEmail);
-}
-
-// Ottieni statistiche prenotazioni per un utente
-function getUserBookingStats(userEmail) {
-  const bookings = bookingsDB.findMany(b => b.email === userEmail);
-
-  // Conta prenotazioni e trova ultima data
-  let count = bookings.length;
-  let lastDate = null;
-
-  bookings.forEach(booking => {
-    if (!lastDate || new Date(booking.giorno) > new Date(lastDate)) {
-      lastDate = booking.giorno;
-    }
-  });
-
-  return { count, lastDate };
-}
-
-// Ottieni prenotazione per giorno e ora (identificatore univoco)
-function getBookingByDateTime(giorno, ora) {
-  return bookingsDB.findOne(b => b.giorno === giorno && b.ora === ora);
 }
 
 // Cancella prenotazione
@@ -510,105 +487,16 @@ function moveBooking(oldGiorno, oldOra, newGiorno, newOra) {
   return newBooking;
 }
 
-// ==================== GESTIONE VIA TOKEN (Smart Rescheduling) ====================
-
-// Ottieni prenotazione tramite token univoco
-function getBookingByToken(token) {
-  if (!token) return null;
-  return bookingsDB.findOne(b => b.token === token);
-}
-
-// Aggiorna prenotazione tramite token (cambio data/ora)
-function updateBookingByToken(token, updates) {
-  const booking = getBookingByToken(token);
-  if (!booking) {
-    throw new Error('Prenotazione non trovata');
-  }
-
-  const { newGiorno, newOra } = updates;
-
-  // Verifica politica 24h: non modificabile entro 24h dall'appuntamento
-  const bookingDate = new Date(booking.giorno + 'T' + booking.ora.replace(':', '') + ':00');
-  const now = new Date();
-  const hoursUntilBooking = (bookingDate - now) / (1000 * 60 * 60);
-
-  if (hoursUntilBooking < 24) {
-    throw new Error("Non e possibile modificare la prenotazione entro 24 ore dall'appuntamento");
-  }
-
-  // Se cambia data/ora, verifica disponibilita
-  if (newGiorno && newOra && (newGiorno !== booking.giorno || newOra !== booking.ora)) {
-    // Verifica slot non occupato
-    const existingBooking = bookingsDB.findOne(
-      b => b.giorno === newGiorno && b.ora === newOra && b.token !== token
-    );
-    if (existingBooking) {
-      throw new Error('Questo slot e gia occupato');
-    }
-
-    // Verifica non in ferie
-    if (isHolidaySlot(newGiorno, newOra)) {
-      throw new Error('Slot non disponibile (ferie)');
-    }
-  }
-
-  // Elimina vecchia prenotazione
-  bookingsDB.delete(b => b.token === token);
-
-  // Crea nuova con dati aggiornati (mantiene lo stesso token)
-  const updatedBooking = {
-    nome: booking.nome,
-    cognome: booking.cognome,
-    email: booking.email,
-    telefono: booking.telefono,
-    giorno: newGiorno || booking.giorno,
-    ora: newOra || booking.ora,
-    token: booking.token
-  };
-
-  bookingsDB.insert(updatedBooking);
-
-  return updatedBooking;
-}
-
-// Cancella prenotazione tramite token
-function cancelBookingByToken(token) {
-  const booking = getBookingByToken(token);
-  if (!booking) {
-    throw new Error('Prenotazione non trovata');
-  }
-
-  // Verifica politica 24h
-  const bookingDate = new Date(booking.giorno + 'T' + booking.ora.replace(':', '') + ':00');
-  const now = new Date();
-  const hoursUntilBooking = (bookingDate - now) / (1000 * 60 * 60);
-
-  if (hoursUntilBooking < 24) {
-    throw new Error("Non e possibile cancellare la prenotazione entro 24 ore dall'appuntamento");
-  }
-
-  bookingsDB.delete(b => b.token === token);
-  return true;
-}
-
 module.exports = {
-  isDayAvailable,
   getAvailableSlots,
   createBooking,
   getUserBookings,
-  getUserBookingStats,
-  getBookingByDateTime,
   cancelBooking,
   rescheduleBooking,
   getAllBookings,
   createAdminBooking,
-  createRecurringBooking,
   adminCancelBooking,
   adminCancelRecurringSeries,
   moveBooking,
-  getBookingByToken,
-  updateBookingByToken,
-  cancelBookingByToken,
-  generateBookingToken,
   addDaysToDateString
 };

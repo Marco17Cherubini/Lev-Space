@@ -216,9 +216,3 @@ class Modal {
     document.body.style.overflow = '';
   }
 }
-
-// Export for use in other modules
-// In a non-module environment, Modal is available globally
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = Modal;
-}

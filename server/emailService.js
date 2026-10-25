@@ -63,16 +63,12 @@ async function sendBookingConfirmation(booking) {
     return { success: false, message: 'Email service not configured' };
   }
 
-  // Supporta sia i nuovi campi (giorno, ora) che i vecchi (data, orario)
-  const dateField = booking.giorno || booking.data;
-  const timeField = booking.ora || booking.orario;
+  const dateField = booking.giorno;
+  const timeField = booking.ora;
   const formattedDate = formatDate(dateField);
 
   // Email mittente - usa dominio verificato o onboarding@resend.dev per test
   const fromEmail = process.env.EMAIL_FROM || 'Lev Space <onboarding@resend.dev>';
-
-  // URL base per il link di gestione (usa variabile d'ambiente o default localhost)
-  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
 
   const htmlContent = `
     <!DOCTYPE html>

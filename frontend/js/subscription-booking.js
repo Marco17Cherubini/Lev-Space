@@ -14,7 +14,6 @@
   let currentMonth = new Date();
   let selectedDate = null;
   let selectedTime = null;
-  let pendingBooking = null;
 
   // DOM Elements
   let calendarGrid, timeSlotsSection, timeSlotsGrid;
@@ -233,7 +232,6 @@
         }
 
         // Check if in allowed week range
-        const weekOfBooking = getWeekNumber(date);
         const canBook = isDateInAllowedWeek(date);
 
         if (!canBook && !alreadyBooked) {
@@ -250,13 +248,6 @@
 
       calendarGrid.appendChild(cell);
     }
-  }
-
-  function getWeekNumber(date) {
-    const start = new Date(date.getFullYear(), 0, 1);
-    const diff = date - start;
-    const oneWeek = 604800000;
-    return Math.ceil(diff / oneWeek);
   }
 
   function isDateInAllowedWeek(date) {

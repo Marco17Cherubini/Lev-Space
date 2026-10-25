@@ -96,15 +96,6 @@ function formatDate(dateString) {
   return `${dayName} ${day} ${month} ${year}`;
 }
 
-function formatDateShort(dateString) {
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-
-  return `${day}/${month}/${year}`;
-}
-
 async function getCurrentUser() {
   try {
     const response = await apiRequest('/auth/me');
@@ -116,8 +107,4 @@ async function getCurrentUser() {
 
 function redirectToLogin() {
   window.location.href = '/login';
-}
-
-function redirectToDashboard() {
-  window.location.href = '/dashboard';
 }
