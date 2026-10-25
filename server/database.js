@@ -139,6 +139,7 @@ async function initDatabase() {
       password TEXT NOT NULL,
       vip INTEGER DEFAULT 0,
       privacy_accepted_at TEXT DEFAULT '',
+      last_active_at TEXT DEFAULT '',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -197,6 +198,20 @@ async function initDatabase() {
   } catch (e) {
     // Colonna gia esiste
   }
+
+  // Ultima attività del cliente, per i tempi di conservazione (retentionService)
+  try {
+    db.run(`ALTER TABLE users ADD COLUMN last_active_at TEXT DEFAULT ''`);
+  } catch (e) {
+    // Colonna gia esiste
+  }
+  // Per i clienti che non hanno ancora una data di attività (creati prima di questa colonna)
+  // il conteggio parte da adesso: dalla sola data di creazione non si può sapere se nel
+  // frattempo hanno usato l'account, e non devono essere cancellati per errore
+  db.run(
+    "UPDATE users SET last_active_at = ? WHERE last_active_at IS NULL OR last_active_at = ''",
+    [new Date().toISOString()]
+  );
 
   // Aggiungi colonna token a bookings se non esiste (migrazione per Smart Rescheduling)
   try {
@@ -378,7 +393,9 @@ const userColumns = [
   'vip',
   'banned',
   'isGuest',
-  'privacy_accepted_at'
+  'privacy_accepted_at',
+  'last_active_at',
+  'created_at'
 ];
 const bookingColumns = ['nome', 'cognome', 'email', 'telefono', 'giorno', 'ora', 'token', 'tipo'];
 const adminColumns = ['email', 'password'];

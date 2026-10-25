@@ -30,6 +30,7 @@ if (process.env.ADMIN_PASSWORD === PLACEHOLDER_ADMIN_PASSWORD) {
 const app = require('./app');
 const { initDatabase } = require('./database');
 const { initializeEmailService } = require('./emailService');
+const { startRetentionScheduler } = require('./retentionService');
 
 initializeEmailService();
 
@@ -38,6 +39,8 @@ initializeEmailService();
 async function startServer() {
   try {
     await initDatabase();
+    // Cancella i dati personali scaduti all'avvio e poi ogni 24 ore
+    startRetentionScheduler();
 
     return await new Promise(resolve => {
       const server = app.listen(config.server.port, () => {

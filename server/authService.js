@@ -19,6 +19,12 @@ function assertPrivacyAccepted(privacyAccepted) {
   }
 }
 
+// Registra l'ultima attività del cliente (accesso o prenotazione): da questa data
+// decorrono i tempi di conservazione dell'account (retentionService)
+function touchUserActivity(email) {
+  usersDB.update(u => u.email === email, { last_active_at: new Date().toISOString() });
+}
+
 // I flag vip/banned sono salvati come '0'/'1'
 const isFlagOn = value => value === '1' || value === 1;
 
@@ -80,7 +86,8 @@ async function registerUser(userData) {
     email: emailLower,
     telefono: telefono.trim(),
     password: hashedPassword,
-    privacy_accepted_at: new Date().toISOString()
+    privacy_accepted_at: new Date().toISOString(),
+    last_active_at: new Date().toISOString()
   };
 
   if (existingUser) {
@@ -123,7 +130,8 @@ function ensureGuestProfile({ nome, cognome, email, privacyAccepted }) {
       vip: '0',
       banned: '0',
       isGuest: '1',
-      privacy_accepted_at: new Date().toISOString()
+      privacy_accepted_at: new Date().toISOString(),
+      last_active_at: new Date().toISOString()
     });
   } else {
     usersDB.update(u => u.email === emailLower, { privacy_accepted_at: new Date().toISOString() });
@@ -171,6 +179,8 @@ async function loginUser(email, password) {
   if (isFlagOn(user.banned)) {
     throw new HttpError(403, 'Account sospeso');
   }
+
+  touchUserActivity(user.email);
 
   // Genera JWT token (utente normale). L'impronta della password fa decadere
   // la sessione appena la password cambia (vedi getSessionUser)
@@ -345,6 +355,7 @@ module.exports = {
   isFlagOn,
   isValidEmail,
   ensureGuestProfile,
+  touchUserActivity,
   getAllUsers,
   toggleVip,
   toggleBanned,

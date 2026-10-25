@@ -22,6 +22,13 @@ module.exports = {
     authMax: Number(process.env.RATE_LIMIT_AUTH_MAX) || 20,
     guestMax: Number(process.env.RATE_LIMIT_GUEST_MAX) || 10
   },
+  // Tempi di conservazione dei dati personali (Privacy Policy, sezione 10)
+  retention: {
+    registeredMonths: 24,
+    guestMonths: 12,
+    // Cancellazione automatica ogni 24 ore; RETENTION_ENABLED=false la disattiva
+    enabled: process.env.RETENTION_ENABLED !== 'false'
+  },
   studio: {
     name: process.env.STUDIO_NAME || 'Lev Space',
     phone: process.env.STUDIO_PHONE || '+39 123 456 7890',

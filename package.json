@@ -19,7 +19,8 @@
     "format": "prettier --write .",
     "test": "node --test",
     "format:check": "prettier --check .",
-    "seed": "node server/seed.js"
+    "seed": "node server/seed.js",
+    "retention": "node server/retentionService.js"
   },
   "keywords": [
     "barber",

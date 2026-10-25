@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const { bookingsDB, usersDB, withTransaction } = require('./database');
 const { HttpError } = require('./errors');
-const { isFlagOn, ensureGuestProfile } = require('./authService');
+const { isFlagOn, ensureGuestProfile, touchUserActivity } = require('./authService');
 const { getBusinessHours } = require('./businessHours');
 const { getHolidays, isHolidaySlot } = require('./holidayService');
 const { parseDate, isValidTime, slotStart, toMinutes } = require('./dates');
@@ -183,6 +183,8 @@ function createBooking(userEmail, bookingData) {
   if (isFlagOn(user.banned)) {
     throw new HttpError(403, 'Account sospeso: impossibile prenotare');
   }
+
+  touchUserActivity(user.email);
 
   // Crea prenotazioni per tutti gli slot
   const bookingToken = generateBookingToken();
