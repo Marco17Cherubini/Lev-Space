@@ -1,8 +1,11 @@
 {
-  "name": "bruma-hair-studio",
+  "name": "lev-space",
   "version": "1.0.0",
   "description": "Sistema gestionale completo per Lev Space",
   "main": "server/server.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",

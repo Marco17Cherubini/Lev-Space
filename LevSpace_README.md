@@ -36,7 +36,7 @@ Lev Space/
 │   ├── emailService.js        # Invio email (Resend)
 │   ├── middleware.js          # Middleware autenticazione
 │   └── server.js              # Entry point Express
-├── 📁 Logo/                   # Asset logo
+├── 📁 docs/                   # Note di progetto e asset sorgente
 ├── .env                       # Variabili ambiente (non committare)
 ├── .env.example               # Template variabili ambiente
 ├── ecosystem.config.js        # Configurazione PM2 per produzione
