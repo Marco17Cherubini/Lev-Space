@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const { usersDB, adminDB } = require('./database');
 const config = require('../config/config');
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // Genera ID univoco
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -34,33 +36,43 @@ async function registerUser(userData) {
   const { nome, cognome, email, telefono, password } = userData;
 
   // Validazione base
-  if (!nome || !cognome || !email || !telefono || !password) {
+  const fields = [nome, cognome, email, telefono, password];
+  if (fields.some(value => typeof value !== 'string' || !value.trim())) {
     throw new Error('Tutti i campi sono obbligatori');
+  }
+
+  const emailLower = email.trim().toLowerCase();
+  if (!EMAIL_PATTERN.test(emailLower)) {
+    throw new Error('Formato email non valido');
   }
 
   if (password.length < 8) {
     throw new Error('La password deve essere di almeno 8 caratteri');
   }
 
-  // Controlla email duplicata
-  const existingUser = usersDB.findOne(user => user.email === email);
-  if (existingUser) {
+  // Controlla email duplicata (le email sono salvate in minuscolo).
+  // Un profilo ospite (creato dal checkout senza password) può invece diventare un account.
+  const existingUser = usersDB.findOne(user => user.email === emailLower);
+  if (existingUser && existingUser.password) {
     throw new Error('Email già registrata');
   }
 
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  // Crea utente (solo campi: nome, cognome, email, telefono, password)
   const user = {
     nome: nome.trim(),
     cognome: cognome.trim(),
-    email: email.trim().toLowerCase(),
+    email: emailLower,
     telefono: telefono.trim(),
     password: hashedPassword
   };
 
-  usersDB.insert(user);
+  if (existingUser) {
+    usersDB.update(u => u.email === emailLower, { ...user, isGuest: '0' });
+  } else {
+    usersDB.insert(user);
+  }
 
   // Ritorna utente senza password
   const { password: _, ...userWithoutPassword } = user;

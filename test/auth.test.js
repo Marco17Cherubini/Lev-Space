@@ -188,16 +188,39 @@ test('le richieste urlencoded non vengono interpretate (solo JSON)', async () =>
   assert.notEqual(res.status, 200);
 });
 
-test(
-  "B6: l'email doppia con maiuscole diverse dà un errore chiaro",
-  { todo: 'piano T08 / B6' },
-  async () => {
-    const user = makeUser('case');
-    await api.request('POST', '/api/auth/register', { body: user });
-    const dup = await api.request('POST', '/api/auth/register', {
-      body: { ...user, email: user.email.toUpperCase() }
-    });
-    assert.equal(dup.status, 400);
-    assert.match(dup.data.error, /già registrata/);
-  }
-);
+test("l'email doppia con maiuscole diverse dà un errore chiaro", async () => {
+  const user = makeUser('case');
+  await api.request('POST', '/api/auth/register', { body: user });
+  const dup = await api.request('POST', '/api/auth/register', {
+    body: { ...user, email: user.email.toUpperCase() }
+  });
+  assert.equal(dup.status, 400);
+  assert.match(dup.data.error, /già registrata/);
+});
+
+test('registrazione: email non valida rifiutata', async () => {
+  const res = await api.request('POST', '/api/auth/register', {
+    body: { ...makeUser('bademail'), email: 'non-una-email' }
+  });
+  assert.equal(res.status, 400);
+  assert.match(res.data.error, /email non valido/);
+});
+
+test('un ospite può registrarsi con la stessa email e ritrova le sue prenotazioni', async () => {
+  const email = 'ospite.poi.cliente@test.local';
+  const guest = await api.request('POST', '/api/bookings/guest', {
+    body: { nome: 'Ospite', cognome: 'Prima', email, giorno: futureWeekday(1, 3), ora: '14:00' }
+  });
+  assert.equal(guest.status, 201);
+
+  const user = { ...makeUser('upgrade'), email };
+  const reg = await api.request('POST', '/api/auth/register', { body: user });
+  assert.equal(reg.status, 201);
+
+  const cookie = (await api.login(email, user.password)).cookie;
+  const me = await api.request('GET', '/api/auth/me', { cookie });
+  assert.equal(me.data.user.cognome, user.cognome);
+  assert.equal(me.data.user.isGuest, '0');
+  const list = await api.request('GET', '/api/bookings', { cookie });
+  assert.equal(list.data.bookings.length, 1);
+});
