@@ -61,6 +61,59 @@ function withTransaction(fn) {
   }
 }
 
+// Schema attuale delle prenotazioni: usato per crearla e per ricostruirla nelle migrazioni.
+// tipo: 'normale' | 'ricorrente'; token: lega gli slot di un gruppo o di una serie.
+const BOOKINGS_COLUMNS_SQL = `
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      cognome TEXT NOT NULL,
+      email TEXT NOT NULL,
+      telefono TEXT NOT NULL,
+      giorno TEXT NOT NULL,
+      ora TEXT NOT NULL,
+      servizio TEXT,
+      token TEXT,
+      tipo TEXT DEFAULT 'normale',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP`;
+
+function tableColumns(table) {
+  const info = db.exec(`PRAGMA table_info(${table})`);
+  return (info[0]?.values || []).map(col => ({ name: col[1], notNull: col[3] === 1 }));
+}
+
+// Le prime versioni avevano servizio NOT NULL; i servizi sono stati rimossi e SQLite non
+// permette di cambiare il vincolo, quindi la tabella va ricostruita copiando tutte le
+// colonne in comune (tipo e token compresi). Tutto avviene in una transazione: se qualcosa
+// fallisce la tabella originale resta com'era.
+function migrateBookingsServizioNullable() {
+  const oldColumns = tableColumns('bookings');
+  const servizio = oldColumns.find(col => col.name === 'servizio');
+  if (!servizio || !servizio.notNull) return;
+
+  console.log('🔄 Migrazione: rimuovo vincolo NOT NULL da servizio...');
+  db.run('BEGIN');
+  try {
+    db.run('ALTER TABLE bookings RENAME TO bookings_old');
+    db.run(`CREATE TABLE bookings (${BOOKINGS_COLUMNS_SQL}
+    )`);
+    const newNames = new Set(tableColumns('bookings').map(col => col.name));
+    const copied = oldColumns
+      .map(col => col.name)
+      .filter(name => newNames.has(name))
+      .join(', ');
+    db.run(`INSERT INTO bookings (${copied}) SELECT ${copied} FROM bookings_old`);
+    db.run('DROP TABLE bookings_old');
+    db.run('COMMIT');
+    console.log('✅ Migrazione completata: servizio ora è opzionale');
+  } catch (error) {
+    db.run('ROLLBACK');
+    console.error(
+      '❌ Migrazione della tabella bookings non riuscita, dati invariati:',
+      error.message
+    );
+  }
+}
+
 // Inizializza il database
 async function initDatabase() {
   const SQL = await initSqlJs();
@@ -89,20 +142,8 @@ async function initDatabase() {
     )
   `);
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS bookings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nome TEXT NOT NULL,
-      cognome TEXT NOT NULL,
-      email TEXT NOT NULL,
-      telefono TEXT NOT NULL,
-      giorno TEXT NOT NULL,
-      ora TEXT NOT NULL,
-      servizio TEXT,
-      token TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+  db.run(`CREATE TABLE IF NOT EXISTS bookings (${BOOKINGS_COLUMNS_SQL}
+    )`);
 
   db.run(`
     CREATE TABLE IF NOT EXISTS admins (
@@ -164,52 +205,7 @@ async function initDatabase() {
     // Colonna gia esiste
   }
 
-  // Migrazione: ricrea tabella bookings se servizio è NOT NULL
-  // Questo è necessario perché SQLite non supporta ALTER COLUMN
-  try {
-    // Verifica se serve la migrazione controllando lo schema
-    const tableInfo = db.exec('PRAGMA table_info(bookings)');
-    const columns = tableInfo[0]?.values || [];
-    const servizioCol = columns.find(col => col[1] === 'servizio');
-
-    // Se servizio ha notnull=1, dobbiamo ricreare la tabella
-    if (servizioCol && servizioCol[3] === 1) {
-      console.log('🔄 Migrazione: rimuovo vincolo NOT NULL da servizio...');
-
-      // Rinomina tabella esistente
-      db.run(`ALTER TABLE bookings RENAME TO bookings_old`);
-
-      // Crea nuova tabella con servizio nullable
-      db.run(`
-                CREATE TABLE bookings (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nome TEXT NOT NULL,
-                    cognome TEXT NOT NULL,
-                    email TEXT NOT NULL,
-                    telefono TEXT NOT NULL,
-                    giorno TEXT NOT NULL,
-                    ora TEXT NOT NULL,
-                    servizio TEXT,
-                    token TEXT,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            `);
-
-      // Copia dati dalla vecchia tabella
-      db.run(`
-                INSERT INTO bookings (id, nome, cognome, email, telefono, giorno, ora, servizio, token, created_at)
-                SELECT id, nome, cognome, email, telefono, giorno, ora, servizio, token, created_at
-                FROM bookings_old
-            `);
-
-      // Elimina vecchia tabella
-      db.run(`DROP TABLE bookings_old`);
-
-      console.log('✅ Migrazione completata: servizio ora è opzionale');
-    }
-  } catch (e) {
-    console.log('Migrazione servizio già eseguita o non necessaria');
-  }
+  migrateBookingsServizioNullable();
 
   // Un solo appuntamento per slot. Se i dati esistenti contengono già doppioni
   // l'indice non può essere creato: lo si segnala senza bloccare l'avvio.

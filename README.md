@@ -135,7 +135,7 @@ Routes only translate HTTP; the rules of the shop live in the services, which th
 
 ### Quality and security
 
-- **71 automated tests** run against the real server and a temporary database: slot calculation, bookings, groups, recurring series, holidays, auth, sessions, bans, rate limiting and persistence.
+- **75 automated tests** run against the real server and a temporary database: slot calculation, bookings, groups, recurring series, holidays, auth, sessions, bans, rate limiting, persistence and database migrations.
 - **Content Security Policy** with no inline scripts, HTML escaping of every user-provided value, JSON-only API (no CSRF via forms), rate limiting on login and guest bookings, single-use password-reset links.
 - **Accessibility** (WCAG 2.2): semantic landmarks, keyboard-operable calendars, accessible dialogs with focus management, AA colour contrast in both themes, reduced-motion support.
 - ESLint + Prettier, and a GitHub Actions workflow that runs lint, formatting check and tests on every push.
