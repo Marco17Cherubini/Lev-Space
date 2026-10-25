@@ -1,0 +1,5 @@
+# Commit di sola formattazione, ignorati da git blame
+# (git config blame.ignoreRevsFile .git-blame-ignore-revs; GitHub li ignora in automatico)
+
+# style: applica Prettier a tutto il repository
+d063c1edecbd3d8c89e95ec4546fcb20e3b1db59
