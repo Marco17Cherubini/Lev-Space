@@ -826,14 +826,18 @@ app.use((err, req, res, _next) => {
 
 const PORT = config.server.port;
 
-// Inizializza database e poi avvia server
+// Inizializza database e poi avvia server.
+// Risolve con l'istanza http.Server, così i test possono usare PORT=0 e leggere la porta.
 async function startServer() {
   try {
     await initDatabase();
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server avviato su http://localhost:${PORT}`);
-      console.log(`🏪 ${config.studio.name}`);
+    return await new Promise(resolve => {
+      const server = app.listen(PORT, () => {
+        console.log(`🚀 Server avviato su http://localhost:${server.address().port}`);
+        console.log(`🏪 ${config.studio.name}`);
+        resolve(server);
+      });
     });
   } catch (error) {
     console.error('❌ Errore avvio server:', error);
@@ -841,6 +845,6 @@ async function startServer() {
   }
 }
 
-startServer();
+const serverReady = startServer();
 
-module.exports = app;
+module.exports = { app, serverReady };

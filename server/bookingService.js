@@ -557,5 +557,6 @@ module.exports = {
   getBookingByToken,
   updateBookingByToken,
   cancelBookingByToken,
-  generateBookingToken
+  generateBookingToken,
+  addDaysToDateString
 };
