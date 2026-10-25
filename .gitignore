@@ -7,6 +7,7 @@ node_modules/
 # Database (dati sensibili!)
 database/*.sqlite
 database/*.sqlite-*
+database/*.sqlite.tmp
 database/*.csv
 database/*_backup.*
 !database/.gitkeep
@@ -21,3 +22,6 @@ logs/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Configurazioni locali e copie di lavoro
+.claude/

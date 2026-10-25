@@ -199,11 +199,27 @@ Lev Space runs on [Railway](https://railway.app) as a single instance: mount a v
 
 ---
 
+## Development
+
+Before pushing, run `npm run lint`, `npm run format:check` and `npm test` — the same checks run in CI on Node 20 and 22.
+
+- **Server**: routes in `server/routes/` only translate HTTP; the rules of the shop live in the services, which throw `HttpError(status, message)`. Multi-row writes go through `withTransaction()`.
+- **Frontend**: one script per page in `frontend/js/`, shared helpers in `utils.js` (`apiRequest`, `escapeHtml`, `showToast`) and `layout.js` (menu, logout, `requireAuth`). No inline scripts or `onclick`: the Content Security Policy blocks them, and every user-provided value goes through `escapeHtml()`.
+- **CSS**: `tokens → base → components → layout → pages`, imported by `styles.css`. Colours come from semantic tokens so both themes keep AA contrast.
+- User-facing text and code comments are in Italian; commits follow Conventional Commits.
+
+## Known limitations
+
+- **Single instance**: sql.js keeps the database in memory and saves it to one file, so the app must run as one process. Moving to a server-based database would be the next step for horizontal scaling.
+- **Guest emails are not verified**: guest bookings are rate-limited and cannot use the email of a registered account, but the address itself is not confirmed.
+- **Long-period bookings** are created one week at a time: if a later week fails, the client sees the error but the weeks already confirmed stay booked.
+- **Sessions issued before the password-change check** remain valid until they expire (7 days).
+
 ## Project structure
 
 ```
 config/        default opening hours and settings
-docs/          images for this README, design notes, user manual (Italian)
+docs/images/   screenshots used in this README
 frontend/      HTML pages, js/, styles/ (tokens, base, components, layout, pages)
 server/        app, routes, services, database, seed and backup scripts
 test/          node:test suites and helpers
