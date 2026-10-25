@@ -335,6 +335,7 @@
     guestData.nome = nome;
     guestData.cognome = cognome;
     guestData.email = email;
+    guestData.privacyAccepted = document.getElementById('privacy-ack').checked;
 
     const btn = e.target.querySelector('button[type="submit"]');
     btn.disabled = true;

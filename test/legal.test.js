@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { startTestServer } = require('./helpers');
+const { startTestServer, makeUser, futureWeekday } = require('./helpers');
 
 const FRONTEND = path.join(__dirname, '../frontend');
 let api;
@@ -62,4 +62,45 @@ test('ogni pagina carica il footer con i link a Privacy e Cookie Policy', () => 
   const footer = fs.readFileSync(path.join(FRONTEND, 'js/legal-footer.js'), 'utf8');
   assert.match(footer, /href="\/privacy-policy"/);
   assert.match(footer, /href="\/cookie-policy"/);
+});
+
+test("registrazione e prenotazione ospite richiedono la presa visione dell'informativa", async () => {
+  const { privacyAccepted: _, ...withoutAck } = makeUser('noack');
+  const register = await api.request('POST', '/api/auth/register', { body: withoutAck });
+  assert.equal(register.status, 400);
+  assert.match(register.data.error, /informativa privacy/);
+
+  const guest = await api.request('POST', '/api/bookings/guest', {
+    body: {
+      nome: 'Anna',
+      cognome: 'Neri',
+      email: 'anna.noack@test.local',
+      giorno: futureWeekday(3),
+      ora: '14:00'
+    }
+  });
+  assert.equal(guest.status, 400);
+  assert.match(guest.data.error, /informativa privacy/);
+});
+
+test('la data della presa visione viene registrata per clienti e ospiti', async () => {
+  const { usersDB } = require('../server/database');
+  const user = makeUser('ack');
+  assert.equal((await api.request('POST', '/api/auth/register', { body: user })).status, 201);
+  const guest = await api.request('POST', '/api/bookings/guest', {
+    body: {
+      privacyAccepted: true,
+      nome: 'Luca',
+      cognome: 'Ospite',
+      email: 'luca.ack@test.local',
+      giorno: futureWeekday(3),
+      ora: '14:45'
+    }
+  });
+  assert.equal(guest.status, 201);
+
+  for (const email of [user.email, 'luca.ack@test.local']) {
+    const saved = usersDB.findOne(u => u.email === email);
+    assert.ok(!Number.isNaN(Date.parse(saved.privacy_accepted_at)), email);
+  }
 });

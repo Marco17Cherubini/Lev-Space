@@ -105,6 +105,7 @@ test('una prenotazione di gruppo occupa slot consecutivi', async () => {
 test("l'ospite prenota senza account con nome, cognome ed email", async () => {
   const res = await api.request('POST', '/api/bookings/guest', {
     body: {
+      privacyAccepted: true,
       nome: 'Anna',
       cognome: 'Bianchi',
       email: 'anna@test.local',
@@ -119,6 +120,7 @@ test("l'ospite prenota senza account con nome, cognome ed email", async () => {
 test("l'ospite non può prenotare con l'email di un account registrato", async () => {
   const res = await api.request('POST', '/api/bookings/guest', {
     body: {
+      privacyAccepted: true,
       nome: 'Finto',
       cognome: 'Mario',
       email: makeUser('mario').email,
@@ -133,7 +135,7 @@ test("l'ospite non può prenotare con l'email di un account registrato", async (
 test('un ospite bannato non può prenotare di nuovo con la stessa email', async () => {
   const guest = { nome: 'G', cognome: 'Bannato', email: 'guest.ban@test.local' };
   const first = await api.request('POST', '/api/bookings/guest', {
-    body: { ...guest, giorno: futureWeekday(3, 4), ora: '14:00' }
+    body: { privacyAccepted: true, ...guest, giorno: futureWeekday(3, 4), ora: '14:00' }
   });
   assert.equal(first.status, 201);
 
@@ -143,7 +145,7 @@ test('un ospite bannato non può prenotare di nuovo con la stessa email', async 
   });
 
   const second = await api.request('POST', '/api/bookings/guest', {
-    body: { ...guest, giorno: futureWeekday(3, 4), ora: '14:45' }
+    body: { privacyAccepted: true, ...guest, giorno: futureWeekday(3, 4), ora: '14:45' }
   });
   assert.equal(second.status, 403);
   assert.match(second.data.error, /sospeso/);
@@ -151,12 +153,13 @@ test('un ospite bannato non può prenotare di nuovo con la stessa email', async 
 
 test("l'ospite riceve 400 se mancano dati o l'email non è valida", async () => {
   const missing = await api.request('POST', '/api/bookings/guest', {
-    body: { nome: 'Anna', giorno: futureWeekday(3), ora: '14:45' }
+    body: { privacyAccepted: true, nome: 'Anna', giorno: futureWeekday(3), ora: '14:45' }
   });
   assert.equal(missing.status, 400);
 
   const invalid = await api.request('POST', '/api/bookings/guest', {
     body: {
+      privacyAccepted: true,
       nome: 'A',
       cognome: 'B',
       email: 'non-una-email',

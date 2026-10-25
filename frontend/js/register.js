@@ -8,7 +8,8 @@ document.getElementById('register-form').addEventListener('submit', async e => {
     cognome: document.getElementById('cognome').value.trim(),
     email: document.getElementById('email').value.trim(),
     telefono: document.getElementById('telefono').value.trim(),
-    password: document.getElementById('password').value
+    password: document.getElementById('password').value,
+    privacyAccepted: document.getElementById('privacy-ack').checked
   };
 
   const confirmPassword = document.getElementById('confirm-password').value;

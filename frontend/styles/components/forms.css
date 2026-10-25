@@ -84,3 +84,26 @@ select.form-input {
   background-color: rgba(52, 199, 89, 0.1);
   border-radius: var(--radius-md);
 }
+
+/* Presa visione dell'informativa privacy (registrazione e prenotazione ospite) */
+.privacy-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+.privacy-ack input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  accent-color: var(--color-accent-text);
+  cursor: pointer;
+}
+
+.privacy-ack label {
+  cursor: pointer;
+}

@@ -138,6 +138,7 @@ async function initDatabase() {
       telefono TEXT NOT NULL,
       password TEXT NOT NULL,
       vip INTEGER DEFAULT 0,
+      privacy_accepted_at TEXT DEFAULT '',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -186,6 +187,13 @@ async function initDatabase() {
   // Aggiungi colonna isGuest se non esiste (migrazione per Guest Checkout)
   try {
     db.run(`ALTER TABLE users ADD COLUMN isGuest INTEGER DEFAULT 0`);
+  } catch (e) {
+    // Colonna gia esiste
+  }
+
+  // Data della presa visione dell'informativa privacy (registrazione o prenotazione ospite)
+  try {
+    db.run(`ALTER TABLE users ADD COLUMN privacy_accepted_at TEXT DEFAULT ''`);
   } catch (e) {
     // Colonna gia esiste
   }
@@ -369,7 +377,8 @@ const userColumns = [
   'password',
   'vip',
   'banned',
-  'isGuest'
+  'isGuest',
+  'privacy_accepted_at'
 ];
 const bookingColumns = ['nome', 'cognome', 'email', 'telefono', 'giorno', 'ora', 'token', 'tipo'];
 const adminColumns = ['email', 'password'];

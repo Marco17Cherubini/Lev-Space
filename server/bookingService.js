@@ -213,13 +213,13 @@ function createBooking(userEmail, bookingData) {
 
 // Prenotazione senza account: profilo ospite e prenotazione nella stessa transazione,
 // così una prenotazione rifiutata non lascia profili ospite orfani
-function createGuestBooking({ nome, cognome, email, giorno, ora, numPersone }) {
+function createGuestBooking({ nome, cognome, email, giorno, ora, numPersone, privacyAccepted }) {
   if (!giorno || !ora) {
     throw new HttpError(400, 'Dati prenotazione incompleti (giorno, ora)');
   }
 
   return withTransaction(() => {
-    const guestEmail = ensureGuestProfile({ nome, cognome, email });
+    const guestEmail = ensureGuestProfile({ nome, cognome, email, privacyAccepted });
     return createBooking(guestEmail, { data: giorno, orario: ora, numPersone });
   });
 }

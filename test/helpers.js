@@ -86,7 +86,8 @@ function makeUser(suffix) {
     cognome: `Rossi${suffix}`,
     email: `mario.${suffix}@test.local`,
     telefono: '3331234567',
-    password: 'Password123!'
+    password: 'Password123!',
+    privacyAccepted: true
   };
 }
 

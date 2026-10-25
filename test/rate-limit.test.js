@@ -26,6 +26,7 @@ test('le prenotazioni ospite sono limitate per IP', async () => {
   const book = ora =>
     api.request('POST', '/api/bookings/guest', {
       body: {
+        privacyAccepted: true,
         nome: 'A',
         cognome: 'B',
         email: `ospite${ora}@test.local`,

@@ -209,7 +209,14 @@ test('registrazione: email non valida rifiutata', async () => {
 test('un ospite può registrarsi con la stessa email e ritrova le sue prenotazioni', async () => {
   const email = 'ospite.poi.cliente@test.local';
   const guest = await api.request('POST', '/api/bookings/guest', {
-    body: { nome: 'Ospite', cognome: 'Prima', email, giorno: futureWeekday(1, 3), ora: '14:00' }
+    body: {
+      privacyAccepted: true,
+      nome: 'Ospite',
+      cognome: 'Prima',
+      email,
+      giorno: futureWeekday(1, 3),
+      ora: '14:00'
+    }
   });
   assert.equal(guest.status, 201);
 
@@ -268,7 +275,14 @@ test('errori uniformi: JSON malformato, endpoint inesistente, campi del tipo sba
   assert.equal(missing.data.success, false);
 
   const wrongType = await api.request('POST', '/api/bookings/guest', {
-    body: { nome: 42, cognome: 'B', email: 'x@test.local', giorno: '2030-01-08', ora: '09:15' }
+    body: {
+      privacyAccepted: true,
+      nome: 42,
+      cognome: 'B',
+      email: 'x@test.local',
+      giorno: '2030-01-08',
+      ora: '09:15'
+    }
   });
   assert.equal(wrongType.status, 400);
 

@@ -11,6 +11,14 @@ function isValidEmail(email) {
   return typeof email === 'string' && EMAIL_PATTERN.test(email.trim().toLowerCase());
 }
 
+// La presa visione dell'informativa è obbligatoria: il modulo la chiede con una casella,
+// il server la verifica e ne registra la data
+function assertPrivacyAccepted(privacyAccepted) {
+  if (privacyAccepted !== true) {
+    throw new HttpError(400, "Per continuare devi prendere visione dell'informativa privacy");
+  }
+}
+
 // I flag vip/banned sono salvati come '0'/'1'
 const isFlagOn = value => value === '1' || value === 1;
 
@@ -37,7 +45,7 @@ async function verifyAdminPassword(email, password) {
 
 // Registrazione utente
 async function registerUser(userData) {
-  const { nome, cognome, email, telefono, password } = userData;
+  const { nome, cognome, email, telefono, password, privacyAccepted } = userData;
 
   // Validazione base
   const fields = [nome, cognome, email, telefono, password];
@@ -54,6 +62,8 @@ async function registerUser(userData) {
     throw new HttpError(400, 'La password deve essere di almeno 8 caratteri');
   }
 
+  assertPrivacyAccepted(privacyAccepted);
+
   // Controlla email duplicata (le email sono salvate in minuscolo).
   // Un profilo ospite (creato dal checkout senza password) può invece diventare un account.
   const existingUser = usersDB.findOne(user => user.email === emailLower);
@@ -69,7 +79,8 @@ async function registerUser(userData) {
     cognome: cognome.trim(),
     email: emailLower,
     telefono: telefono.trim(),
-    password: hashedPassword
+    password: hashedPassword,
+    privacy_accepted_at: new Date().toISOString()
   };
 
   if (existingUser) {
@@ -85,13 +96,14 @@ async function registerUser(userData) {
 
 // Profilo usato dal checkout ospite: lo crea se l'email è nuova (senza password),
 // lo riusa se è già un ospite, rifiuta se appartiene a un account registrato
-function ensureGuestProfile({ nome, cognome, email }) {
+function ensureGuestProfile({ nome, cognome, email, privacyAccepted }) {
   if ([nome, cognome, email].some(value => typeof value !== 'string' || !value.trim())) {
     throw new HttpError(400, 'Nome, cognome e email sono obbligatori');
   }
   if (!isValidEmail(email)) {
     throw new HttpError(400, 'Formato email non valido');
   }
+  assertPrivacyAccepted(privacyAccepted);
 
   const emailLower = email.trim().toLowerCase();
   const existingUser = usersDB.findOne(u => u.email === emailLower);
@@ -110,8 +122,11 @@ function ensureGuestProfile({ nome, cognome, email }) {
       password: '',
       vip: '0',
       banned: '0',
-      isGuest: '1'
+      isGuest: '1',
+      privacy_accepted_at: new Date().toISOString()
     });
+  } else {
+    usersDB.update(u => u.email === emailLower, { privacy_accepted_at: new Date().toISOString() });
   }
 
   return emailLower;
