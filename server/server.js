@@ -33,14 +33,26 @@ const { initDatabase } = require('./database');
 
 // ==================== VALIDAZIONE SICUREZZA ====================
 
-// Verifica che JWT_SECRET sia configurato
-if (!config.jwt.secret) {
+// Segnaposto pubblicati in .env.example: chi li conosce può firmare token validi
+const PLACEHOLDER_JWT_SECRET = 'CAMBIA_QUESTO_CON_UNA_STRINGA_CASUALE_DI_ALMENO_64_CARATTERI';
+const PLACEHOLDER_ADMIN_PASSWORD = 'CambiaMi_ConPassword_Sicura_123!';
+
+// Verifica che JWT_SECRET sia configurato e non sia il segnaposto di esempio
+if (!config.jwt.secret || config.jwt.secret === PLACEHOLDER_JWT_SECRET) {
   console.error('❌ ERRORE CRITICO: JWT_SECRET non configurato!');
-  console.error('   Imposta JWT_SECRET nel file .env');
+  console.error('   Imposta JWT_SECRET nel file .env (il valore di .env.example non è valido)');
   console.error(
     "   Genera un secret con: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\""
   );
   process.exit(1);
+}
+
+if (config.jwt.secret.length < 32) {
+  console.warn('⚠️  JWT_SECRET è più corto di 32 caratteri: usa una stringa casuale più lunga');
+}
+
+if (process.env.ADMIN_PASSWORD === PLACEHOLDER_ADMIN_PASSWORD) {
+  console.warn('⚠️  ADMIN_PASSWORD è ancora il valore di esempio: cambiala nel file .env');
 }
 
 const app = express();

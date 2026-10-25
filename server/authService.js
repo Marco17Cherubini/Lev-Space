@@ -8,7 +8,7 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// Verifica se è admin (solo lettura da admin.xlsx)
+// Verifica se è admin (tabella admins)
 function isAdmin(email) {
   const admin = adminDB.findOne(a => a.email === email.trim().toLowerCase());
   return !!admin;

@@ -1,5 +1,4 @@
 const dotenv = require('dotenv');
-const path = require('path');
 
 dotenv.config();
 
@@ -12,23 +11,10 @@ module.exports = {
     secret: process.env.JWT_SECRET,
     expiresIn: '7d'
   },
-  email: {
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    user: process.env.EMAIL_USER,
-    password: process.env.EMAIL_PASSWORD,
-    from: process.env.EMAIL_FROM
-  },
   studio: {
     name: process.env.STUDIO_NAME || 'Lev Space',
     phone: process.env.STUDIO_PHONE || '+39 123 456 7890',
     address: process.env.STUDIO_ADDRESS || 'Via Example 123, 00100 Roma, Italia'
-  },
-  database: {
-    usersFile: path.join(__dirname, '../database/users.csv'),
-    bookingsFile: path.join(__dirname, '../database/bookings.csv'),
-    adminFile: path.join(__dirname, '../database/admin.csv'),
-    holidaysFile: path.join(__dirname, '../database/holidays.csv')
   },
   businessHours: {
     daysOpen: [1, 2, 3, 4, 5, 6], // lunedì-sabato
