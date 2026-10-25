@@ -9,9 +9,13 @@
 
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config();
 
-const DATABASE_PATH = path.join(__dirname, '../database/database.sqlite');
-const BACKUP_DIR = path.join(__dirname, '../backups');
+// Stessi percorsi del server: DATABASE_PATH (es. volume Railway) e, se impostata,
+// BACKUP_DIR (meglio un disco diverso da quello del database)
+const DATABASE_PATH =
+  process.env.DATABASE_PATH || path.join(__dirname, '../database/database.sqlite');
+const BACKUP_DIR = process.env.BACKUP_DIR || path.join(__dirname, '../backups');
 const MAX_BACKUPS = 4; // Mantieni ultimi 4 backup (circa 1 mese)
 
 function formatDate(date) {
@@ -35,7 +39,7 @@ function backup() {
   // Crea directory backup se non esiste
   if (!fs.existsSync(BACKUP_DIR)) {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
-    console.log('📁 Creata directory backups/');
+    console.log(`📁 Creata directory ${BACKUP_DIR}`);
   }
 
   // Nome file backup con timestamp

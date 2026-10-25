@@ -1,4 +1,10 @@
-const { bookingsDB, usersDB, holidaysDB, globalSettingsDB } = require('./database');
+const {
+  bookingsDB,
+  usersDB,
+  holidaysDB,
+  globalSettingsDB,
+  withTransaction
+} = require('./database');
 const { generateId } = require('./authService');
 const config = require('../config/config');
 const crypto = require('crypto');
@@ -188,22 +194,24 @@ function createBooking(userEmail, bookingData) {
   const bookingToken = generateBookingToken();
   const createdBookings = [];
 
-  slotsToBook.forEach((slotTime, index) => {
-    const booking = {
-      nome: user.nome,
-      cognome: user.cognome,
-      email: user.email,
-      telefono: user.telefono,
-      giorno: data,
-      ora: slotTime,
-      token: bookingToken,
-      numPersone: groupSize,
-      slotIndex: index + 1 // 1, 2, 3 per identificare slot del gruppo
-    };
+  withTransaction(() =>
+    slotsToBook.forEach((slotTime, index) => {
+      const booking = {
+        nome: user.nome,
+        cognome: user.cognome,
+        email: user.email,
+        telefono: user.telefono,
+        giorno: data,
+        ora: slotTime,
+        token: bookingToken,
+        numPersone: groupSize,
+        slotIndex: index + 1 // 1, 2, 3 per identificare slot del gruppo
+      };
 
-    bookingsDB.insert(booking);
-    createdBookings.push(booking);
-  });
+      bookingsDB.insert(booking);
+      createdBookings.push(booking);
+    })
+  );
 
   // Ritorna la prima prenotazione (principale)
   return createdBookings[0];
@@ -352,30 +360,33 @@ function createRecurringBooking(bookingData) {
   const inserite = [];
   let saltate = 0;
 
-  for (let i = 0; i < totaleOccorrenze; i++) {
-    const dataOccorrenza = addDaysToDateString(giorno, i * intervallo * 7);
+  // Tutta la serie in una transazione: un errore a metà non lascia occorrenze parziali
+  withTransaction(() => {
+    for (let i = 0; i < totaleOccorrenze; i++) {
+      const dataOccorrenza = addDaysToDateString(giorno, i * intervallo * 7);
 
-    // Salta se lo slot è in ferie o già occupato: non sovrascrivere l'appuntamento esistente
-    const occupato =
-      isHolidaySlot(dataOccorrenza, ora) ||
-      bookingsDB.findOne(b => b.giorno === dataOccorrenza && b.ora === ora);
+      // Salta se lo slot è in ferie o già occupato: non sovrascrivere l'appuntamento esistente
+      const occupato =
+        isHolidaySlot(dataOccorrenza, ora) ||
+        bookingsDB.findOne(b => b.giorno === dataOccorrenza && b.ora === ora);
 
-    if (occupato) {
-      saltate++;
-      continue;
+      if (occupato) {
+        saltate++;
+        continue;
+      }
+
+      const occorrenza = {
+        ...datiCliente,
+        giorno: dataOccorrenza,
+        ora,
+        token,
+        tipo: 'ricorrente'
+      };
+
+      bookingsDB.insert(occorrenza);
+      inserite.push(occorrenza);
     }
-
-    const occorrenza = {
-      ...datiCliente,
-      giorno: dataOccorrenza,
-      ora,
-      token,
-      tipo: 'ricorrente'
-    };
-
-    bookingsDB.insert(occorrenza);
-    inserite.push(occorrenza);
-  }
+  });
 
   // Se ogni occorrenza era occupata/in ferie, non è stata creata nessuna prenotazione
   if (inserite.length === 0) {
@@ -449,17 +460,17 @@ function moveBooking(oldGiorno, oldOra, newGiorno, newOra) {
     throw new Error('Slot non disponibile (ferie)');
   }
 
-  // Elimina la vecchia prenotazione
-  bookingsDB.delete(b => b.giorno === oldGiorno && b.ora === oldOra);
-
-  // Crea la nuova prenotazione con i nuovi dati
   const newBooking = {
     ...booking,
     giorno: newGiorno,
     ora: newOra
   };
 
-  bookingsDB.insert(newBooking);
+  // Spostamento atomico: se l'inserimento fallisce, la vecchia prenotazione non va persa
+  withTransaction(() => {
+    bookingsDB.delete(b => b.giorno === oldGiorno && b.ora === oldOra);
+    bookingsDB.insert(newBooking);
+  });
 
   return newBooking;
 }

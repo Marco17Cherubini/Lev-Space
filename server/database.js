@@ -18,12 +18,46 @@ if (!fs.existsSync(dbDir)) {
 // Database instance (sarà inizializzato in modo asincrono)
 let db = null;
 
-// Funzione per salvare il database su disco
+// true mentre è aperta una transazione: i salvataggi intermedi vengono rimandati al COMMIT
+let inTransaction = false;
+
+// Salva il database su disco. sql.js tiene il DB in memoria e lo riscrive per intero:
+// si scrive prima un file temporaneo e poi lo si rinomina, così un crash a metà
+// scrittura non lascia mai un database troncato.
 function saveDatabase() {
-  if (db) {
-    const data = db.export();
-    const buffer = Buffer.from(data);
+  if (!db || inTransaction) return;
+
+  const buffer = Buffer.from(db.export());
+  const tmpPath = `${DB_PATH}.tmp`;
+  fs.writeFileSync(tmpPath, buffer);
+  try {
+    fs.renameSync(tmpPath, DB_PATH);
+  } catch (error) {
+    // Su Windows la rinomina può fallire se il file è aperto da un altro processo
+    // (antivirus, backup): si ripiega sulla scrittura diretta
+    console.warn('⚠️  Rinomina atomica non riuscita, scrittura diretta:', error.code);
     fs.writeFileSync(DB_PATH, buffer);
+    fs.rmSync(tmpPath, { force: true });
+  }
+}
+
+// Esegue più scritture come un'unica operazione: o vanno tutte a buon fine o nessuna,
+// con un solo salvataggio su disco alla fine. Le chiamate annidate riusano la transazione.
+function withTransaction(fn) {
+  if (!db || inTransaction) return fn();
+
+  db.run('BEGIN');
+  inTransaction = true;
+  try {
+    const result = fn();
+    db.run('COMMIT');
+    inTransaction = false;
+    saveDatabase();
+    return result;
+  } catch (error) {
+    inTransaction = false;
+    db.run('ROLLBACK');
+    throw error;
   }
 }
 
@@ -175,6 +209,15 @@ async function initDatabase() {
     }
   } catch (e) {
     console.log('Migrazione servizio già eseguita o non necessaria');
+  }
+
+  // Un solo appuntamento per slot. Se i dati esistenti contengono già doppioni
+  // l'indice non può essere creato: lo si segnala senza bloccare l'avvio.
+  try {
+    db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_slot ON bookings (giorno, ora)');
+  } catch (e) {
+    console.warn('⚠️  Prenotazioni duplicate sullo stesso slot: indice univoco non creato.');
+    console.warn('   Rimuovi i doppioni (stesso giorno e ora) e riavvia il server.');
   }
 
   // Salva struttura iniziale
@@ -421,5 +464,6 @@ module.exports = {
   holidaysDB,
   globalSettingsDB,
   initDatabase,
-  saveDatabase
+  saveDatabase,
+  withTransaction
 };

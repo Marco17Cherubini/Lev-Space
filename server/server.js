@@ -30,7 +30,7 @@ const {
   sendBookingConfirmation,
   sendPasswordResetEmail
 } = require('./emailService');
-const { initDatabase } = require('./database');
+const { initDatabase, withTransaction } = require('./database');
 
 // ==================== VALIDAZIONE SICUREZZA ====================
 
@@ -620,14 +620,16 @@ app.post('/api/admin/holidays', authenticateToken, (req, res) => {
     const added = [];
     const existingHolidays = holidaysDB.readAll();
 
-    for (const slot of slots) {
-      // Verifica che non esista già
-      const exists = existingHolidays.find(h => h.giorno === slot.giorno && h.ora === slot.ora);
-      if (!exists) {
-        holidaysDB.insert({ giorno: slot.giorno, ora: slot.ora });
-        added.push(slot);
+    withTransaction(() => {
+      for (const slot of slots) {
+        // Verifica che non esista già
+        const exists = existingHolidays.find(h => h.giorno === slot.giorno && h.ora === slot.ora);
+        if (!exists) {
+          holidaysDB.insert({ giorno: slot.giorno, ora: slot.ora });
+          added.push(slot);
+        }
       }
-    }
+    });
 
     res.status(201).json({ success: true, added, count: added.length });
   } catch (error) {
@@ -649,10 +651,12 @@ app.delete('/api/admin/holidays', authenticateToken, (req, res) => {
 
     // Rimuovi ogni slot
     let removed = 0;
-    for (const slot of slots) {
-      const deleted = holidaysDB.delete(h => h.giorno === slot.giorno && h.ora === slot.ora);
-      if (deleted) removed++;
-    }
+    withTransaction(() => {
+      for (const slot of slots) {
+        const deleted = holidaysDB.delete(h => h.giorno === slot.giorno && h.ora === slot.ora);
+        if (deleted) removed++;
+      }
+    });
 
     res.json({ success: true, removed });
   } catch (error) {
