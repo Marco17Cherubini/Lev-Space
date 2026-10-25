@@ -34,6 +34,7 @@ const {
 } = require('./emailService');
 const { initDatabase, withTransaction } = require('./database');
 const { parseDate, isValidTime } = require('./dates');
+const { normalizeBusinessHours } = require('./businessHours');
 
 // ==================== VALIDAZIONE SICUREZZA ====================
 
@@ -447,12 +448,8 @@ app.post('/api/admin/settings/hours', authenticateToken, (req, res) => {
       return res.status(403).json({ success: false, error: 'Accesso negato' });
     }
     const { globalSettingsDB } = require('./database');
-    const newHours = req.body;
-
-    // validazione base
-    if (!newHours || !newHours.daysOpen || !newHours.days) {
-      return res.status(400).json({ success: false, error: 'Formato inviato non valido' });
-    }
+    // Lancia un errore (→ 400) se il formato non è quello atteso
+    const newHours = normalizeBusinessHours(req.body);
 
     globalSettingsDB.set('businessHours', newHours);
     res.json({ success: true, message: 'Orari aggiornati con successo!' });

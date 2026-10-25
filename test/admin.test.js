@@ -235,3 +235,45 @@ test("la prenotazione singola dell'admin rispetta le ferie ma non il calendario 
   });
   assert.equal(invalid.status, 400);
 });
+
+test('gli orari salvati vengono validati prima di essere applicati', async () => {
+  const save = body => api.request('POST', '/api/admin/settings/hours', { cookie: admin, body });
+  const current = (await api.request('GET', '/api/admin/settings/hours', { cookie: admin })).data
+    .businessHours;
+
+  // Giorni come stringhe: prima venivano salvati e chiudevano il salone
+  assert.equal((await save({ ...current, daysOpen: ['1', '2'] })).status, 400);
+  // Turno senza slot: prima faceva fallire ogni richiesta di slot
+  assert.equal((await save({ ...current, days: { 2: { morning: {} } } })).status, 400);
+  assert.equal(
+    (
+      await save({
+        ...current,
+        days: { 2: { morning: { start: '08:30', end: '12:15', slots: ['8:30'] } } }
+      })
+    ).status,
+    400
+  );
+
+  // Il formato inviato dalla pagina Gestione Orari viene accettato e applicato
+  const ok = await save({
+    ...current,
+    days: {
+      ...current.days,
+      2: {
+        morning: { start: '08:30', end: '09:15', slots: ['08:30'] },
+        afternoon: null,
+        vip: null
+      }
+    }
+  });
+  assert.equal(ok.status, 200);
+  const slots = (await api.request('GET', `/api/slots/${futureWeekday(2, 10)}`)).data.slots;
+  assert.deepEqual(
+    slots.map(s => s.time),
+    ['08:30']
+  );
+
+  // Ripristina gli orari originali per gli altri test
+  assert.equal((await save(current)).status, 200);
+});
