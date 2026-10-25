@@ -8,7 +8,7 @@ const {
 const { generateId } = require('./authService');
 const config = require('../config/config');
 const crypto = require('crypto');
-const { parseDate, slotStart } = require('./dates');
+const { parseDate, slotStart, toMinutes } = require('./dates');
 
 // Helper
 function getBusinessHours() {
@@ -137,6 +137,14 @@ function createBooking(userEmail, bookingData) {
 
   // Validazione numero persone
   const groupSize = Math.min(Math.max(parseInt(numPersone) || 1, 1), 3);
+
+  const start = slotStart(data, orario);
+  if (!start) {
+    throw new Error('Data o orario non validi');
+  }
+  if (start <= new Date()) {
+    throw new Error('Non è possibile prenotare una data o un orario già passati');
+  }
 
   // Verifica che il giorno sia disponibile
   if (!isDayAvailable(data)) {

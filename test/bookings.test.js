@@ -167,12 +167,19 @@ test("l'ospite riceve 400 se mancano dati o l'email non è valida", async () => 
   assert.equal(invalid.status, 400);
 });
 
-test('B1: una data passata non è prenotabile', { todo: 'piano T08 / B1' }, async () => {
-  const res = await api.request('POST', '/api/bookings', {
+test('una data passata o malformata non è prenotabile', async () => {
+  const past = await api.request('POST', '/api/bookings', {
     cookie: mario,
     body: { data: '2020-01-07', orario: '09:15' }
   });
-  assert.equal(res.status, 400);
+  assert.equal(past.status, 400);
+  assert.match(past.data.error, /già passati/);
+
+  const malformed = await api.request('POST', '/api/bookings', {
+    cookie: mario,
+    body: { data: '2030-02-30', orario: '09:15' }
+  });
+  assert.equal(malformed.status, 400);
 });
 
 test('B2: un gruppo non scavalca la pausa pranzo', { todo: 'piano T08 / B2' }, async () => {
