@@ -278,6 +278,15 @@ function cancelBooking(giorno, ora, userEmail) {
   return true;
 }
 
+// Sposta una prenotazione del cliente: cancellazione della vecchia e creazione della nuova
+// avvengono insieme, quindi se la nuova non è valida la vecchia resta com'era
+function rescheduleBooking(userEmail, oldGiorno, oldOra, bookingData) {
+  return withTransaction(() => {
+    cancelBooking(oldGiorno, oldOra, userEmail);
+    return createBooking(userEmail, bookingData);
+  });
+}
+
 // Ottieni tutte le prenotazioni (per admin)
 function getAllBookings() {
   return bookingsDB.readAll();
@@ -580,6 +589,7 @@ module.exports = {
   getUserBookingStats,
   getBookingByDateTime,
   cancelBooking,
+  rescheduleBooking,
   getAllBookings,
   createAdminBooking,
   createRecurringBooking,

@@ -11,6 +11,7 @@ const {
   createBooking,
   getUserBookings,
   cancelBooking,
+  rescheduleBooking,
   getAllBookings,
   createAdminBooking,
   adminCancelBooking,
@@ -295,6 +296,26 @@ app.get('/api/bookings', authenticateToken, (req, res) => {
   try {
     const bookings = getUserBookings(req.user.email);
     res.json({ success: true, bookings });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// PUT /api/bookings - Sposta una propria prenotazione su un nuovo giorno/orario
+app.put('/api/bookings', authenticateToken, (req, res) => {
+  try {
+    const { oldGiorno, oldOra, data, orario, numPersone } = req.body;
+    const booking = rescheduleBooking(req.user.email, oldGiorno, oldOra, {
+      data,
+      orario,
+      numPersone
+    });
+
+    sendBookingConfirmation(booking).catch(err => {
+      console.error('Errore invio email:', err.message);
+    });
+
+    res.json({ success: true, booking, emailSent: 'pending' });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }

@@ -84,34 +84,26 @@ document.getElementById('modal-confirm').addEventListener('click', async () => {
 
     hideMessage('error-message');
 
-    // Crea prenotazione
+    // In modifica il server sposta la prenotazione in un'unica operazione:
+    // se il nuovo orario non è valido, quella vecchia resta invariata
+    const editingBooking = JSON.parse(sessionStorage.getItem('editingBooking') || 'null');
+    const newBooking = {
+      data: selectedDate,
+      orario: selectedTime,
+      numPersone: selectedGroupSize
+    };
+
     const response = await apiRequest('/bookings', {
-      method: 'POST',
-      body: JSON.stringify({
-        data: selectedDate,
-        orario: selectedTime,
-        numPersone: selectedGroupSize
-      })
+      method: editingBooking ? 'PUT' : 'POST',
+      body: JSON.stringify(
+        editingBooking
+          ? { ...newBooking, oldGiorno: editingBooking.giorno, oldOra: editingBooking.ora }
+          : newBooking
+      )
     });
 
     if (response.success) {
-      // Check if we were editing an existing booking
-      const editingBooking = sessionStorage.getItem('editingBooking');
-      if (editingBooking) {
-        try {
-          const oldBooking = JSON.parse(editingBooking);
-          // Delete the old booking
-          await apiRequest('/bookings', {
-            method: 'DELETE',
-            body: JSON.stringify({ giorno: oldBooking.giorno, ora: oldBooking.ora })
-          });
-          console.log('Old booking deleted successfully');
-        } catch (deleteError) {
-          console.error('Error deleting old booking:', deleteError);
-          // Continue anyway - new booking was created successfully
-        }
-        sessionStorage.removeItem('editingBooking');
-      }
+      sessionStorage.removeItem('editingBooking');
 
       // Pulisci sessionStorage
       sessionStorage.removeItem('selectedDate');

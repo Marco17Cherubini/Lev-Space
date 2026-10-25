@@ -211,3 +211,41 @@ test('cancellare un gruppo libera tutti i suoi slot', async () => {
   const busy = slots.filter(s => !s.available).map(s => s.time);
   assert.deepEqual(busy, ['10:45']);
 });
+
+test("spostare una propria prenotazione è un'unica operazione", async () => {
+  const day = futureWeekday(5, 6);
+  await api.request('POST', '/api/bookings', {
+    cookie: mario,
+    body: { data: day, orario: '14:00' }
+  });
+
+  // Nuovo orario non valido: la prenotazione originale resta
+  const invalid = await api.request('PUT', '/api/bookings', {
+    cookie: mario,
+    body: { oldGiorno: day, oldOra: '14:00', data: day, orario: '13:00' }
+  });
+  assert.equal(invalid.status, 400);
+  let busy = (await api.request('GET', `/api/slots/${day}`)).data.slots.filter(s => !s.available);
+  assert.deepEqual(
+    busy.map(s => s.time),
+    ['14:00']
+  );
+
+  // Un altro cliente non può spostarla
+  const foreign = await api.request('PUT', '/api/bookings', {
+    cookie: luigi,
+    body: { oldGiorno: day, oldOra: '14:00', data: day, orario: '14:45' }
+  });
+  assert.equal(foreign.status, 400);
+
+  const moved = await api.request('PUT', '/api/bookings', {
+    cookie: mario,
+    body: { oldGiorno: day, oldOra: '14:00', data: day, orario: '14:45' }
+  });
+  assert.equal(moved.status, 200);
+  busy = (await api.request('GET', `/api/slots/${day}`)).data.slots.filter(s => !s.available);
+  assert.deepEqual(
+    busy.map(s => s.time),
+    ['14:45']
+  );
+});
