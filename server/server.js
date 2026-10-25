@@ -18,9 +18,10 @@ const {
   moveBooking
 } = require('./bookingService');
 const {
+  verifyToken,
+  isAdmin,
   getAllUsers,
   toggleVip,
-  isVip,
   toggleBanned,
   generateResetToken,
   resetPassword
@@ -193,35 +194,30 @@ app.post('/api/auth/reset-password', async (req, res) => {
 // ==================== BOOKING ROUTES ====================
 
 // GET /api/slots/:date - Ottieni slot disponibili per una data
+// Gli slot extra (pre-apertura e serali) sono riservati all'admin: i VIP vedono e
+// prenotano gli stessi orari degli altri clienti. La sessione qui è facoltativa.
+function hasAdminSession(req) {
+  const token = req.cookies.token;
+  if (!token) return false;
+  try {
+    const decoded = verifyToken(token);
+    return !!decoded.isAdmin && !decoded.purpose && isAdmin(decoded.email);
+  } catch (e) {
+    return false;
+  }
+}
+
 // GET /api/availability/:year/:month - Ottieni la disponibilità per un intero mese
 app.get('/api/availability/:year/:month', (req, res) => {
   try {
     const year = parseInt(req.params.year);
     const month = parseInt(req.params.month) - 1; // getMonth() returns 0-11
 
-    let includeExtraSlots = false;
-    const authHeader = req.headers.cookie;
-    if (authHeader) {
-      const cookies = authHeader.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=');
-        acc[key] = value;
-        return acc;
-      }, {});
-
-      if (cookies.token) {
-        try {
-          const { verifyToken, isVip } = require('./authService');
-          const decoded = verifyToken(cookies.token);
-          if (isVip(decoded.email) || decoded.isAdmin) {
-            includeExtraSlots = true;
-          }
-        } catch (e) {
-          // Token non valido: si prosegue senza slot extra
-        }
-      }
+    if (!Number.isInteger(year) || !Number.isInteger(month) || month < 0 || month > 11) {
+      return res.status(400).json({ success: false, error: 'Anno o mese non validi' });
     }
 
-    const { getAvailableSlots } = require('./bookingService');
+    const includeExtraSlots = hasAdminSession(req);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const availability = {};
 
@@ -252,36 +248,10 @@ app.get('/api/availability/:year/:month', (req, res) => {
 });
 
 // GET /api/slots/:date - Ottieni slot disponibili per una data
-// Se l'utente è VIP o admin, include anche gli orari extra
+// Per l'admin include anche gli orari extra
 app.get('/api/slots/:date', (req, res) => {
   try {
-    // Prova a verificare l'autenticazione (opzionale per questa route)
-    let includeExtraSlots = false;
-
-    const authHeader = req.headers.cookie;
-    if (authHeader) {
-      const cookies = authHeader.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=');
-        acc[key] = value;
-        return acc;
-      }, {});
-
-      if (cookies.token) {
-        try {
-          const jwt = require('jsonwebtoken');
-          const decoded = jwt.verify(cookies.token, config.jwt.secret);
-
-          // Admin può vedere orari extra
-          if (decoded.isAdmin) {
-            includeExtraSlots = true;
-          }
-        } catch (e) {
-          // Token invalido, ignora
-        }
-      }
-    }
-
-    const slots = getAvailableSlots(req.params.date, includeExtraSlots);
+    const slots = getAvailableSlots(req.params.date, hasAdminSession(req));
 
     // Prevent caching of availability
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');

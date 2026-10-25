@@ -49,7 +49,7 @@ function getSlotsForDay(date, includeExtraSlots = false) {
     ...(hours.afternoon ? hours.afternoon.slots : [])
   ];
 
-  // Se VIP o admin, aggiungi orari extra
+  // Orari extra (pre-apertura e serali): solo per l'admin
   if (includeExtraSlots && hours.vip) {
     const extraSlots = hours.vip.slots || [];
     // Mantieni pre-orario 08:00 fisso o se nel JSON

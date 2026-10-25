@@ -167,3 +167,39 @@ test(
     assert.equal(res.data.count, 1);
   }
 );
+
+test("gli slot extra sono solo per l'admin: un VIP vede gli orari normali", async () => {
+  const { makeUser } = require('./helpers');
+  const vip = makeUser('vip');
+  await api.request('POST', '/api/auth/register', { body: vip });
+  await api.request('PUT', `/api/admin/users/${encodeURIComponent(vip.email)}/vip`, {
+    cookie: admin
+  });
+  const vipCookie = (await api.login(vip.email, vip.password)).cookie;
+
+  // Sabato con tutti gli slot standard occupati: liberi restano solo gli extra
+  const day = futureWeekday(6, 9);
+  for (const ora of ['09:15', '10:00', '10:45', '11:30']) {
+    await api.request('POST', '/api/admin/bookings', {
+      cookie: admin,
+      body: { cognome: 'Pieno', giorno: day, ora }
+    });
+  }
+  const [year, month, dayOfMonth] = day.split('-').map(Number);
+  const availability = async cookie =>
+    (await api.request('GET', `/api/availability/${year}/${month}`, { cookie })).data.availability[
+      dayOfMonth
+    ];
+
+  assert.equal(await availability(vipCookie), false);
+  assert.equal(await availability(admin), true);
+
+  const vipSlots = (await api.request('GET', `/api/slots/${day}`, { cookie: vipCookie })).data
+    .slots;
+  assert.ok(vipSlots.every(s => !s.available));
+});
+
+test('availability rifiuta anno o mese non validi', async () => {
+  assert.equal((await api.request('GET', '/api/availability/2030/13')).status, 400);
+  assert.equal((await api.request('GET', '/api/availability/abc/1')).status, 400);
+});
