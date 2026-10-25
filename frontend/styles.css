@@ -134,12 +134,12 @@
 }
 
 .sidebar-item.active {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-weight: var(--font-weight-medium);
 }
 
 .sidebar-logout {
-  color: var(--color-error);
+  color: var(--color-error-text);
   margin-top: auto;
 }
 

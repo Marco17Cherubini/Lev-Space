@@ -3,10 +3,9 @@
    Focus visibile, testo solo per screen reader, elementi cliccabili non nativi
    ============================================================================ */
 
-/* Anello di focus per chi naviga da tastiera (non compare al click del mouse).
-   --color-focus è definito nei token; in sua assenza si usa l'accento. */
+/* Anello di focus per chi naviga da tastiera (non compare al click del mouse) */
 :focus-visible {
-  outline: 2px solid var(--color-focus, var(--color-accent));
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -14,7 +13,7 @@
 .form-input:focus-visible,
 .search-input:focus-visible,
 .time-select:focus-visible {
-  outline: 2px solid var(--color-focus, var(--color-accent));
+  outline: 2px solid var(--color-focus);
   outline-offset: 1px;
 }
 
@@ -37,4 +36,16 @@
 }
 [role='button'][aria-disabled='true'] {
   cursor: default;
+}
+
+/* Chi ha chiesto meno movimento al sistema operativo non vede animazioni e transizioni */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

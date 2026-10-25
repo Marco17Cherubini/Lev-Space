@@ -114,7 +114,7 @@
 
   /* ==================== APPLE LABELS (Light Mode) ==================== */
   --label: #000000;
-  --secondary-label: rgba(60, 60, 67, 0.6);
+  --secondary-label: rgba(60, 60, 67, 0.75);
   --tertiary-label: rgba(60, 60, 67, 0.3);
   --quaternary-label: rgba(60, 60, 67, 0.18);
   --placeholder-text: rgba(60, 60, 67, 0.3);
@@ -153,8 +153,15 @@
   --color-accent: var(--brand-coral);
   --color-accent-hover: var(--brand-coral-hover);
   --brand-accent-tint: rgba(255, 107, 87, 0.12);
-  --on-accent: #ffffff;
+  /* Testo sopra l'accento pieno: scuro (6:1 sul corallo; il bianco era 2,8:1) */
+  --on-accent: #1c1c1e;
   --focus-ring: 0 0 0 3px var(--brand-accent-tint);
+
+  /* Varianti per testo e bordi su sfondo chiaro, con contrasto AA (≥ 4,5:1) */
+  --color-accent-text: #c93a27;
+  --color-error-text: #d70015;
+  --color-success-text: #1a7f37;
+  --color-focus: var(--color-accent-text);
 
   --color-success: var(--system-green);
   --color-warning: var(--system-orange);
@@ -232,6 +239,12 @@
   --color-accent-hover: var(--brand-lime-hover);
   --brand-accent-tint: rgba(198, 242, 78, 0.16);
   --on-accent: #10140a;
+
+  /* Su sfondo scuro i colori di sistema hanno già contrasto sufficiente */
+  --color-accent-text: var(--brand-lime);
+  --color-error-text: var(--system-red);
+  --color-success-text: var(--system-green);
+  --color-focus: var(--brand-lime);
   --color-success: var(--system-green);
   --color-warning: var(--system-orange);
   --color-error: var(--system-red);

@@ -64,7 +64,7 @@
 
 .calendar-day.selected {
   background-color: var(--color-accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -121,7 +121,7 @@
 
 .time-slot.selected {
   background-color: var(--color-accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font-weight: var(--font-weight-medium);
 }
 

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prenotazione di lungo periodo - Lev Space</title>
     <link rel="stylesheet" href="/styles.css" />
+    <script src="/js/theme-init.js"></script>
     <style>
       /* Sidebar styles */
       .sidebar-overlay {
@@ -106,7 +107,7 @@
       /* Subscription Progress Banner */
       .subscription-banner {
         background-color: var(--color-accent);
-        color: #fff;
+        color: var(--on-accent);
         padding: var(--space-4) var(--space-6);
         border-radius: var(--radius-lg);
         margin-bottom: var(--space-6);
@@ -196,7 +197,7 @@
 
       .selected-booking-week {
         font-size: var(--font-size-xs);
-        color: var(--color-accent);
+        color: var(--color-accent-text);
       }
 
       .btn-modify {
@@ -212,7 +213,7 @@
 
       .btn-modify:hover {
         background-color: var(--color-accent);
-        color: #fff;
+        color: var(--on-accent);
         border-color: var(--color-accent);
       }
 

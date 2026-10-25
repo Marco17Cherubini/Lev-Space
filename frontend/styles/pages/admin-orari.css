@@ -141,7 +141,7 @@ input:checked + .slider:before {
   transform: scale(0.98);
 }
 .save-btn:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
