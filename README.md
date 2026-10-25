@@ -28,6 +28,12 @@ We designed, built and iteratively improved a web app that takes the whole booki
 - **the barber manages everything from one admin panel**: weekly calendar, regular clients, opening hours, holidays and statistics;
 - **the rules of the shop are encoded in the app** — opening hours per day, group appointments, recurring clients, VIP treatment and blocks for disrespectful users — so they no longer need to be enforced by hand.
 
+For a client, booking takes three steps: pick a free day and time, confirm, and receive the confirmation email.
+
+| 1. Pick day and time                                                                                       | 2. Confirm                                                                         | 3. Confirmation email                                                                           |
+| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| ![Client calendar with the free days of the month and the available times](docs/images/client-booking.png) | ![Booking confirmation dialog with date and time](docs/images/booking-confirm.png) | ![Confirmation email with date and time of the appointment](docs/images/confirmation-email.png) |
+
 ### Results
 
 The app is in daily use and has grown with the shop:
@@ -52,55 +58,47 @@ Lev Space is not a generic booking widget: every feature comes from how this spe
 
 When a returning client opens the calendar, Lev Space looks at their last appointment, checks whether **the same day and time one week later** is still free, and asks: _"Il solito Luca?"_ ("The usual, Luca?"). One tap fills in date and time, and a final confirmation books it. It reproduces the most common sentence the barber used to hear on the phone.
 
-<!-- screenshot: docs/images/il-solito.png -->
-
 ### Recurring appointments
 
 Many clients come at a fixed rhythm. From the admin calendar the barber can turn an appointment into a **series every 1, 2 or 3 weeks for up to 12 months**. Dates that are already taken or fall on a holiday are skipped (never overwritten) and the summary says how many were created. Later he can cancel **a single occurrence or the whole series**.
 
-<!-- screenshot: docs/images/recurring.png -->
+![New appointment dialog with weekly, 2-week and 3-week recurrence and the number of months](docs/images/recurring.png)
 
 ### Opening hours the barber can change himself
 
 Opening days, morning and afternoon shifts and their slots are edited from the **Gestione Orari** page — no code, no deploy. The client calendar updates immediately, and the input is validated so a mistake can never close the shop by accident.
 
-<!-- screenshot: docs/images/opening-hours.png -->
+![Opening hours page: per-day switch, morning and afternoon shifts, VIP extra hours](docs/images/opening-hours.png)
 
 ### VIP clients and extra hours
 
-Regular and loyal clients can be marked as **VIP**. Outside the standard hours the admin calendar shows **extra slots (early morning and evening)** that clients cannot book online: the barber uses them to fit in his VIPs personally.
-
-<!-- screenshot: docs/images/vip-extra-slots.png -->
+Regular and loyal clients can be marked as **VIP**. Outside the standard hours the barber can open **extra VIP hours** (early morning and evening, set in the same opening-hours page). They appear only in the admin calendar — like the 08:00 appointment in the calendar below — and clients cannot book them online: the barber uses them to fit in his VIPs personally.
 
 ### BAN for disrespectful users
 
-Clients who repeatedly skip appointments can be **banned** with one click from the client list. A banned user can no longer log in, any open session stops working, and they cannot book as a guest with the same email either.
-
-<!-- screenshot: docs/images/ban.png -->
+Clients who repeatedly skip appointments can be **banned** with one click from the client list. A banned user can no longer log in, any open session stops working, and they cannot book as a guest with the same email either. VIP and BAN are both managed from the client list shown in [Results](#results).
 
 ### Group appointments
 
 A father with two kids, or three friends: clients can book for **up to 3 people** and get **consecutive slots** — never split across the lunch break.
 
-<!-- screenshot: docs/images/group-booking.png -->
+![Dialog asking how many people will come: 1, 2 or 3](docs/images/group-booking.png)
 
 ### Guest booking without an account
 
 First-time clients can book with just **name, surname and email**. If they register later with the same email, their guest bookings move into the new account.
 
-<!-- screenshot: docs/images/guest-booking.png -->
-
 ### Long-period bookings
 
 A client can reserve **one appointment per week for 4, 8 or 12 weeks** in a single flow, choosing day and time week by week.
 
-<!-- screenshot: docs/images/long-period.png -->
+![Long-period booking plans: monthly (4 weeks), bimonthly (8 weeks) and quarterly (12 weeks)](docs/images/long-period.png)
 
 ### A calendar built for the chair
 
 The admin weekly calendar supports **drag & drop** to move appointments (with **long-press on mobile**, between two cuts), **drag-select holidays** across slots, client **autocomplete** when adding a booking, and a **weekly/monthly report** with history navigation.
 
-<!-- screenshot: docs/images/admin-calendar.png -->
+![Admin weekly calendar with bookings, a recurring appointment, holidays and an extra 08:00 slot (names blurred)](docs/images/admin-calendar.png)
 
 Also included: email confirmations and password reset (via Resend), and a light/dark theme with an animated switch.
 
