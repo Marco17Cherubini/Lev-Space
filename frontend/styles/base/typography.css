@@ -53,7 +53,8 @@ a {
   transition: color var(--transition-fast);
 }
 
-a:hover {
+/* I link testuali si sottolineano; i pulsanti <a class="btn"> mantengono il loro stile */
+a:not(.btn):hover {
   color: var(--color-accent-text);
   text-decoration: underline;
 }

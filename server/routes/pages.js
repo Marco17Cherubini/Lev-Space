@@ -11,6 +11,8 @@ const PAGES = {
   '/register': 'register.html',
   '/reset-password': 'reset-password.html',
   '/new-password': 'new-password.html',
+  '/privacy-policy': 'privacy-policy.html',
+  '/cookie-policy': 'cookie-policy.html',
   '/guest-booking': 'guest-booking.html',
   '/guest-home': 'guest-home.html',
   '/home': 'home.html',
