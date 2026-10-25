@@ -5,55 +5,6 @@
 (function () {
   'use strict';
 
-  // Verifica autenticazione
-  async function checkAuth() {
-    try {
-      const response = await fetch('/api/auth/me');
-      const data = await response.json();
-
-      if (!data.success) {
-        window.location.href = '/login';
-        return null;
-      }
-
-      return data.user;
-    } catch (error) {
-      console.error('Errore verifica auth:', error);
-      window.location.href = '/login';
-      return null;
-    }
-  }
-
-  // Inizializza sidebar
-  function initSidebar() {
-    const hamburger = document.getElementById('hamburger-btn');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    const closeBtn = document.getElementById('close-sidebar');
-    const logoutBtn = document.getElementById('sidebar-logout');
-
-    function openSidebar() {
-      sidebar.classList.add('active');
-      overlay.classList.add('active');
-    }
-
-    function closeSidebar() {
-      sidebar.classList.remove('active');
-      overlay.classList.remove('active');
-    }
-
-    if (hamburger) hamburger.addEventListener('click', openSidebar);
-    if (overlay) overlay.addEventListener('click', closeSidebar);
-    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
-
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        window.location.href = '/login';
-      });
-    }
-  }
-
   // Gestione selezione abbonamento
   function initSubscriptionCards() {
     const cards = document.querySelectorAll('.subscription-card');
@@ -87,10 +38,9 @@
 
   // Init
   async function init() {
-    const user = await checkAuth();
+    const user = await requireAuth();
     if (!user) return;
 
-    initSidebar();
     initSubscriptionCards();
   }
 

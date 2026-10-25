@@ -1,19 +1,30 @@
-// Utility functions
+// Utility condivise da tutte le pagine (caricato prima degli script di pagina)
 const API_BASE = '/api';
 
+// Chiamata all'API JSON del server. Restituisce i dati della risposta oppure lancia un
+// Error con un messaggio già adatto all'utente (error.status contiene lo status HTTP).
 async function apiRequest(endpoint, options = {}) {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers
-    },
-    ...options
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+  } catch (networkError) {
+    throw new Error('Impossibile contattare il server. Controlla la connessione e riprova.');
+  }
 
-  const data = await response.json();
+  // Un proxy o un errore del server possono rispondere con HTML invece che JSON
+  const isJson = (response.headers.get('content-type') || '').includes('application/json');
+  const data = isJson ? await response.json() : null;
 
   if (!response.ok) {
-    throw new Error(data.error || 'Si è verificato un errore');
+    const error = new Error((data && data.error) || 'Si è verificato un errore, riprova più tardi');
+    error.status = response.status;
+    throw error;
   }
 
   return data;
@@ -43,24 +54,33 @@ function isFollowingSlot(prev, next) {
   return toMinutes(next) - toMinutes(prev) === APPOINTMENT_MINUTES;
 }
 
+const MONTHS_IT = [
+  'Gennaio',
+  'Febbraio',
+  'Marzo',
+  'Aprile',
+  'Maggio',
+  'Giugno',
+  'Luglio',
+  'Agosto',
+  'Settembre',
+  'Ottobre',
+  'Novembre',
+  'Dicembre'
+];
+const DAYS_IT = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+
+// I messaggi restano visibili finché l'utente non agisce di nuovo (hideMessage)
 function showError(elementId, message) {
   const errorElement = document.getElementById(elementId);
   errorElement.textContent = message;
   errorElement.classList.remove('hidden');
-
-  setTimeout(() => {
-    errorElement.classList.add('hidden');
-  }, 5000);
 }
 
 function showSuccess(elementId, message) {
   const successElement = document.getElementById(elementId);
   successElement.textContent = message;
   successElement.classList.remove('hidden');
-
-  setTimeout(() => {
-    successElement.classList.add('hidden');
-  }, 5000);
 }
 
 function hideMessage(elementId) {
@@ -70,30 +90,15 @@ function hideMessage(elementId) {
   }
 }
 
+// 'YYYY-MM-DD' → "martedì 8 gennaio 2030". La data si costruisce dai componenti:
+// new Date('YYYY-MM-DD') è mezzanotte UTC e a ovest di Greenwich cade nel giorno prima.
 function formatDate(dateString) {
-  const date = new Date(dateString);
-  const days = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
-  const months = [
-    'gennaio',
-    'febbraio',
-    'marzo',
-    'aprile',
-    'maggio',
-    'giugno',
-    'luglio',
-    'agosto',
-    'settembre',
-    'ottobre',
-    'novembre',
-    'dicembre'
-  ];
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString);
+  const date = match ? new Date(match[1], match[2] - 1, match[3]) : new Date(dateString);
 
-  const dayName = days[date.getDay()];
-  const day = date.getDate();
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-
-  return `${dayName} ${day} ${month} ${year}`;
+  const dayName = DAYS_IT[date.getDay()].toLowerCase();
+  const month = MONTHS_IT[date.getMonth()].toLowerCase();
+  return `${dayName} ${date.getDate()} ${month} ${date.getFullYear()}`;
 }
 
 async function getCurrentUser() {

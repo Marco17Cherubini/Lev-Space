@@ -63,7 +63,11 @@
         "Modal": "readonly",
         "escapeHtml": "readonly",
         "APPOINTMENT_MINUTES": "readonly",
-        "isFollowingSlot": "readonly"
+        "isFollowingSlot": "readonly",
+        "MONTHS_IT": "readonly",
+        "DAYS_IT": "readonly",
+        "requireAuth": "readonly",
+        "logout": "readonly"
       }
     }
   ]

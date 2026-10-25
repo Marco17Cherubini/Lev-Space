@@ -7,31 +7,14 @@ let nextRecurringDate = null; // Data proposta per appuntamento ricorrente
 let selectedGroupSize = 1; // Numero persone per la prenotazione (1-3)
 
 // Giorni della settimana in italiano
-const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
-const monthNames = [
-  'gennaio',
-  'febbraio',
-  'marzo',
-  'aprile',
-  'maggio',
-  'giugno',
-  'luglio',
-  'agosto',
-  'settembre',
-  'ottobre',
-  'novembre',
-  'dicembre'
-];
+const dayNames = DAYS_IT;
+const monthNames = MONTHS_IT.map(m => m.toLowerCase());
 
 // Inizializzazione
 async function init() {
   try {
-    currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      redirectToLogin();
-      return;
-    }
+    currentUser = await requireAuth();
+    if (!currentUser) return;
 
     // Mostra messaggio di benvenuto
     document.getElementById('welcome-message').textContent = `Bentornato, ${currentUser.nome}`;
@@ -237,20 +220,7 @@ async function renderCalendar() {
   const month = currentMonth.getMonth();
 
   // Mostra mese corrente (usa prima lettera maiuscola)
-  const calendarMonthNames = [
-    'Gennaio',
-    'Febbraio',
-    'Marzo',
-    'Aprile',
-    'Maggio',
-    'Giugno',
-    'Luglio',
-    'Agosto',
-    'Settembre',
-    'Ottobre',
-    'Novembre',
-    'Dicembre'
-  ];
+  const calendarMonthNames = MONTHS_IT;
   document.getElementById('current-month').textContent = `${calendarMonthNames[month]} ${year}`;
 
   // Calcola primo giorno e numero di giorni
@@ -467,43 +437,6 @@ document.getElementById('confirm-datetime-btn').addEventListener('click', () => 
     window.location.href = '/summary';
   }
 });
-
-// Sidebar functionality
-function setupSidebar() {
-  const hamburgerBtn = document.getElementById('hamburger-btn');
-  const sidebar = document.getElementById('sidebar');
-  const sidebarOverlay = document.getElementById('sidebar-overlay');
-  const closeSidebarBtn = document.getElementById('close-sidebar');
-  const sidebarLogout = document.getElementById('sidebar-logout');
-
-  function openSidebar() {
-    sidebar.classList.add('active');
-    sidebarOverlay.classList.add('active');
-  }
-
-  function closeSidebar() {
-    sidebar.classList.remove('active');
-    sidebarOverlay.classList.remove('active');
-  }
-
-  hamburgerBtn.addEventListener('click', openSidebar);
-  closeSidebarBtn.addEventListener('click', closeSidebar);
-  sidebarOverlay.addEventListener('click', closeSidebar);
-
-  // Logout from sidebar
-  sidebarLogout.addEventListener('click', async () => {
-    try {
-      await apiRequest('/auth/logout', { method: 'POST' });
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Errore logout:', error);
-      window.location.href = '/';
-    }
-  });
-}
-
-// Initialize sidebar
-setupSidebar();
 
 // Avvia inizializzazione
 init();

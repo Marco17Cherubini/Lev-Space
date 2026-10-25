@@ -47,12 +47,7 @@ let currentSettings = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // Check if user is admin
-    const sessionRes = await apiRequest('/auth/me');
-    if (!sessionRes || !sessionRes.success || !sessionRes.user.isAdmin) {
-      window.location.href = '/login';
-      return;
-    }
+    if (!(await requireAuth({ admin: true }))) return;
 
     // Load config
     const res = await apiRequest('/admin/settings/hours');
@@ -64,12 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (err) {
     console.error(err);
-    // If unauthenticated or error, redirect or alert
-    if (err.message.includes('Token non fornito') || err.message.includes('non valido')) {
-      window.location.href = '/login';
-    } else {
-      alert('Errore di connessione o autenticazione.');
-    }
+    alert(err.message);
   }
 
   const saveBtn = document.getElementById('save-orari-btn');

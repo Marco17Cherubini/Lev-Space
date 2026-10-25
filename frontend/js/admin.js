@@ -97,14 +97,7 @@ const workDays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', '
 // Inizializzazione
 async function init() {
   try {
-    // Verifica autenticazione admin
-    const response = await apiRequest('/auth/me');
-
-    if (!response.success || !response.user.isAdmin) {
-      // Non è admin, redirect a home cliente
-      window.location.href = '/home';
-      return;
-    }
+    if (!(await requireAuth({ admin: true }))) return;
 
     // Imposta settimana corrente (inizia da lunedì)
     currentWeekStart = getMonday(new Date());
@@ -186,8 +179,8 @@ async function loadBookings() {
   }
 }
 
-// Formatta data come YYYY-MM-DD
-function formatDate(date) {
+// Formatta data come YYYY-MM-DD (nome diverso da formatDate di utils.js, che produce testo)
+function toISODate(date) {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
@@ -244,7 +237,7 @@ function renderCalendar() {
       const cell = document.createElement('div');
       cell.className = 'admin-cell';
 
-      const dateStr = formatDate(date);
+      const dateStr = toISODate(date);
       const daySlots = getTimeSlotsForDate(date, true); // Include extra
       const normalSlots = getTimeSlotsForDate(date, false);
       const isValidSlot = daySlots.includes(time);
@@ -988,42 +981,6 @@ document.getElementById('today-week').addEventListener('click', async () => {
 });
 
 // ==================== SIDEBAR MENU ====================
-
-function setupSidebar() {
-  const hamburgerBtn = document.getElementById('hamburger-btn');
-  const sidebar = document.getElementById('sidebar');
-  const sidebarOverlay = document.getElementById('sidebar-overlay');
-  const closeSidebarBtn = document.getElementById('close-sidebar');
-  const sidebarLogout = document.getElementById('sidebar-logout');
-
-  function openSidebar() {
-    sidebar.classList.add('active');
-    sidebarOverlay.classList.add('active');
-  }
-
-  function closeSidebar() {
-    sidebar.classList.remove('active');
-    sidebarOverlay.classList.remove('active');
-  }
-
-  hamburgerBtn.addEventListener('click', openSidebar);
-  closeSidebarBtn.addEventListener('click', closeSidebar);
-  sidebarOverlay.addEventListener('click', closeSidebar);
-
-  // Logout from sidebar
-  sidebarLogout.addEventListener('click', async () => {
-    try {
-      await apiRequest('/auth/logout', { method: 'POST' });
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Errore logout:', error);
-      window.location.href = '/';
-    }
-  });
-}
-
-// Initialize sidebar
-setupSidebar();
 
 // ==================== GESTIONE FERIE ====================
 

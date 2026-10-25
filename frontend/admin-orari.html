@@ -56,28 +56,7 @@
     </div>
 
     <script src="/js/utils.js"></script>
+    <script src="/js/layout.js"></script>
     <script src="/js/admin-orari.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const closeSidebarBtn = document.getElementById('close-sidebar');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const sidebar = document.getElementById('sidebar');
-
-        function openSidebar() {
-          sidebar.classList.add('active');
-          sidebarOverlay.classList.add('active');
-        }
-
-        function closeSidebar() {
-          sidebar.classList.remove('active');
-          sidebarOverlay.classList.remove('active');
-        }
-
-        hamburgerBtn.addEventListener('click', openSidebar);
-        closeSidebarBtn.addEventListener('click', closeSidebar);
-        sidebarOverlay.addEventListener('click', closeSidebar);
-      });
-    </script>
   </body>
 </html>

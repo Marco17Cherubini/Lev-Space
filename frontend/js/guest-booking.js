@@ -97,11 +97,8 @@
 
   async function loadHolidays() {
     try {
-      const response = await fetch('/api/holidays');
-      const data = await response.json();
-      if (data.success) {
-        holidays = data.holidays || [];
-      }
+      const data = await apiRequest('/holidays');
+      holidays = data.holidays || [];
     } catch (error) {
       console.error('Errore caricamento ferie:', error);
     }
@@ -114,20 +111,7 @@
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
 
-    const monthNames = [
-      'Gennaio',
-      'Febbraio',
-      'Marzo',
-      'Aprile',
-      'Maggio',
-      'Giugno',
-      'Luglio',
-      'Agosto',
-      'Settembre',
-      'Ottobre',
-      'Novembre',
-      'Dicembre'
-    ];
+    const monthNames = MONTHS_IT;
 
     monthLabel.textContent = `${monthNames[month]} ${year}`;
 
@@ -157,9 +141,8 @@
 
     let availability = {};
     try {
-      const resp = await fetch(`/api/availability/${year}/${month + 1}`);
-      const data = await resp.json();
-      if (data.success) availability = data.availability;
+      const data = await apiRequest(`/availability/${year}/${month + 1}`);
+      availability = data.availability;
     } catch (e) {
       console.error(e);
     }
@@ -225,12 +208,11 @@
     container.classList.remove('hidden');
     grid.innerHTML = '<div class="loading">Caricamento orari...</div>';
 
-    const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+    const dayNames = DAYS_IT;
     title.textContent = `Orari disponibili - ${dayNames[dateObj.getDay()]} ${dateObj.getDate()}`;
 
     try {
-      const response = await fetch(`/api/slots/${dateStr}`);
-      const data = await response.json();
+      const data = await apiRequest(`/slots/${dateStr}`);
 
       if (data.success && data.slots.length > 0) {
         grid.innerHTML = '';
@@ -352,26 +334,14 @@
     btn.textContent = 'Prenotazione in corso...';
 
     try {
-      const response = await fetch('/api/bookings/guest', {
+      await apiRequest('/bookings/guest', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify(guestData)
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        showConfirmation();
-      } else {
-        showError(data.error || 'Errore durante la prenotazione');
-        btn.disabled = false;
-        btn.textContent = 'Conferma Prenotazione';
-      }
+      showConfirmation();
     } catch (error) {
       console.error('Errore prenotazione:', error);
-      showError('Errore di connessione. Riprova.');
+      showError(error.message);
       btn.disabled = false;
       btn.textContent = 'Conferma Prenotazione';
     }
@@ -413,21 +383,8 @@
     if (!dateStr) return '';
     const [year, month, day] = dateStr.split('-');
     const date = new Date(year, month - 1, day);
-    const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
-    const monthNames = [
-      'Gennaio',
-      'Febbraio',
-      'Marzo',
-      'Aprile',
-      'Maggio',
-      'Giugno',
-      'Luglio',
-      'Agosto',
-      'Settembre',
-      'Ottobre',
-      'Novembre',
-      'Dicembre'
-    ];
+    const dayNames = DAYS_IT;
+    const monthNames = MONTHS_IT;
 
     return `${dayNames[date.getDay()]} ${day} ${monthNames[date.getMonth()]} ${year}`;
   }

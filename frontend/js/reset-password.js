@@ -16,13 +16,10 @@ document.getElementById('reset-form').addEventListener('submit', async e => {
   submitBtn.textContent = 'Invio in corso...';
 
   try {
-    const response = await fetch('/api/auth/forgot-password', {
+    await apiRequest('/auth/forgot-password', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
     });
-
-    const data = await response.json();
 
     // Always show success message (anti-enumeration)
     successMessage.textContent =

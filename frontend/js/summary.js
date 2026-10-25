@@ -156,18 +156,5 @@ document.getElementById('back-btn').addEventListener('click', () => {
 });
 
 // Utility functions locali
-function hideMessage(elementId) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.classList.add('hidden');
-  }
-}
-
-function showError(elementId, message) {
-  const errorElement = document.getElementById(elementId);
-  errorElement.textContent = message;
-  errorElement.classList.remove('hidden');
-}
-
 // Avvia inizializzazione
 init();

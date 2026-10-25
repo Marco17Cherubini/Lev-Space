@@ -18,57 +18,6 @@
   // DOM Elements
   let calendarGrid, timeSlotsSection, timeSlotsGrid;
 
-  // ==================== AUTH ====================
-
-  async function checkAuth() {
-    try {
-      const response = await fetch('/api/auth/me');
-      const data = await response.json();
-
-      if (!data.success) {
-        window.location.href = '/login';
-        return null;
-      }
-
-      return data.user;
-    } catch (error) {
-      console.error('Errore verifica auth:', error);
-      window.location.href = '/login';
-      return null;
-    }
-  }
-
-  // ==================== SIDEBAR ====================
-
-  function initSidebar() {
-    const hamburger = document.getElementById('hamburger-btn');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    const closeBtn = document.getElementById('close-sidebar');
-    const logoutBtn = document.getElementById('sidebar-logout');
-
-    function openSidebar() {
-      sidebar.classList.add('active');
-      overlay.classList.add('active');
-    }
-
-    function closeSidebar() {
-      sidebar.classList.remove('active');
-      overlay.classList.remove('active');
-    }
-
-    if (hamburger) hamburger.addEventListener('click', openSidebar);
-    if (overlay) overlay.addEventListener('click', closeSidebar);
-    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
-
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        window.location.href = '/login';
-      });
-    }
-  }
-
   // ==================== SUBSCRIPTION STATE ====================
 
   function loadSubscriptionState() {
@@ -172,20 +121,7 @@
     const month = currentMonth.getMonth();
 
     // Update month display
-    const monthNames = [
-      'Gennaio',
-      'Febbraio',
-      'Marzo',
-      'Aprile',
-      'Maggio',
-      'Giugno',
-      'Luglio',
-      'Agosto',
-      'Settembre',
-      'Ottobre',
-      'Novembre',
-      'Dicembre'
-    ];
+    const monthNames = MONTHS_IT;
     document.getElementById('current-month').textContent = `${monthNames[month]} ${year}`;
 
     // Clear existing days (keep headers)
@@ -306,12 +242,7 @@
     timeSlotsGrid.innerHTML = '<div class="loading">Caricamento orari...</div>';
 
     try {
-      const response = await fetch(`/api/slots/${dateStr}`);
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error);
-      }
+      const data = await apiRequest(`/slots/${dateStr}`);
 
       // Client-side filtering for today (consistency with dashboard.js)
       let availableSlots = data.slots;
@@ -485,19 +416,13 @@
     try {
       // Create all bookings
       for (const booking of selectedBookings) {
-        const response = await fetch('/api/bookings', {
+        await apiRequest('/bookings', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             data: booking.giorno,
             orario: booking.ora
           })
         });
-
-        const data = await response.json();
-        if (!data.success) {
-          throw new Error(data.error || 'Errore nella creazione della prenotazione');
-        }
       }
 
       // Clear session storage
@@ -550,7 +475,7 @@
   function formatDate(dateStr) {
     const [year, month, day] = dateStr.split('-');
     const date = new Date(year, month - 1, day);
-    const days = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+    const days = DAYS_IT;
     const months = [
       'gen',
       'feb',
@@ -578,12 +503,11 @@
   // ==================== INIT ====================
 
   async function init() {
-    currentUser = await checkAuth();
+    currentUser = await requireAuth();
     if (!currentUser) return;
 
     if (!loadSubscriptionState()) return;
 
-    initSidebar();
     initCalendar();
     initConfirmModal();
     initSuccessModal();

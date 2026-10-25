@@ -51,35 +51,3 @@ document.getElementById('register-form').addEventListener('submit', async e => {
     submitButton.textContent = 'Registrati';
   }
 });
-
-// Utility functions locali
-function hideMessage(elementId) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.classList.add('hidden');
-  }
-}
-
-function showError(elementId, message) {
-  const errorElement = document.getElementById(elementId);
-  errorElement.textContent = message;
-  errorElement.classList.remove('hidden');
-}
-
-async function apiRequest(endpoint, options = {}) {
-  const response = await fetch(`/api${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers
-    },
-    ...options
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || 'Si è verificato un errore');
-  }
-
-  return data;
-}
