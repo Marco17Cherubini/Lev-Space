@@ -2,6 +2,11 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+// Orari, slot e date sono quelli del salone: si fissa il fuso prima di qualsiasi
+// calcolo, altrimenti su un host in UTC (es. Railway) gli slot già iniziati
+// resterebbero prenotabili per 1-2 ore. Sovrascrivibile con TZ nel .env.
+process.env.TZ = process.env.TZ || 'Europe/Rome';
+
 module.exports = {
   server: {
     port: process.env.PORT || 3000,

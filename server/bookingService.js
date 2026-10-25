@@ -8,6 +8,7 @@ const {
 const { generateId } = require('./authService');
 const config = require('../config/config');
 const crypto = require('crypto');
+const { parseDate, slotStart } = require('./dates');
 
 // Helper
 function getBusinessHours() {
@@ -24,8 +25,8 @@ function generateBookingToken() {
 const APPOINTMENT_DURATION = config.appointmentDuration || 45;
 
 function isDayAvailable(date) {
-  const dayOfWeek = new Date(date).getDay();
-  return getBusinessHours().daysOpen.includes(dayOfWeek);
+  const parsed = parseDate(date);
+  return !!parsed && getBusinessHours().daysOpen.includes(parsed.getDay());
 }
 
 // Verifica se uno slot è in ferie
@@ -36,7 +37,9 @@ function isHolidaySlot(date, time) {
 
 // Ottieni gli slot per un giorno specifico (sabato ha orari diversi)
 function getSlotsForDay(date, includeExtraSlots = false) {
-  const dayOfWeek = new Date(date).getDay();
+  const parsed = parseDate(date);
+  if (!parsed) return [];
+  const dayOfWeek = parsed.getDay();
   const hours = getBusinessHours().days[dayOfWeek];
 
   if (!hours) return [];
@@ -113,16 +116,8 @@ function getAvailableSlots(date, includeExtraSlots = false) {
 
   return allSlots
     .filter(slot => {
-      // Crea data completa dello slot per confronto preciso
-      // Assumiamo che date sia formato YYYY-MM-DD e slot HH:MM
-      const slotDate = new Date(`${date}T${slot}:00`);
-
-      // Mantiene solo slot futuri
-      const keep = slotDate > now;
-      if (!keep) {
-        // console.log(`[FILTER] Removed past slot ${slot} for ${date} (Server time: ${now.toLocaleTimeString()})`);
-      }
-      return keep;
+      // Mantiene solo slot futuri (orario del salone, vedi TZ in config.js)
+      return slotStart(date, slot) > now;
     })
     .map(slot => ({
       time: slot,

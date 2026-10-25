@@ -1,5 +1,6 @@
 const { Resend } = require('resend');
 const config = require('../config/config');
+const { parseDate } = require('./dates');
 
 // Resend client
 let resend = null;
@@ -29,7 +30,8 @@ function escapeHtml(value) {
 
 // Formatta data in italiano
 function formatDate(dateString) {
-  const date = new Date(dateString);
+  const date = parseDate(dateString);
+  if (!date) return dateString;
   const days = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
   const months = [
     'gennaio',
