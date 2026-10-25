@@ -429,7 +429,7 @@ function renderBookingItem(booking, time) {
     <div class="${itemClass}" data-giorno="${escapeHtml(booking.giorno)}" data-ora="${escapeHtml(booking.ora)}">
       ${recurringBadge}
       <div class="name">${escapeHtml(booking.nome)} ${escapeHtml(booking.cognome)}</div>
-      <div class="duration">Durata: 30 min.</div>
+      <div class="duration">Durata: ${APPOINTMENT_MINUTES} min.</div>
       <div class="service">Orario: ${escapeHtml(time)}</div>
       <div class="contact">
         ${escapeHtml(booking.email)}<br>

@@ -50,17 +50,17 @@ async function loadBookings() {
         return `
       <div class="card booking-card" data-giorno="${escapeHtml(booking.giorno)}" data-ora="${escapeHtml(booking.ora)}">
         <div class="booking-info">
-          <div class="card-title">${escapeHtml(booking.servizio)}</div>
+          <div class="card-title">Appuntamento</div>
           <div class="booking-details">
             <div><strong>Data:</strong> ${escapeHtml(formatDate(booking.giorno))}</div>
             <div><strong>Orario:</strong> ${escapeHtml(booking.ora)}</div>
           </div>
         </div>
         <div class="booking-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-edit" onclick="editBooking('${booking.giorno}', '${booking.ora}', '${booking.servizio}')">
+          <button class="btn btn-edit" onclick="editBooking('${booking.giorno}', '${booking.ora}')">
             Modifica
           </button>
-          <button class="btn btn-cancel" onclick="showDeleteConfirm('${booking.giorno}', '${booking.ora}', '${booking.servizio}')">
+          <button class="btn btn-cancel" onclick="showDeleteConfirm('${booking.giorno}', '${booking.ora}')">
             Cancella
           </button>
         </div>
@@ -76,9 +76,9 @@ async function loadBookings() {
 }
 
 // Funzione per modificare una prenotazione
-function editBooking(giorno, ora, servizio) {
+function editBooking(giorno, ora) {
   // Salva la prenotazione da modificare in sessionStorage
-  sessionStorage.setItem('editingBooking', JSON.stringify({ giorno, ora, servizio }));
+  sessionStorage.setItem('editingBooking', JSON.stringify({ giorno, ora }));
 
   // Reindirizza al calendario per selezionare nuovo appuntamento
   window.location.href = '/dashboard';
@@ -88,12 +88,11 @@ function editBooking(giorno, ora, servizio) {
 let bookingToDelete = null;
 
 // Mostra modal di conferma cancellazione
-function showDeleteConfirm(giorno, ora, servizio) {
+function showDeleteConfirm(giorno, ora) {
   bookingToDelete = { giorno, ora };
 
   // Popola i dettagli
   document.getElementById('delete-booking-details').innerHTML = `
-    <div><strong>Servizio:</strong> ${escapeHtml(servizio)}</div>
     <div><strong>Data:</strong> ${escapeHtml(formatDate(giorno))}</div>
     <div><strong>Orario:</strong> ${escapeHtml(ora)}</div>
   `;
