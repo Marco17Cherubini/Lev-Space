@@ -50,7 +50,7 @@ test('uno slot già occupato viene rifiutato', async () => {
     cookie: luigi,
     body: { data: day, orario: '10:00' }
   });
-  assert.equal(res.status, 400);
+  assert.equal(res.status, 409);
   assert.match(res.data.error, /già occupato/);
 });
 
@@ -79,7 +79,7 @@ test('un cliente non può cancellare la prenotazione di un altro', async () => {
     cookie: luigi,
     body: { giorno: day, ora: '08:30' }
   });
-  assert.equal(res.status, 400);
+  assert.equal(res.status, 403);
   assert.match(res.data.error, /Non autorizzato/);
 
   const own = await api.request('DELETE', '/api/bookings', {
@@ -145,7 +145,7 @@ test('un ospite bannato non può prenotare di nuovo con la stessa email', async 
   const second = await api.request('POST', '/api/bookings/guest', {
     body: { ...guest, giorno: futureWeekday(3, 4), ora: '14:45' }
   });
-  assert.equal(second.status, 400);
+  assert.equal(second.status, 403);
   assert.match(second.data.error, /sospeso/);
 });
 
@@ -187,7 +187,7 @@ test('un gruppo non scavalca la pausa pranzo', async () => {
     cookie: mario,
     body: { data: futureWeekday(2, 5), orario: '11:30', numPersone: 2 }
   });
-  assert.equal(res.status, 400);
+  assert.equal(res.status, 409);
 });
 
 test('cancellare un gruppo libera tutti i suoi slot', async () => {
@@ -236,7 +236,7 @@ test("spostare una propria prenotazione è un'unica operazione", async () => {
     cookie: luigi,
     body: { oldGiorno: day, oldOra: '14:00', data: day, orario: '14:45' }
   });
-  assert.equal(foreign.status, 400);
+  assert.equal(foreign.status, 403);
 
   const moved = await api.request('PUT', '/api/bookings', {
     cookie: mario,

@@ -1,50 +1,32 @@
-const { verifyToken, getUserByEmail, isAdmin } = require('./authService');
+const { getSessionUser } = require('./authService');
+const { HttpError } = require('./errors');
 
-// Middleware per autenticazione
+// Richiede una sessione valida: imposta req.user oppure risponde 401/403
 function authenticateToken(req, res, next) {
-  const token = req.cookies.token;
-
-  if (!token) {
-    return res.status(401).json({ error: 'Accesso non autorizzato' });
-  }
-
   try {
-    const decoded = verifyToken(token);
-
-    // I token con uno scopo dedicato (es. reset password) non valgono come sessione
-    if (decoded.purpose) {
-      return res.status(401).json({ error: 'Token non valido' });
-    }
-
-    // Controlla se è admin (ancora presente in tabella: un admin rimosso perde l'accesso)
-    if (decoded.isAdmin) {
-      if (!isAdmin(decoded.email)) {
-        return res.status(401).json({ error: 'Token non valido' });
-      }
-      req.user = {
-        email: decoded.email,
-        isAdmin: true
-      };
-      return next();
-    }
-
-    // Utente normale
-    const user = getUserByEmail(decoded.email);
-
-    if (!user) {
-      return res.status(401).json({ error: 'Utente non trovato' });
-    }
-
-    // Il ban vale anche per le sessioni aperte prima del ban
-    if (user.banned === '1' || user.banned === 1) {
-      return res.status(403).json({ error: 'Account sospeso' });
-    }
-
-    req.user = { ...user, isAdmin: false };
+    req.user = getSessionUser(req.cookies.token);
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Token non valido' });
+    next(error);
   }
 }
 
-module.exports = { authenticateToken };
+// Da usare dopo authenticateToken sulle rotte del pannello admin
+function requireAdmin(req, res, next) {
+  if (!req.user || !req.user.isAdmin) {
+    return next(new HttpError(403, 'Accesso negato'));
+  }
+  next();
+}
+
+// Sessione facoltativa: true solo per un admin con sessione valida
+// (es. per mostrare gli orari extra riservati all'admin)
+function isAdminRequest(req) {
+  try {
+    return getSessionUser(req.cookies.token).isAdmin;
+  } catch (error) {
+    return false;
+  }
+}
+
+module.exports = { authenticateToken, requireAdmin, isAdminRequest };

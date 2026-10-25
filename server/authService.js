@@ -1,10 +1,20 @@
 const bcrypt = require('bcryptjs');
+const { HttpError } = require('./errors');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { usersDB, adminDB } = require('./database');
 const config = require('../config/config');
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// I flag vip/banned sono salvati come '0'/'1'
+const isFlagOn = value => value === '1' || value === 1;
+
+// Utente senza hash della password, come esposto da API e sessione
+function toPublicUser(user) {
+  const { password: _, ...userWithoutPassword } = user;
+  return { ...userWithoutPassword, vip: isFlagOn(user.vip) };
+}
 
 // Verifica se è admin (tabella admins)
 function isAdmin(email) {
@@ -28,23 +38,23 @@ async function registerUser(userData) {
   // Validazione base
   const fields = [nome, cognome, email, telefono, password];
   if (fields.some(value => typeof value !== 'string' || !value.trim())) {
-    throw new Error('Tutti i campi sono obbligatori');
+    throw new HttpError(400, 'Tutti i campi sono obbligatori');
   }
 
   const emailLower = email.trim().toLowerCase();
   if (!EMAIL_PATTERN.test(emailLower)) {
-    throw new Error('Formato email non valido');
+    throw new HttpError(400, 'Formato email non valido');
   }
 
   if (password.length < 8) {
-    throw new Error('La password deve essere di almeno 8 caratteri');
+    throw new HttpError(400, 'La password deve essere di almeno 8 caratteri');
   }
 
   // Controlla email duplicata (le email sono salvate in minuscolo).
   // Un profilo ospite (creato dal checkout senza password) può invece diventare un account.
   const existingUser = usersDB.findOne(user => user.email === emailLower);
   if (existingUser && existingUser.password) {
-    throw new Error('Email già registrata');
+    throw new HttpError(409, 'Email già registrata');
   }
 
   // Hash password
@@ -72,7 +82,7 @@ async function registerUser(userData) {
 // Login utente
 async function loginUser(email, password) {
   if (!email || !password) {
-    throw new Error('Email e password sono obbligatori');
+    throw new HttpError(400, 'Email e password sono obbligatori');
   }
 
   const emailLower = email.trim().toLowerCase();
@@ -95,23 +105,27 @@ async function loginUser(email, password) {
   // Non è admin, cerca tra gli utenti normali
   const user = usersDB.findOne(u => u.email === emailLower);
   if (!user) {
-    throw new Error('Credenziali non valide');
-  }
-
-  // Verifica se l'utente è bannato
-  if (user.banned === '1' || user.banned === 1) {
-    throw new Error('Account sospeso');
+    throw new HttpError(401, 'Credenziali non valide');
   }
 
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) {
-    throw new Error('Credenziali non valide');
+    throw new HttpError(401, 'Credenziali non valide');
   }
 
-  // Genera JWT token (utente normale)
-  const token = jwt.sign({ email: user.email, isAdmin: false }, config.jwt.secret, {
-    expiresIn: config.jwt.expiresIn
-  });
+  // Il ban si comunica solo dopo la password corretta: prima rivelerebbe
+  // a chiunque che l'account esiste
+  if (isFlagOn(user.banned)) {
+    throw new HttpError(403, 'Account sospeso');
+  }
+
+  // Genera JWT token (utente normale). L'impronta della password fa decadere
+  // la sessione appena la password cambia (vedi getSessionUser)
+  const token = jwt.sign(
+    { email: user.email, isAdmin: false, pwd: passwordFingerprint(user) },
+    config.jwt.secret,
+    { expiresIn: config.jwt.expiresIn }
+  );
 
   const { password: _, ...userWithoutPassword } = user;
   return { user: { ...userWithoutPassword, isAdmin: false }, token, isAdmin: false };
@@ -122,42 +136,65 @@ function verifyToken(token) {
   try {
     return jwt.verify(token, config.jwt.secret);
   } catch (error) {
-    throw new Error('Token non valido');
+    throw new HttpError(401, 'Token non valido');
   }
 }
 
-// Get user by email
-function getUserByEmail(email) {
-  const user = usersDB.findOne(u => u.email === email);
-  if (!user) return null;
+// Utente della sessione a partire dal token del cookie: lancia 401 se la sessione
+// non è valida e 403 se l'account è sospeso
+function getSessionUser(token) {
+  if (!token) {
+    throw new HttpError(401, 'Accesso non autorizzato');
+  }
 
-  const { password: _, ...userWithoutPassword } = user;
-  return {
-    ...userWithoutPassword,
-    vip: user.vip === '1' || user.vip === 1
-  };
+  const decoded = verifyToken(token);
+
+  // I token con uno scopo dedicato (es. reset password) non valgono come sessione
+  if (decoded.purpose) {
+    throw new HttpError(401, 'Token non valido');
+  }
+
+  // Admin ancora presente in tabella: un admin rimosso perde l'accesso
+  if (decoded.isAdmin) {
+    if (!isAdmin(decoded.email)) {
+      throw new HttpError(401, 'Token non valido');
+    }
+    return { email: decoded.email, isAdmin: true };
+  }
+
+  const user = usersDB.findOne(u => u.email === decoded.email);
+  if (!user) {
+    throw new HttpError(401, 'Utente non trovato');
+  }
+
+  // Dopo un cambio password le sessioni aperte prima decadono. I token emessi prima
+  // dell'introduzione dell'impronta non la contengono e valgono fino alla scadenza.
+  if (decoded.pwd !== undefined && decoded.pwd !== passwordFingerprint(user)) {
+    throw new HttpError(401, 'Sessione scaduta, accedi di nuovo');
+  }
+
+  // Il ban vale anche per le sessioni aperte prima del ban
+  if (isFlagOn(user.banned)) {
+    throw new HttpError(403, 'Account sospeso');
+  }
+
+  return { ...toPublicUser(user), isAdmin: false };
 }
 
 // Get all users (per admin - senza password)
 function getAllUsers() {
   const users = usersDB.readAll();
-  return users.map(user => {
-    const { password: _, ...userWithoutPassword } = user;
-    return {
-      ...userWithoutPassword,
-      vip: user.vip === '1' || user.vip === 1
-    };
-  });
+  return users.map(toPublicUser);
 }
 
 // Toggle VIP status per un utente
 function toggleVip(email) {
   const user = usersDB.findOne(u => u.email === email);
   if (!user) {
-    throw new Error('Utente non trovato');
+    throw new HttpError(404, 'Utente non trovato');
   }
 
-  const newVipStatus = user.vip === '1' || user.vip === 1 ? '0' : '1';
+  const newVipStatus = isFlagOn(user.vip) ? '0' : '1';
   usersDB.update(u => u.email === email, { vip: newVipStatus });
 
   return newVipStatus === '1';
@@ -167,10 +204,10 @@ function toggleVip(email) {
 function toggleBanned(email) {
   const user = usersDB.findOne(u => u.email === email);
   if (!user) {
-    throw new Error('Utente non trovato');
+    throw new HttpError(404, 'Utente non trovato');
   }
 
-  const newBannedStatus = user.banned === '1' || user.banned === 1 ? '0' : '1';
+  const newBannedStatus = isFlagOn(user.banned) ? '0' : '1';
   usersDB.update(u => u.email === email, { banned: newBannedStatus });
 
   return newBannedStatus === '1';
@@ -208,11 +245,11 @@ function generateResetToken(email) {
 // Reset password con token
 async function resetPassword(token, newPassword) {
   if (!token || !newPassword) {
-    throw new Error('Token e password sono obbligatori');
+    throw new HttpError(400, 'Token e password sono obbligatori');
   }
 
   if (newPassword.length < 8) {
-    throw new Error('La password deve essere di almeno 8 caratteri');
+    throw new HttpError(400, 'La password deve essere di almeno 8 caratteri');
   }
 
   // Verifica token
@@ -220,23 +257,23 @@ async function resetPassword(token, newPassword) {
   try {
     decoded = jwt.verify(token, config.jwt.secret);
   } catch (error) {
-    throw new Error('Link scaduto o non valido');
+    throw new HttpError(400, 'Link scaduto o non valido');
   }
 
   // Verifica che sia un token di reset
   if (decoded.purpose !== 'password-reset') {
-    throw new Error('Token non valido');
+    throw new HttpError(400, 'Token non valido');
   }
 
   // Trova utente
   const user = usersDB.findOne(u => u.email === decoded.email);
   if (!user) {
-    throw new Error('Utente non trovato');
+    throw new HttpError(404, 'Utente non trovato');
   }
 
   // Link già usato: la password è cambiata dopo l'emissione del token
   if (decoded.pwd !== passwordFingerprint(user)) {
-    throw new Error('Link scaduto o non valido');
+    throw new HttpError(400, 'Link scaduto o non valido');
   }
 
   // Hash nuova password
@@ -251,9 +288,8 @@ async function resetPassword(token, newPassword) {
 module.exports = {
   registerUser,
   loginUser,
-  verifyToken,
-  getUserByEmail,
-  isAdmin,
+  getSessionUser,
+  isFlagOn,
   getAllUsers,
   toggleVip,
   toggleBanned,

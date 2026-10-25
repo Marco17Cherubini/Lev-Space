@@ -5,6 +5,8 @@ const {
   globalSettingsDB,
   withTransaction
 } = require('./database');
+const { HttpError } = require('./errors');
+const { isFlagOn } = require('./authService');
 const config = require('../config/config');
 const crypto = require('crypto');
 const { parseDate, isValidTime, slotStart, toMinutes } = require('./dates');
@@ -131,7 +133,7 @@ function createBooking(userEmail, bookingData) {
 
   // Validazione
   if (!data || !orario) {
-    throw new Error('Data e orario sono obbligatori');
+    throw new HttpError(400, 'Data e orario sono obbligatori');
   }
 
   // Validazione numero persone
@@ -139,15 +141,15 @@ function createBooking(userEmail, bookingData) {
 
   const start = slotStart(data, orario);
   if (!start) {
-    throw new Error('Data o orario non validi');
+    throw new HttpError(400, 'Data o orario non validi');
   }
   if (start <= new Date()) {
-    throw new Error('Non è possibile prenotare una data o un orario già passati');
+    throw new HttpError(400, 'Non è possibile prenotare una data o un orario già passati');
   }
 
   // Verifica che il giorno sia disponibile
   if (!isDayAvailable(data)) {
-    throw new Error('Il giorno selezionato non è disponibile');
+    throw new HttpError(400, 'Il giorno selezionato non è disponibile');
   }
 
   // Ottieni tutti gli slot per il giorno (i clienti/VIP non accedono agli slot extra)
@@ -155,7 +157,7 @@ function createBooking(userEmail, bookingData) {
   const startIndex = allSlots.indexOf(orario);
 
   if (startIndex === -1) {
-    throw new Error('Orario non valido');
+    throw new HttpError(400, 'Orario non valido');
   }
 
   // Verifica che ci siano abbastanza slot consecutivi
@@ -168,19 +170,19 @@ function createBooking(userEmail, bookingData) {
       i === 0 ||
       (slotTime && toMinutes(slotTime) - toMinutes(slotsToBook[i - 1]) === APPOINTMENT_DURATION);
     if (!slotTime || !isContiguous) {
-      throw new Error('Non ci sono abbastanza slot consecutivi disponibili');
+      throw new HttpError(409, 'Non ci sono abbastanza slot consecutivi disponibili');
     }
 
     // Verifica che lo slot non sia in ferie
     if (isHolidaySlot(data, slotTime)) {
-      throw new Error(`Slot ${slotTime} non disponibile (ferie)`);
+      throw new HttpError(409, `Slot ${slotTime} non disponibile (ferie)`);
     }
 
     // Verifica che lo slot sia ancora disponibile
     const existingBooking = bookingsDB.findOne(b => b.giorno === data && b.ora === slotTime);
 
     if (existingBooking) {
-      throw new Error(`Slot ${slotTime} già occupato`);
+      throw new HttpError(409, `Slot ${slotTime} già occupato`);
     }
 
     slotsToBook.push(slotTime);
@@ -189,12 +191,12 @@ function createBooking(userEmail, bookingData) {
   // Ottieni dati utente
   const user = usersDB.findOne(u => u.email === userEmail);
   if (!user) {
-    throw new Error('Utente non trovato');
+    throw new HttpError(404, 'Utente non trovato');
   }
 
   // Copre anche la prenotazione ospite, che non passa dal middleware di autenticazione
-  if (user.banned === '1' || user.banned === 1) {
-    throw new Error('Account sospeso: impossibile prenotare');
+  if (isFlagOn(user.banned)) {
+    throw new HttpError(403, 'Account sospeso: impossibile prenotare');
   }
 
   // Crea prenotazioni per tutti gli slot
@@ -234,11 +236,11 @@ function cancelBooking(giorno, ora, userEmail) {
   const booking = bookingsDB.findOne(b => b.giorno === giorno && b.ora === ora);
 
   if (!booking) {
-    throw new Error('Prenotazione non trovata');
+    throw new HttpError(404, 'Prenotazione non trovata');
   }
 
   if (booking.email !== userEmail) {
-    throw new Error('Non autorizzato');
+    throw new HttpError(403, 'Non autorizzato');
   }
 
   // Gli slot di una prenotazione di gruppo condividono il token: si liberano tutti insieme
@@ -288,12 +290,12 @@ function createAdminBooking(bookingData) {
 
   // Validazione (solo cognome, giorno, ora obbligatori per admin)
   if (!cognome || !giorno || !ora) {
-    throw new Error('Cognome, giorno e ora sono obbligatori');
+    throw new HttpError(400, 'Cognome, giorno e ora sono obbligatori');
   }
 
   // L'admin può usare orari fuori dal calendario standard, ma in un formato valido
   if (!parseDate(giorno) || !isValidTime(ora)) {
-    throw new Error('Data o orario non validi');
+    throw new HttpError(400, 'Data o orario non validi');
   }
 
   // Se richiesta una prenotazione ricorrente, delega alla logica dedicata
@@ -304,12 +306,12 @@ function createAdminBooking(bookingData) {
   // Verifica slot non già occupato
   const existingBooking = bookingsDB.findOne(b => b.giorno === giorno && b.ora === ora);
   if (existingBooking) {
-    throw new Error('Questo slot è già occupato');
+    throw new HttpError(409, 'Questo slot è già occupato');
   }
 
   // Le ferie valgono anche per l'admin, come già per le serie ricorrenti
   if (isHolidaySlot(giorno, ora)) {
-    throw new Error('Slot non disponibile (ferie)');
+    throw new HttpError(409, 'Slot non disponibile (ferie)');
   }
 
   // Crea prenotazione (campi opzionali possono essere vuoti)
@@ -338,13 +340,13 @@ function createRecurringBooking(bookingData) {
 
   // Validazione base (come per la prenotazione admin normale)
   if (!cognome || !giorno || !ora) {
-    throw new Error('Cognome, giorno e ora sono obbligatori');
+    throw new HttpError(400, 'Cognome, giorno e ora sono obbligatori');
   }
 
   // Validazione numero di mesi (1-12): 1 mese = 4 settimane (finestra temporale)
   const mesi = parseInt(mesiRicorrenza, 10);
   if (!Number.isInteger(mesi) || mesi < 1 || mesi > 12) {
-    throw new Error('Numero di mesi non valido (deve essere tra 1 e 12)');
+    throw new HttpError(400, 'Numero di mesi non valido (deve essere tra 1 e 12)');
   }
 
   // Intervallo tra le occorrenze in settimane: 1 (ogni settimana), 2 o 3.
@@ -402,7 +404,8 @@ function createRecurringBooking(bookingData) {
 
   // Se ogni occorrenza era occupata/in ferie, non è stata creata nessuna prenotazione
   if (inserite.length === 0) {
-    throw new Error(
+    throw new HttpError(
+      409,
       'Nessuna occorrenza inserita: tutte le date selezionate sono già occupate o in ferie'
     );
   }
@@ -419,12 +422,12 @@ function createRecurringBooking(bookingData) {
 // Cancella prenotazione da admin (senza verifica proprietario)
 function adminCancelBooking(giorno, ora) {
   if (!giorno || !ora) {
-    throw new Error('Giorno e ora sono obbligatori');
+    throw new HttpError(400, 'Giorno e ora sono obbligatori');
   }
 
   const booking = bookingsDB.findOne(b => b.giorno === giorno && b.ora === ora);
   if (!booking) {
-    throw new Error('Prenotazione non trovata');
+    throw new HttpError(404, 'Prenotazione non trovata');
   }
 
   bookingsDB.delete(b => b.giorno === giorno && b.ora === ora);
@@ -436,12 +439,12 @@ function adminCancelBooking(giorno, ora) {
 // Ritorna il numero di occorrenze eliminate.
 function adminCancelRecurringSeries(token) {
   if (!token) {
-    throw new Error('Token serie non valido');
+    throw new HttpError(400, 'Token serie non valido');
   }
 
   const occorrenze = bookingsDB.findMany(b => b.token === token && b.tipo === 'ricorrente');
   if (occorrenze.length === 0) {
-    throw new Error('Nessuna prenotazione trovata per la serie');
+    throw new HttpError(404, 'Nessuna prenotazione trovata per la serie');
   }
 
   bookingsDB.delete(b => b.token === token && b.tipo === 'ricorrente');
@@ -452,24 +455,24 @@ function adminCancelRecurringSeries(token) {
 // Sposta prenotazione da admin (cambia giorno/ora)
 function moveBooking(oldGiorno, oldOra, newGiorno, newOra) {
   if (!oldGiorno || !oldOra || !newGiorno || !newOra) {
-    throw new Error('Tutti i campi sono obbligatori');
+    throw new HttpError(400, 'Tutti i campi sono obbligatori');
   }
 
   // Trova la prenotazione da spostare
   const booking = bookingsDB.findOne(b => b.giorno === oldGiorno && b.ora === oldOra);
   if (!booking) {
-    throw new Error('Prenotazione non trovata');
+    throw new HttpError(404, 'Prenotazione non trovata');
   }
 
   // Verifica che il nuovo slot non sia occupato
   const existingBooking = bookingsDB.findOne(b => b.giorno === newGiorno && b.ora === newOra);
   if (existingBooking) {
-    throw new Error('Questo slot è già occupato');
+    throw new HttpError(409, 'Questo slot è già occupato');
   }
 
   // Verifica che il nuovo slot non sia in ferie
   if (isHolidaySlot(newGiorno, newOra)) {
-    throw new Error('Slot non disponibile (ferie)');
+    throw new HttpError(409, 'Slot non disponibile (ferie)');
   }
 
   const newBooking = {

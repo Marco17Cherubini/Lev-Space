@@ -40,7 +40,7 @@ test("l'admin crea una prenotazione con il solo cognome e la cancella", async ()
     cookie: admin,
     body: { cognome: 'Neri', giorno: day, ora: '14:00' }
   });
-  assert.equal(dup.status, 400);
+  assert.equal(dup.status, 409);
 
   const del = await api.request('DELETE', '/api/admin/bookings', {
     cookie: admin,
@@ -219,7 +219,7 @@ test("la prenotazione singola dell'admin rispetta le ferie ma non il calendario 
     cookie: admin,
     body: { cognome: 'Ferie', giorno: day, ora: '09:15' }
   });
-  assert.equal(onHoliday.status, 400);
+  assert.equal(onHoliday.status, 409);
   assert.match(onHoliday.data.error, /ferie/);
 
   // Orario fuori calendario (pausa pranzo): consentito all'admin

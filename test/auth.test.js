@@ -31,7 +31,7 @@ test("registrazione: la risposta non contiene la password e l'email doppia è ri
   assert.equal(res.data.user.password, undefined);
 
   const dup = await api.request('POST', '/api/auth/register', { body: user });
-  assert.equal(dup.status, 400);
+  assert.equal(dup.status, 409);
   assert.match(dup.data.error, /già registrata/);
 });
 
@@ -82,7 +82,7 @@ test('un utente bannato non può fare login', async () => {
   assert.equal(ban.data.banned, true);
 
   const res = await api.login(user.email, user.password);
-  assert.equal(res.status, 401);
+  assert.equal(res.status, 403);
   assert.match(res.data.error, /sospeso/);
 });
 
@@ -194,7 +194,7 @@ test("l'email doppia con maiuscole diverse dà un errore chiaro", async () => {
   const dup = await api.request('POST', '/api/auth/register', {
     body: { ...user, email: user.email.toUpperCase() }
   });
-  assert.equal(dup.status, 400);
+  assert.equal(dup.status, 409);
   assert.match(dup.data.error, /già registrata/);
 });
 
@@ -223,4 +223,55 @@ test('un ospite può registrarsi con la stessa email e ritrova le sue prenotazio
   assert.equal(me.data.user.isGuest, '0');
   const list = await api.request('GET', '/api/bookings', { cookie });
   assert.equal(list.data.bookings.length, 1);
+});
+
+test('dopo un reset della password le sessioni aperte decadono', async () => {
+  const { generateResetToken } = require('../server/authService');
+  const user = makeUser('sessionreset');
+  const cookie = await api.registerAndLogin(user);
+  assert.equal((await api.request('GET', '/api/auth/me', { cookie })).status, 200);
+
+  await api.request('POST', '/api/auth/reset-password', {
+    body: { token: generateResetToken(user.email), password: 'PasswordNuova123!' }
+  });
+
+  const old = await api.request('GET', '/api/auth/me', { cookie });
+  assert.equal(old.status, 401);
+  const fresh = (await api.login(user.email, 'PasswordNuova123!')).cookie;
+  assert.equal((await api.request('GET', '/api/auth/me', { cookie: fresh })).status, 200);
+});
+
+test('il ban viene comunicato solo con la password corretta', async () => {
+  const user = makeUser('banenum');
+  await api.request('POST', '/api/auth/register', { body: user });
+  const admin = (await api.login(ADMIN.email, ADMIN.password)).cookie;
+  await api.request('PUT', `/api/admin/users/${encodeURIComponent(user.email)}/banned`, {
+    cookie: admin
+  });
+
+  const wrong = await api.login(user.email, 'PasswordSbagliata1');
+  assert.equal(wrong.status, 401);
+  assert.doesNotMatch(wrong.data.error, /sospeso/);
+});
+
+test('errori uniformi: JSON malformato, endpoint inesistente, campi del tipo sbagliato', async () => {
+  const malformed = await fetch(`${api.baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{"email": '
+  });
+  assert.equal(malformed.status, 400);
+  assert.deepEqual(await malformed.json(), { success: false, error: 'Richiesta non valida' });
+
+  const missing = await api.request('GET', '/api/non-esiste');
+  assert.equal(missing.status, 404);
+  assert.equal(missing.data.success, false);
+
+  const wrongType = await api.request('POST', '/api/bookings/guest', {
+    body: { nome: 42, cognome: 'B', email: 'x@test.local', giorno: '2030-01-08', ora: '09:15' }
+  });
+  assert.equal(wrongType.status, 400);
+
+  const noSession = await api.request('GET', '/api/admin/users');
+  assert.deepEqual(noSession.data, { success: false, error: 'Accesso non autorizzato' });
 });
