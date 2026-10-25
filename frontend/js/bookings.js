@@ -48,12 +48,12 @@ async function loadBookings() {
     bookingsList.innerHTML = activeBookings
       .map(booking => {
         return `
-      <div class="card booking-card" data-giorno="${booking.giorno}" data-ora="${booking.ora}">
+      <div class="card booking-card" data-giorno="${escapeHtml(booking.giorno)}" data-ora="${escapeHtml(booking.ora)}">
         <div class="booking-info">
-          <div class="card-title">${booking.servizio}</div>
+          <div class="card-title">${escapeHtml(booking.servizio)}</div>
           <div class="booking-details">
-            <div><strong>Data:</strong> ${formatDate(booking.giorno)}</div>
-            <div><strong>Orario:</strong> ${booking.ora}</div>
+            <div><strong>Data:</strong> ${escapeHtml(formatDate(booking.giorno))}</div>
+            <div><strong>Orario:</strong> ${escapeHtml(booking.ora)}</div>
           </div>
         </div>
         <div class="booking-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -93,9 +93,9 @@ function showDeleteConfirm(giorno, ora, servizio) {
 
   // Popola i dettagli
   document.getElementById('delete-booking-details').innerHTML = `
-    <div><strong>Servizio:</strong> ${servizio}</div>
-    <div><strong>Data:</strong> ${formatDate(giorno)}</div>
-    <div><strong>Orario:</strong> ${ora}</div>
+    <div><strong>Servizio:</strong> ${escapeHtml(servizio)}</div>
+    <div><strong>Data:</strong> ${escapeHtml(formatDate(giorno))}</div>
+    <div><strong>Orario:</strong> ${escapeHtml(ora)}</div>
   `;
 
   // Mostra modal

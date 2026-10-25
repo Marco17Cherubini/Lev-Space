@@ -426,14 +426,14 @@ function renderBookingItem(booking, time) {
   const recurringBadge = isRecurring ? '<div class="recurring-badge">↻ Ricorrente</div>' : '';
 
   return `
-    <div class="${itemClass}" data-giorno="${booking.giorno}" data-ora="${booking.ora}">
+    <div class="${itemClass}" data-giorno="${escapeHtml(booking.giorno)}" data-ora="${escapeHtml(booking.ora)}">
       ${recurringBadge}
-      <div class="name">${booking.nome} ${booking.cognome}</div>
+      <div class="name">${escapeHtml(booking.nome)} ${escapeHtml(booking.cognome)}</div>
       <div class="duration">Durata: 30 min.</div>
-      <div class="service">Orario: ${time}</div>
+      <div class="service">Orario: ${escapeHtml(time)}</div>
       <div class="contact">
-        ${booking.email}<br>
-        ${booking.telefono}
+        ${escapeHtml(booking.email)}<br>
+        ${escapeHtml(booking.telefono)}
       </div>
     </div>
   `;
@@ -449,7 +449,7 @@ function startBookingDrag(booking, event) {
   dragGhostElement = document.createElement('div');
   dragGhostElement.className = 'booking-drag-ghost';
   dragGhostElement.innerHTML = `
-    <div class="name">${booking.nome} ${booking.cognome}</div>
+    <div class="name">${escapeHtml(booking.nome)} ${escapeHtml(booking.cognome)}</div>
   `;
   document.body.appendChild(dragGhostElement);
 
@@ -679,11 +679,11 @@ function showDetailModal(booking) {
     booking.tipo === 'ricorrente' ? '<div><strong>Tipo:</strong> Ricorrente</div>' : '';
 
   document.getElementById('detail-content').innerHTML = `
-    <div><strong>Nome:</strong> ${booking.nome} ${booking.cognome}</div>
-    <div><strong>Data:</strong> ${formatDateStringDisplay(booking.giorno)}</div>
-    <div><strong>Ora:</strong> ${booking.ora}</div>
-    <div><strong>Email:</strong> ${booking.email}</div>
-    <div><strong>Telefono:</strong> ${booking.telefono}</div>
+    <div><strong>Nome:</strong> ${escapeHtml(booking.nome)} ${escapeHtml(booking.cognome)}</div>
+    <div><strong>Data:</strong> ${escapeHtml(formatDateStringDisplay(booking.giorno))}</div>
+    <div><strong>Ora:</strong> ${escapeHtml(booking.ora)}</div>
+    <div><strong>Email:</strong> ${escapeHtml(booking.email)}</div>
+    <div><strong>Telefono:</strong> ${escapeHtml(booking.telefono)}</div>
     ${tipoRow}
   `;
 
@@ -705,8 +705,8 @@ function showDeleteConfirmModal() {
     `${selectedBooking.nome} ${selectedBooking.cognome}`;
 
   document.getElementById('delete-booking-details').innerHTML = `
-    <div><strong>Data:</strong> ${formatDateStringDisplay(selectedBooking.giorno)}</div>
-    <div><strong>Ora:</strong> ${selectedBooking.ora}</div>
+    <div><strong>Data:</strong> ${escapeHtml(formatDateStringDisplay(selectedBooking.giorno))}</div>
+    <div><strong>Ora:</strong> ${escapeHtml(selectedBooking.ora)}</div>
   `;
 
   // Mostra la scelta singolo/serie solo per le prenotazioni ricorrenti
@@ -804,12 +804,14 @@ function setupAutocomplete() {
     }
 
     // Mostra suggerimenti
+    // L'indice in `matches` evita di serializzare l'utente in un attributo HTML
+    // (gli apostrofi, es. "D'Amico", spezzavano l'attributo)
     suggestionsList.innerHTML = matches
       .map(
-        user => `
-      <div class="suggestion-item" data-user='${JSON.stringify(user).replace(/'/g, "\\'")}'>
-        <div class="suggestion-name">${user.cognome} ${user.nome}</div>
-        <div class="suggestion-details">${user.email} | ${user.telefono}</div>
+        (user, index) => `
+      <div class="suggestion-item" data-index="${index}">
+        <div class="suggestion-name">${escapeHtml(user.cognome)} ${escapeHtml(user.nome)}</div>
+        <div class="suggestion-details">${escapeHtml(user.email)} | ${escapeHtml(user.telefono)}</div>
       </div>
     `
       )
@@ -820,7 +822,7 @@ function setupAutocomplete() {
     // Click su suggerimento
     suggestionsList.querySelectorAll('.suggestion-item').forEach(item => {
       item.addEventListener('click', () => {
-        const user = JSON.parse(item.dataset.user.replace(/\\'/g, "'"));
+        const user = matches[Number(item.dataset.index)];
         fillUserData(user);
         suggestionsList.classList.add('hidden');
       });

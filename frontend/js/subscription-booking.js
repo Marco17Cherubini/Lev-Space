@@ -137,8 +137,8 @@
         (booking, index) => `
             <div class="selected-booking-item">
                 <div class="selected-booking-info">
-                    <div class="selected-booking-date">${formatDate(booking.giorno)}</div>
-                    <div class="selected-booking-time">${booking.ora} - ${booking.servizio}</div>
+                    <div class="selected-booking-date">${escapeHtml(formatDate(booking.giorno))}</div>
+                    <div class="selected-booking-time">${escapeHtml(booking.ora)} - ${escapeHtml(booking.servizio)}</div>
                     <div class="selected-booking-week">Settimana ${index + 1}</div>
                 </div>
                 <button class="btn-modify" onclick="modifyBooking(${index})">Modifica</button>
@@ -452,8 +452,8 @@
             <div class="modal-booking-item">
                 <div>
                     <strong>Settimana ${index + 1}</strong><br>
-                    ${formatDate(booking.giorno)} alle ${booking.ora}<br>
-                    <small>${booking.servizio}</small>
+                    ${escapeHtml(formatDate(booking.giorno))} alle ${escapeHtml(booking.ora)}<br>
+                    <small>${escapeHtml(booking.servizio)}</small>
                 </div>
                 <button class="btn-modify" onclick="closeModalAndModify(${index})">Modifica</button>
             </div>

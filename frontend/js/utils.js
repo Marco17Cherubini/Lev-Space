@@ -19,6 +19,17 @@ async function apiRequest(endpoint, options = {}) {
   return data;
 }
 
+// Neutralizza i caratteri speciali HTML: da usare su ogni dato inserito in innerHTML
+// tramite template string (nomi, email, telefoni arrivano da input di utenti e ospiti)
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function showError(elementId, message) {
   const errorElement = document.getElementById(elementId);
   errorElement.textContent = message;

@@ -314,16 +314,16 @@
             }
 
             return `
-                    <div class="user-item ${pendingClass}" data-email="${user.email}">
+                    <div class="user-item ${pendingClass}" data-email="${escapeHtml(user.email)}">
                         <div class="user-info">
                             <span class="banned-badge" style="visibility: ${displayBanned ? 'visible' : 'hidden'}">🚫</span>
-                            <span class="user-name">${user.cognome} ${user.nome}</span>
+                            <span class="user-name">${escapeHtml(user.cognome)} ${escapeHtml(user.nome)}</span>
                             ${pendingBadge}
                         </div>
                         <label class="banned-label">
                             <span>Ban</span>
                             <input type="checkbox" class="banned-checkbox" 
-                                   data-email="${user.email}" 
+                                   data-email="${escapeHtml(user.email)}" 
                                    ${isChecked ? 'checked' : ''}>
                         </label>
                     </div>

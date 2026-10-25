@@ -178,9 +178,9 @@
             if (current.banned) currentBadges += '<span class="badge badge-banned">BAN</span>';
 
             return `
-                    <div class="user-item${pendingClass}" data-email="${user.email}">
+                    <div class="user-item${pendingClass}" data-email="${escapeHtml(user.email)}">
                         <div class="user-info">
-                            <span class="user-name">${user.cognome} ${user.nome}</span>
+                            <span class="user-name">${escapeHtml(user.cognome)} ${escapeHtml(user.nome)}</span>
                             <div class="user-badges">${currentBadges}</div>
                             ${pendingBadges}
                         </div>
@@ -188,13 +188,13 @@
                             <div class="action-group">
                                 <span class="action-label vip">VIP</span>
                                 <input type="checkbox" class="action-checkbox vip" 
-                                       data-email="${user.email}" data-type="vip"
+                                       data-email="${escapeHtml(user.email)}" data-type="vip"
                                        ${current.vip ? 'checked' : ''}>
                             </div>
                             <div class="action-group">
                                 <span class="action-label ban">BAN</span>
                                 <input type="checkbox" class="action-checkbox ban" 
-                                       data-email="${user.email}" data-type="banned"
+                                       data-email="${escapeHtml(user.email)}" data-type="banned"
                                        ${current.banned ? 'checked' : ''}>
                             </div>
                         </div>

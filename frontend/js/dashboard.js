@@ -96,7 +96,7 @@ function showEditingBanner(booking) {
   banner.style.cssText =
     'background: var(--color-warning, #ffc107); color: #000; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;';
   banner.innerHTML = `
-    <span><strong>Modalità Modifica:</strong> Seleziona nuova data e orario per sostituire l'appuntamento del ${formatDate(booking.giorno)} alle ${booking.ora}</span>
+    <span><strong>Modalità Modifica:</strong> Seleziona nuova data e orario per sostituire l'appuntamento del ${escapeHtml(formatDate(booking.giorno))} alle ${escapeHtml(booking.ora)}</span>
     <button onclick="cancelEditing()" class="btn" style="padding: 6px 12px; font-size: 0.9rem;">Annulla Modifica</button>
   `;
   container.insertBefore(banner, container.firstChild.nextSibling);

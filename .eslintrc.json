@@ -62,7 +62,8 @@
         "getCurrentUser": "readonly",
         "redirectToLogin": "readonly",
         "redirectToDashboard": "readonly",
-        "Modal": "readonly"
+        "Modal": "readonly",
+        "escapeHtml": "readonly"
       }
     }
   ]

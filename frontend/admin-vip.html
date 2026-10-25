@@ -312,16 +312,16 @@
             }
 
             return `
-                    <div class="user-item ${pendingClass}" data-email="${user.email}">
+                    <div class="user-item ${pendingClass}" data-email="${escapeHtml(user.email)}">
                         <div class="user-info">
                             <span class="vip-badge" style="visibility: ${displayVip ? 'visible' : 'hidden'}">⭐</span>
-                            <span class="user-name">${user.cognome} ${user.nome}</span>
+                            <span class="user-name">${escapeHtml(user.cognome)} ${escapeHtml(user.nome)}</span>
                             ${pendingBadge}
                         </div>
                         <label class="vip-label">
                             <span>VIP</span>
                             <input type="checkbox" class="vip-checkbox" 
-                                   data-email="${user.email}" 
+                                   data-email="${escapeHtml(user.email)}" 
                                    ${isChecked ? 'checked' : ''}>
                         </label>
                     </div>
