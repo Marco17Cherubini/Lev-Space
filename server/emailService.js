@@ -110,7 +110,8 @@ async function sendBookingConfirmation(booking) {
   `;
 
   try {
-    console.log(`📧 Invio email a: ${booking.email}`);
+    // Nei log non si scrivono indirizzi email dei clienti (Privacy Policy)
+    console.log('📧 Invio email di conferma prenotazione');
 
     const { data, error } = await resend.emails.send({
       from: fromEmail,
@@ -178,7 +179,7 @@ async function sendPasswordResetEmail(email, resetLink) {
   `;
 
   try {
-    console.log(`📧 Invio email reset password a: ${email}`);
+    console.log('📧 Invio email di reset password');
 
     const { data, error } = await resend.emails.send({
       from: fromEmail,
