@@ -15,12 +15,15 @@ The project follows a modular architecture:
 We use **ESLint** and **Prettier** to enforce code quality and formatting.
 
 ### CSS Architecture
+
 We follow the **BEM (Block Element Modifier)** naming convention for all new components.
+
 - **Block**: `.admin-calendar`
 - **Element**: `.admin-calendar__cell`
 - **Modifier**: `.admin-calendar__cell--active`
 
 CSS is organized into layers:
+
 1. **Tokens**: Global variables (`global.css`, `admin.css`)
 2. **Base**: Resets and typography
 3. **Components**: Reusable UI elements (`buttons.css`, `cards.css`)
@@ -28,6 +31,7 @@ CSS is organized into layers:
 5. **Pages**: Page-specific overrides
 
 ### JavaScript Architecture
+
 - Use **ES6+** features (Classes, Async/Await, Arrow Functions).
 - Prefer **Component-based** architecture for UI logic (e.g., `Modal.js`).
 - Avoid inline event listeners; use `addEventListener`.
@@ -35,14 +39,17 @@ CSS is organized into layers:
 ## 🚀 Development Workflow
 
 1. **Install Dependencies**
+
    ```bash
    npm install
    ```
 
 2. **Start Development Server**
+
    ```bash
    npm run dev
    ```
+
    Server runs on `http://localhost:3000`.
 
 3. **Linting & Formatting**

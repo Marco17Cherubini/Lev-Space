@@ -78,11 +78,9 @@ async function loginUser(email, password) {
   const adminCheck = await verifyAdminPassword(emailLower, password);
   if (adminCheck) {
     // È un admin - genera token con flag isAdmin
-    const token = jwt.sign(
-      { email: emailLower, isAdmin: true },
-      config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
-    );
+    const token = jwt.sign({ email: emailLower, isAdmin: true }, config.jwt.secret, {
+      expiresIn: config.jwt.expiresIn
+    });
 
     return {
       user: { email: emailLower, isAdmin: true },
@@ -108,11 +106,9 @@ async function loginUser(email, password) {
   }
 
   // Genera JWT token (utente normale)
-  const token = jwt.sign(
-    { email: user.email, isAdmin: false },
-    config.jwt.secret,
-    { expiresIn: config.jwt.expiresIn }
-  );
+  const token = jwt.sign({ email: user.email, isAdmin: false }, config.jwt.secret, {
+    expiresIn: config.jwt.expiresIn
+  });
 
   const { password: _, ...userWithoutPassword } = user;
   return { user: { ...userWithoutPassword, isAdmin: false }, token, isAdmin: false };
@@ -202,11 +198,9 @@ function generateResetToken(email) {
   }
 
   // Genera token con email e timestamp per invalidazione automatica
-  const token = jwt.sign(
-    { email: emailLower, purpose: 'password-reset' },
-    config.jwt.secret,
-    { expiresIn: '1h' }
-  );
+  const token = jwt.sign({ email: emailLower, purpose: 'password-reset' }, config.jwt.secret, {
+    expiresIn: '1h'
+  });
 
   return token;
 }

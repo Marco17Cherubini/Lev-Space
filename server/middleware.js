@@ -10,19 +10,19 @@ function authenticateToken(req, res, next) {
 
   try {
     const decoded = verifyToken(token);
-    
+
     // Controlla se è admin
     if (decoded.isAdmin) {
-      req.user = { 
-        email: decoded.email, 
-        isAdmin: true 
+      req.user = {
+        email: decoded.email,
+        isAdmin: true
       };
       return next();
     }
-    
+
     // Utente normale
     const user = getUserByEmail(decoded.email);
-    
+
     if (!user) {
       return res.status(401).json({ error: 'Utente non trovato' });
     }

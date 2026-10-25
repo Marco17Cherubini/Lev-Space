@@ -16,8 +16,19 @@ const {
   adminCancelRecurringSeries,
   moveBooking
 } = require('./bookingService');
-const { getAllUsers, toggleVip, isVip, toggleBanned, generateResetToken, resetPassword } = require('./authService');
-const { initializeEmailService, sendBookingConfirmation, sendPasswordResetEmail } = require('./emailService');
+const {
+  getAllUsers,
+  toggleVip,
+  isVip,
+  toggleBanned,
+  generateResetToken,
+  resetPassword
+} = require('./authService');
+const {
+  initializeEmailService,
+  sendBookingConfirmation,
+  sendPasswordResetEmail
+} = require('./emailService');
 const { initDatabase } = require('./database');
 
 // ==================== VALIDAZIONE SICUREZZA ====================
@@ -26,7 +37,9 @@ const { initDatabase } = require('./database');
 if (!config.jwt.secret) {
   console.error('❌ ERRORE CRITICO: JWT_SECRET non configurato!');
   console.error('   Imposta JWT_SECRET nel file .env');
-  console.error('   Genera un secret con: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
+  console.error(
+    "   Genera un secret con: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\""
+  );
   process.exit(1);
 }
 
@@ -36,9 +49,11 @@ const app = express();
 initializeEmailService();
 
 // Middleware
-app.use(helmet({
-  contentSecurityPolicy: false // Disabilita per permettere inline scripts
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: false // Disabilita per permettere inline scripts
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -111,8 +126,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     }
 
     // Risposta generica (anti-enumerazione)
-    res.json({ success: true, message: 'Se l\'email esiste, riceverai un link di reset.' });
-
+    res.json({ success: true, message: "Se l'email esiste, riceverai un link di reset." });
   } catch (error) {
     console.error('Errore forgot-password:', error);
     res.status(500).json({ success: false, error: 'Errore interno' });
@@ -127,7 +141,6 @@ app.post('/api/auth/reset-password', async (req, res) => {
     await resetPassword(token, password);
 
     res.json({ success: true, message: 'Password aggiornata con successo' });
-
   } catch (error) {
     console.error('Errore reset-password:', error);
     res.status(400).json({ success: false, error: error.message });
@@ -142,7 +155,7 @@ app.get('/api/availability/:year/:month', (req, res) => {
   try {
     const year = parseInt(req.params.year);
     const month = parseInt(req.params.month) - 1; // getMonth() returns 0-11
-    
+
     let includeExtraSlots = false;
     const authHeader = req.headers.cookie;
     if (authHeader) {
@@ -168,29 +181,29 @@ app.get('/api/availability/:year/:month', (req, res) => {
     const { getAvailableSlots } = require('./bookingService');
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const availability = {};
-    
+
     const today = new Date();
-    today.setHours(0,0,0,0);
-    
+    today.setHours(0, 0, 0, 0);
+
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month, d);
-      
+
       // Se è nel passato, è false e non calcoliamo
       if (date < today) {
         availability[d] = false;
         continue;
       }
-      
+
       // Calcoliamo la disponibilità vera
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const slots = getAvailableSlots(dateStr, includeExtraSlots);
-      
+
       // Controllo che ci sia almeno uno slot disponibile per essere considerato aperto ai click
       availability[d] = slots.some(slot => slot.available);
     }
 
     res.json({ success: true, availability });
-  } catch(e) {
+  } catch (e) {
     res.status(400).json({ success: false, error: e.message });
   }
 });
@@ -363,13 +376,10 @@ app.post('/api/bookings/guest', (req, res) => {
       message: 'Prenotazione confermata! Riceverai una email con i dettagli.',
       emailSent: 'pending'
     });
-
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
 });
-
-
 
 // ==================== ADMIN ROUTES ====================
 
@@ -396,10 +406,10 @@ app.post('/api/admin/settings/hours', authenticateToken, (req, res) => {
     }
     const { globalSettingsDB } = require('./database');
     const newHours = req.body;
-    
+
     // validazione base
     if (!newHours || !newHours.daysOpen || !newHours.days) {
-         return res.status(400).json({ success: false, error: 'Formato inviato non valido' });
+      return res.status(400).json({ success: false, error: 'Formato inviato non valido' });
     }
 
     globalSettingsDB.set('businessHours', newHours);
@@ -627,8 +637,6 @@ app.get('/guest-home', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/guest-home.html'));
 });
 
-
-
 // Home page (dopo login)
 app.get('/home', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/home.html'));
@@ -718,7 +726,9 @@ app.get('/api/admin/reports/bookings-stats', authenticateToken, (req, res) => {
       today.setDate(today.getDate() + offset * 30);
     }
 
-    let startDate, labels = [], dateFormat;
+    let startDate,
+      labels = [],
+      dateFormat;
 
     if (period === 'weekly') {
       // Ultimi 7 giorni

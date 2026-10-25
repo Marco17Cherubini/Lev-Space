@@ -48,12 +48,33 @@ function getTimeSlotsForDate(date, includeExtra = true) {
     slots = [...slots, ...extraSlots];
   } else if (includeExtra && !hours.vip) {
     const preOpeningSlot = ['08:00'];
-    const extraSlotsWeekday = ['18:00', '18:45', '19:30', '20:15', '21:00', '21:45', '22:30', '23:15'];
-    const extraSlotsSaturday = ['15:30', '16:15', '17:00', '17:45', '18:30', '19:15', '20:00', '20:45', '21:30', '22:15', '23:00'];
+    const extraSlotsWeekday = [
+      '18:00',
+      '18:45',
+      '19:30',
+      '20:15',
+      '21:00',
+      '21:45',
+      '22:30',
+      '23:15'
+    ];
+    const extraSlotsSaturday = [
+      '15:30',
+      '16:15',
+      '17:00',
+      '17:45',
+      '18:30',
+      '19:15',
+      '20:00',
+      '20:45',
+      '21:30',
+      '22:15',
+      '23:00'
+    ];
     const extraSlots = dayOfWeek === 6 ? extraSlotsSaturday : extraSlotsWeekday;
     slots = [...preOpeningSlot, ...slots, ...extraSlots];
   }
-  
+
   slots = [...new Set(slots)].sort();
   return slots;
 }
@@ -62,12 +83,12 @@ function getTimeSlotsForDate(date, includeExtra = true) {
 function initAllTimeSlots() {
   const tempSet = new Set();
   businessHours.daysOpen.forEach(day => {
-      const d = new Date();
-      const currentDay = d.getDay();
-      const distance = day - currentDay;
-      d.setDate(d.getDate() + distance);
-      const slots = getTimeSlotsForDate(d, true);
-      slots.forEach(s => tempSet.add(s));
+    const d = new Date();
+    const currentDay = d.getDay();
+    const distance = day - currentDay;
+    d.setDate(d.getDate() + distance);
+    const slots = getTimeSlotsForDate(d, true);
+    slots.forEach(s => tempSet.add(s));
   });
   allTimeSlots = Array.from(tempSet).sort();
 }
@@ -197,7 +218,8 @@ function renderCalendar() {
 
   // Calcola le date della settimana (Lun-Sab)
   const weekDates = [];
-  for (let i = 0; i <= 5; i++) { // 0=Lun, 1=Mar, 2=Mer, 3=Gio, 4=Ven, 5=Sab
+  for (let i = 0; i <= 5; i++) {
+    // 0=Lun, 1=Mar, 2=Mer, 3=Gio, 4=Ven, 5=Sab
     const date = new Date(currentWeekStart);
     date.setDate(date.getDate() + i);
     weekDates.push(date);
@@ -231,7 +253,9 @@ function renderCalendar() {
       const isExtraSlot = isValidSlot && !normalSlots.includes(time);
       const booking = findBooking(dateStr, time);
       const isHoliday = findHoliday(dateStr, time);
-      const isSelectedForHoliday = selectedHolidaySlots.some(s => s.giorno === dateStr && s.ora === time);
+      const isSelectedForHoliday = selectedHolidaySlots.some(
+        s => s.giorno === dateStr && s.ora === time
+      );
 
       // Slot dati
       cell.dataset.date = dateStr;
@@ -265,7 +289,7 @@ function renderCalendar() {
         // Solo celle senza prenotazione possono essere selezionate per ferie
         if (!booking) {
           // Drag-select: mousedown inizia il drag
-          cell.addEventListener('mousedown', (e) => {
+          cell.addEventListener('mousedown', e => {
             e.preventDefault();
             startDrag(dateStr, time, isHoliday);
           });
@@ -287,41 +311,49 @@ function renderCalendar() {
         cell.innerHTML = renderBookingItem(booking, time);
 
         // Drag-and-drop: inizia drag su mousedown sulla prenotazione
-        cell.addEventListener('mousedown', (e) => {
+        cell.addEventListener('mousedown', e => {
           if (holidayMode) return;
           e.preventDefault();
           startBookingDrag(booking, e);
         });
 
         // Drag-and-drop: supporto TOUCH (Long Press)
-        cell.addEventListener('touchstart', (e) => {
-          if (holidayMode) return;
-          if (e.touches.length !== 1) return;
+        cell.addEventListener(
+          'touchstart',
+          e => {
+            if (holidayMode) return;
+            if (e.touches.length !== 1) return;
 
-          touchStartX = e.touches[0].clientX;
-          touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
 
-          // Avvia timer per long press (500ms)
-          longPressTimer = setTimeout(() => {
-            e.preventDefault();
-            startBookingDrag(booking, e.touches[0]);
+            // Avvia timer per long press (500ms)
+            longPressTimer = setTimeout(() => {
+              e.preventDefault();
+              startBookingDrag(booking, e.touches[0]);
 
-            // Feedback vibratile se supportato
-            if (navigator.vibrate) navigator.vibrate(50);
-          }, 500);
-        }, { passive: false });
+              // Feedback vibratile se supportato
+              if (navigator.vibrate) navigator.vibrate(50);
+            }, 500);
+          },
+          { passive: false }
+        );
 
-        cell.addEventListener('touchmove', (e) => {
-          // Se ci si muove troppo prima del long press, annulla
-          if (longPressTimer && !isDraggingBooking) {
-            const moveX = e.touches[0].clientX;
-            const moveY = e.touches[0].clientY;
-            if (Math.abs(moveX - touchStartX) > 10 || Math.abs(moveY - touchStartY) > 10) {
-              clearTimeout(longPressTimer);
-              longPressTimer = null;
+        cell.addEventListener(
+          'touchmove',
+          e => {
+            // Se ci si muove troppo prima del long press, annulla
+            if (longPressTimer && !isDraggingBooking) {
+              const moveX = e.touches[0].clientX;
+              const moveY = e.touches[0].clientY;
+              if (Math.abs(moveX - touchStartX) > 10 || Math.abs(moveY - touchStartY) > 10) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
             }
-          }
-        }, { passive: false });
+          },
+          { passive: false }
+        );
 
         cell.addEventListener('touchend', () => {
           if (longPressTimer) {
@@ -338,7 +370,7 @@ function renderCalendar() {
         });
 
         // Click su cella con prenotazione -> mostra dettagli (solo se non era drag)
-        cell.addEventListener('click', (e) => {
+        cell.addEventListener('click', e => {
           if (isDraggingBooking) return;
           e.stopPropagation();
           showDetailModal(booking);
@@ -425,7 +457,9 @@ function startBookingDrag(booking, event) {
   updateGhostPosition(event);
 
   // Aggiungi classe alla cella originale
-  const originalCell = document.querySelector(`[data-date="${booking.giorno}"][data-time="${booking.ora}"]`);
+  const originalCell = document.querySelector(
+    `[data-date="${booking.giorno}"][data-time="${booking.ora}"]`
+  );
   if (originalCell) {
     originalCell.classList.add('dragging-source');
   }
@@ -436,8 +470,8 @@ function startBookingDrag(booking, event) {
 
 function updateGhostPosition(event) {
   if (dragGhostElement) {
-    dragGhostElement.style.left = (event.clientX + 10) + 'px';
-    dragGhostElement.style.top = (event.clientY + 10) + 'px';
+    dragGhostElement.style.left = event.clientX + 10 + 'px';
+    dragGhostElement.style.top = event.clientY + 10 + 'px';
   }
 }
 
@@ -463,7 +497,9 @@ function endBookingDrag(snapBack = false) {
 
   // Rimuovi classi
   document.body.classList.remove('is-dragging-booking');
-  document.querySelectorAll('.dragging-source').forEach(el => el.classList.remove('dragging-source'));
+  document
+    .querySelectorAll('.dragging-source')
+    .forEach(el => el.classList.remove('dragging-source'));
   document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
   document.querySelectorAll('.drop-invalid').forEach(el => el.classList.remove('drop-invalid'));
 }
@@ -542,7 +578,7 @@ async function dropBooking(newGiorno, newOra) {
 }
 
 // Event listener globali per drag prenotazioni
-document.addEventListener('mousemove', (e) => {
+document.addEventListener('mousemove', e => {
   if (isDraggingBooking) {
     updateGhostPosition(e);
   }
@@ -555,26 +591,30 @@ document.addEventListener('mouseup', () => {
 });
 
 // Supporto Touch per Mobile (Global)
-document.addEventListener('touchmove', (e) => {
-  if (isDraggingBooking) {
-    e.preventDefault(); // Previene lo scroll
-    updateGhostPosition(e.touches[0]);
+document.addEventListener(
+  'touchmove',
+  e => {
+    if (isDraggingBooking) {
+      e.preventDefault(); // Previene lo scroll
+      updateGhostPosition(e.touches[0]);
 
-    // Identifica manualmente il target del drop
-    const touch = e.touches[0];
-    const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    const cell = target ? target.closest('.admin-cell') : null;
+      // Identifica manualmente il target del drop
+      const touch = e.touches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      const cell = target ? target.closest('.admin-cell') : null;
 
-    // Rimuovi highlight precedenti
-    document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+      // Rimuovi highlight precedenti
+      document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
 
-    if (cell && cell.classList.contains('droppable')) {
-      cell.classList.add('drop-target');
+      if (cell && cell.classList.contains('droppable')) {
+        cell.classList.add('drop-target');
+      }
     }
-  }
-}, { passive: false });
+  },
+  { passive: false }
+);
 
-document.addEventListener('touchend', (e) => {
+document.addEventListener('touchend', e => {
   if (isDraggingBooking) {
     e.preventDefault();
 
@@ -607,7 +647,9 @@ function openBookingModal(date, time) {
   document.getElementById('suggestions-list').classList.add('hidden');
 
   // Reset opzioni ricorrenza (tutte le modalità spente, dropdown nascosto)
-  document.querySelectorAll('.form-recurrence__checkbox').forEach(cb => { cb.checked = false; });
+  document.querySelectorAll('.form-recurrence__checkbox').forEach(cb => {
+    cb.checked = false;
+  });
   document.getElementById('recurrence-options').classList.add('hidden');
 
   // Imposta titolo e sottotitolo
@@ -633,9 +675,8 @@ function closeBookingModal() {
 function showDetailModal(booking) {
   selectedBooking = booking;
 
-  const tipoRow = booking.tipo === 'ricorrente'
-    ? '<div><strong>Tipo:</strong> Ricorrente</div>'
-    : '';
+  const tipoRow =
+    booking.tipo === 'ricorrente' ? '<div><strong>Tipo:</strong> Ricorrente</div>' : '';
 
   document.getElementById('detail-content').innerHTML = `
     <div><strong>Nome:</strong> ${booking.nome} ${booking.cognome}</div>
@@ -753,9 +794,8 @@ function setupAutocomplete() {
     }
 
     // Cerca utenti che matchano il cognome
-    const matches = allUsers.filter(user =>
-      user.cognome.toLowerCase().includes(value) ||
-      user.nome.toLowerCase().includes(value)
+    const matches = allUsers.filter(
+      user => user.cognome.toLowerCase().includes(value) || user.nome.toLowerCase().includes(value)
     );
 
     if (matches.length === 0) {
@@ -764,12 +804,16 @@ function setupAutocomplete() {
     }
 
     // Mostra suggerimenti
-    suggestionsList.innerHTML = matches.map(user => `
+    suggestionsList.innerHTML = matches
+      .map(
+        user => `
       <div class="suggestion-item" data-user='${JSON.stringify(user).replace(/'/g, "\\'")}'>
         <div class="suggestion-name">${user.cognome} ${user.nome}</div>
         <div class="suggestion-details">${user.email} | ${user.telefono}</div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
 
     suggestionsList.classList.remove('hidden');
 
@@ -784,7 +828,7 @@ function setupAutocomplete() {
   });
 
   // Chiudi suggerimenti quando si clicca fuori
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', e => {
     if (!cognomeInput.contains(e.target) && !suggestionsList.contains(e.target)) {
       suggestionsList.classList.add('hidden');
     }
@@ -824,14 +868,16 @@ function setupModalListeners() {
   document.getElementById('modal-cancel').addEventListener('click', () => bookingModal.close());
   document.getElementById('detail-close').addEventListener('click', () => detailModal.close());
   document.getElementById('detail-delete').addEventListener('click', showDeleteConfirmModal);
-  document.getElementById('delete-cancel').addEventListener('click', () => deleteConfirmModal.close());
+  document
+    .getElementById('delete-cancel')
+    .addEventListener('click', () => deleteConfirmModal.close());
   document.getElementById('delete-confirm').addEventListener('click', executeDelete);
 
   // Opzioni ricorrenza mutuamente esclusive: selezionandone una si deselezionano le altre.
   // Il dropdown dei mesi appare se almeno una modalità è attiva.
   const recurrenceCheckboxes = document.querySelectorAll('.form-recurrence__checkbox');
   recurrenceCheckboxes.forEach(cb => {
-    cb.addEventListener('change', (e) => {
+    cb.addEventListener('change', e => {
       if (e.target.checked) {
         recurrenceCheckboxes.forEach(other => {
           if (other !== e.target) other.checked = false;
@@ -843,13 +889,15 @@ function setupModalListeners() {
   });
 
   // Submit form inserimento
-  document.getElementById('booking-form').addEventListener('submit', async (e) => {
+  document.getElementById('booking-form').addEventListener('submit', async e => {
     e.preventDefault();
 
     // Modalità ricorrente selezionata (se presente) e relativo intervallo in settimane
     const selectedRecurrence = document.querySelector('.form-recurrence__checkbox:checked');
     const ricorrente = !!selectedRecurrence;
-    const intervalloSettimane = selectedRecurrence ? parseInt(selectedRecurrence.dataset.interval, 10) : 1;
+    const intervalloSettimane = selectedRecurrence
+      ? parseInt(selectedRecurrence.dataset.interval, 10)
+      : 1;
     const mesiRicorrenza = parseInt(document.getElementById('input-mesi').value, 10);
 
     const formData = {
@@ -872,8 +920,12 @@ function setupModalListeners() {
     }
 
     // Validazione ricorrenza: numero di mesi valido (1-12)
-    if (ricorrente && (!Number.isInteger(mesiRicorrenza) || mesiRicorrenza < 1 || mesiRicorrenza > 12)) {
-      document.getElementById('form-error').textContent = 'Seleziona per quanti mesi ripetere la prenotazione';
+    if (
+      ricorrente &&
+      (!Number.isInteger(mesiRicorrenza) || mesiRicorrenza < 1 || mesiRicorrenza > 12)
+    ) {
+      document.getElementById('form-error').textContent =
+        'Seleziona per quanti mesi ripetere la prenotazione';
       document.getElementById('form-error').classList.remove('hidden');
       return;
     }
@@ -896,9 +948,8 @@ function setupModalListeners() {
 
         // Riepilogo per le prenotazioni ricorrenti (inserite / saltate per sovrapposizione)
         if (response.ricorrente) {
-          const saltateMsg = response.saltate > 0
-            ? `, ${response.saltate} saltate per sovrapposizione`
-            : '';
+          const saltateMsg =
+            response.saltate > 0 ? `, ${response.saltate} saltate per sovrapposizione` : '';
           showDropFeedback(`Ricorrente: ${response.inserite} occorrenze inserite${saltateMsg}`);
         }
 
@@ -1050,8 +1101,12 @@ async function saveHolidays() {
 
   try {
     // Separa slot da aggiungere e da rimuovere
-    const toAdd = selectedHolidaySlots.filter(s => !s.isRemove).map(s => ({ giorno: s.giorno, ora: s.ora }));
-    const toRemove = selectedHolidaySlots.filter(s => s.isRemove).map(s => ({ giorno: s.giorno, ora: s.ora }));
+    const toAdd = selectedHolidaySlots
+      .filter(s => !s.isRemove)
+      .map(s => ({ giorno: s.giorno, ora: s.ora }));
+    const toRemove = selectedHolidaySlots
+      .filter(s => s.isRemove)
+      .map(s => ({ giorno: s.giorno, ora: s.ora }));
 
     // Aggiungi nuove ferie
     if (toAdd.length > 0) {
@@ -1072,7 +1127,6 @@ async function saveHolidays() {
     // Ricarica ferie e esci dalla modalità
     await loadHolidays();
     exitHolidayMode();
-
   } catch (error) {
     console.error('Errore salvataggio ferie:', error);
     alert('Errore nel salvataggio delle ferie: ' + error.message);
@@ -1140,7 +1194,7 @@ document.addEventListener('mouseup', () => {
 });
 
 // Previeni selezione testo durante il drag
-document.addEventListener('selectstart', (e) => {
+document.addEventListener('selectstart', e => {
   if (isDragging) {
     e.preventDefault();
   }

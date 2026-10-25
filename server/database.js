@@ -12,7 +12,7 @@ console.log(`📁 Database path: ${DB_PATH}`);
 // Assicurati che la directory esista
 const dbDir = path.dirname(DB_PATH);
 if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
+  fs.mkdirSync(dbDir, { recursive: true });
 }
 
 // Database instance (sarà inizializzato in modo asincrono)
@@ -20,29 +20,29 @@ let db = null;
 
 // Funzione per salvare il database su disco
 function saveDatabase() {
-    if (db) {
-        const data = db.export();
-        const buffer = Buffer.from(data);
-        fs.writeFileSync(DB_PATH, buffer);
-    }
+  if (db) {
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(DB_PATH, buffer);
+  }
 }
 
 // Inizializza il database
 async function initDatabase() {
-    const SQL = await initSqlJs();
+  const SQL = await initSqlJs();
 
-    // Carica database esistente o crea nuovo
-    if (fs.existsSync(DB_PATH)) {
-        const fileBuffer = fs.readFileSync(DB_PATH);
-        db = new SQL.Database(fileBuffer);
-        console.log('📦 Database SQLite caricato da file');
-    } else {
-        db = new SQL.Database();
-        console.log('📦 Nuovo database SQLite creato');
-    }
+  // Carica database esistente o crea nuovo
+  if (fs.existsSync(DB_PATH)) {
+    const fileBuffer = fs.readFileSync(DB_PATH);
+    db = new SQL.Database(fileBuffer);
+    console.log('📦 Database SQLite caricato da file');
+  } else {
+    db = new SQL.Database();
+    console.log('📦 Nuovo database SQLite creato');
+  }
 
-    // Crea tabelle se non esistono
-    db.run(`
+  // Crea tabelle se non esistono
+  db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nome TEXT NOT NULL,
@@ -55,7 +55,7 @@ async function initDatabase() {
     )
   `);
 
-    db.run(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS bookings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nome TEXT NOT NULL,
@@ -70,7 +70,7 @@ async function initDatabase() {
     )
   `);
 
-    db.run(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS admins (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE NOT NULL,
@@ -78,7 +78,7 @@ async function initDatabase() {
     )
   `);
 
-    db.run(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS holidays (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       giorno TEXT NOT NULL,
@@ -87,66 +87,66 @@ async function initDatabase() {
     )
   `);
 
-    db.run(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS global_settings (
       key TEXT PRIMARY KEY,
       json_data TEXT NOT NULL
     )
   `);
 
-    // Aggiungi colonna vip se non esiste (migrazione)
-    try {
-        db.run(`ALTER TABLE users ADD COLUMN vip INTEGER DEFAULT 0`);
-    } catch (e) {
-        // Colonna già esiste
-    }
+  // Aggiungi colonna vip se non esiste (migrazione)
+  try {
+    db.run(`ALTER TABLE users ADD COLUMN vip INTEGER DEFAULT 0`);
+  } catch (e) {
+    // Colonna già esiste
+  }
 
-    // Aggiungi colonna banned se non esiste (migrazione)
-    try {
-        db.run(`ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0`);
-    } catch (e) {
-        // Colonna già esiste
-    }
+  // Aggiungi colonna banned se non esiste (migrazione)
+  try {
+    db.run(`ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0`);
+  } catch (e) {
+    // Colonna già esiste
+  }
 
-    // Aggiungi colonna isGuest se non esiste (migrazione per Guest Checkout)
-    try {
-        db.run(`ALTER TABLE users ADD COLUMN isGuest INTEGER DEFAULT 0`);
-    } catch (e) {
-        // Colonna gia esiste
-    }
+  // Aggiungi colonna isGuest se non esiste (migrazione per Guest Checkout)
+  try {
+    db.run(`ALTER TABLE users ADD COLUMN isGuest INTEGER DEFAULT 0`);
+  } catch (e) {
+    // Colonna gia esiste
+  }
 
-    // Aggiungi colonna token a bookings se non esiste (migrazione per Smart Rescheduling)
-    try {
-        db.run(`ALTER TABLE bookings ADD COLUMN token TEXT`);
-    } catch (e) {
-        // Colonna gia esiste
-    }
+  // Aggiungi colonna token a bookings se non esiste (migrazione per Smart Rescheduling)
+  try {
+    db.run(`ALTER TABLE bookings ADD COLUMN token TEXT`);
+  } catch (e) {
+    // Colonna gia esiste
+  }
 
-    // Aggiungi colonna tipo a bookings se non esiste (migrazione per Prenotazioni Ricorrenti)
-    // Valori: 'normale' (default) | 'ricorrente'
-    try {
-        db.run(`ALTER TABLE bookings ADD COLUMN tipo TEXT DEFAULT 'normale'`);
-    } catch (e) {
-        // Colonna gia esiste
-    }
+  // Aggiungi colonna tipo a bookings se non esiste (migrazione per Prenotazioni Ricorrenti)
+  // Valori: 'normale' (default) | 'ricorrente'
+  try {
+    db.run(`ALTER TABLE bookings ADD COLUMN tipo TEXT DEFAULT 'normale'`);
+  } catch (e) {
+    // Colonna gia esiste
+  }
 
-    // Migrazione: ricrea tabella bookings se servizio è NOT NULL
-    // Questo è necessario perché SQLite non supporta ALTER COLUMN
-    try {
-        // Verifica se serve la migrazione controllando lo schema
-        const tableInfo = db.exec("PRAGMA table_info(bookings)");
-        const columns = tableInfo[0]?.values || [];
-        const servizioCol = columns.find(col => col[1] === 'servizio');
+  // Migrazione: ricrea tabella bookings se servizio è NOT NULL
+  // Questo è necessario perché SQLite non supporta ALTER COLUMN
+  try {
+    // Verifica se serve la migrazione controllando lo schema
+    const tableInfo = db.exec('PRAGMA table_info(bookings)');
+    const columns = tableInfo[0]?.values || [];
+    const servizioCol = columns.find(col => col[1] === 'servizio');
 
-        // Se servizio ha notnull=1, dobbiamo ricreare la tabella
-        if (servizioCol && servizioCol[3] === 1) {
-            console.log('🔄 Migrazione: rimuovo vincolo NOT NULL da servizio...');
+    // Se servizio ha notnull=1, dobbiamo ricreare la tabella
+    if (servizioCol && servizioCol[3] === 1) {
+      console.log('🔄 Migrazione: rimuovo vincolo NOT NULL da servizio...');
 
-            // Rinomina tabella esistente
-            db.run(`ALTER TABLE bookings RENAME TO bookings_old`);
+      // Rinomina tabella esistente
+      db.run(`ALTER TABLE bookings RENAME TO bookings_old`);
 
-            // Crea nuova tabella con servizio nullable
-            db.run(`
+      // Crea nuova tabella con servizio nullable
+      db.run(`
                 CREATE TABLE bookings (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     nome TEXT NOT NULL,
@@ -161,181 +161,189 @@ async function initDatabase() {
                 )
             `);
 
-            // Copia dati dalla vecchia tabella
-            db.run(`
+      // Copia dati dalla vecchia tabella
+      db.run(`
                 INSERT INTO bookings (id, nome, cognome, email, telefono, giorno, ora, servizio, token, created_at)
                 SELECT id, nome, cognome, email, telefono, giorno, ora, servizio, token, created_at
                 FROM bookings_old
             `);
 
-            // Elimina vecchia tabella
-            db.run(`DROP TABLE bookings_old`);
+      // Elimina vecchia tabella
+      db.run(`DROP TABLE bookings_old`);
 
-            console.log('✅ Migrazione completata: servizio ora è opzionale');
-        }
-    } catch (e) {
-        console.log('Migrazione servizio già eseguita o non necessaria');
+      console.log('✅ Migrazione completata: servizio ora è opzionale');
     }
+  } catch (e) {
+    console.log('Migrazione servizio già eseguita o non necessaria');
+  }
 
-    // Salva struttura iniziale
-    saveDatabase();
+  // Salva struttura iniziale
+  saveDatabase();
 
-    // Inizializza impostazioni globali se mancano
-    initializeSettings();
+  // Inizializza impostazioni globali se mancano
+  initializeSettings();
 
-    // Inizializza admin
-    initializeDefaultAdmin();
+  // Inizializza admin
+  initializeDefaultAdmin();
 
-    console.log('📦 Database SQLite inizializzato');
+  console.log('📦 Database SQLite inizializzato');
 }
 
 // ==================== INIZIALIZZA SETTINGS (SEED) ====================
 function initializeSettings() {
-    if (!db) return;
-    const currentHours = globalSettingsDB.get('businessHours');
-    if (!currentHours) {
-        try {
-            const config = require('../config/config');
-            if (config.businessHours) {
-                globalSettingsDB.set('businessHours', config.businessHours);
-                console.log('⚙️ Impostazioni businessHours migrate da config.js');
-            }
-        } catch(e) {
-            console.error('Errore durante la migrazione di businessHours:', e);
-        }
+  if (!db) return;
+  const currentHours = globalSettingsDB.get('businessHours');
+  if (!currentHours) {
+    try {
+      const config = require('../config/config');
+      if (config.businessHours) {
+        globalSettingsDB.set('businessHours', config.businessHours);
+        console.log('⚙️ Impostazioni businessHours migrate da config.js');
+      }
+    } catch (e) {
+      console.error('Errore durante la migrazione di businessHours:', e);
     }
+  }
 }
 
 // ==================== CLASSE DB WRAPPER ====================
 
 class SQLiteTable {
-    constructor(tableName, columns) {
-        this.tableName = tableName;
-        this.columns = columns;
+  constructor(tableName, columns) {
+    this.tableName = tableName;
+    this.columns = columns;
+  }
+
+  // Leggi tutti i record
+  readAll() {
+    if (!db) return [];
+    const stmt = db.prepare(`SELECT * FROM ${this.tableName}`);
+    const rows = [];
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      const obj = {};
+      this.columns.forEach(col => {
+        obj[col] = row[col] !== null && row[col] !== undefined ? String(row[col]) : '';
+      });
+      rows.push(obj);
     }
+    stmt.free();
+    return rows;
+  }
 
-    // Leggi tutti i record
-    readAll() {
-        if (!db) return [];
-        const stmt = db.prepare(`SELECT * FROM ${this.tableName}`);
-        const rows = [];
-        while (stmt.step()) {
-            const row = stmt.getAsObject();
-            const obj = {};
-            this.columns.forEach(col => {
-                obj[col] = row[col] !== null && row[col] !== undefined ? String(row[col]) : '';
-            });
-            rows.push(obj);
-        }
-        stmt.free();
-        return rows;
-    }
+  // Trova un record
+  findOne(filterFn) {
+    const data = this.readAll();
+    return data.find(filterFn);
+  }
 
-    // Trova un record
-    findOne(filterFn) {
-        const data = this.readAll();
-        return data.find(filterFn);
-    }
+  // Trova più record
+  findMany(filterFn) {
+    const data = this.readAll();
+    return data.filter(filterFn);
+  }
 
-    // Trova più record
-    findMany(filterFn) {
-        const data = this.readAll();
-        return data.filter(filterFn);
-    }
+  // Inserisci un record
+  insert(record) {
+    if (!db) return null;
+    const cols = this.columns.filter(c => record[c] !== undefined);
+    const placeholders = cols.map(() => '?').join(', ');
+    const values = cols.map(c => record[c]);
 
-    // Inserisci un record
-    insert(record) {
-        if (!db) return null;
-        const cols = this.columns.filter(c => record[c] !== undefined);
-        const placeholders = cols.map(() => '?').join(', ');
-        const values = cols.map(c => record[c]);
+    db.run(`INSERT INTO ${this.tableName} (${cols.join(', ')}) VALUES (${placeholders})`, values);
 
-        db.run(
-            `INSERT INTO ${this.tableName} (${cols.join(', ')}) VALUES (${placeholders})`,
-            values
-        );
+    saveDatabase();
+    return db.exec('SELECT last_insert_rowid()')[0]?.values[0]?.[0];
+  }
 
-        saveDatabase();
-        return db.exec("SELECT last_insert_rowid()")[0]?.values[0]?.[0];
-    }
+  // Aggiorna record che matchano il filtro
+  update(filterFn, updates) {
+    if (!db) return;
+    const allData = this.readAll();
 
-    // Aggiorna record che matchano il filtro
-    update(filterFn, updates) {
-        if (!db) return;
-        const allData = this.readAll();
+    allData.forEach(row => {
+      if (filterFn(row)) {
+        const setClauses = Object.keys(updates)
+          .map(k => `${k} = ?`)
+          .join(', ');
+        const values = Object.values(updates);
 
-        allData.forEach(row => {
-            if (filterFn(row)) {
-                const setClauses = Object.keys(updates).map(k => `${k} = ?`).join(', ');
-                const values = Object.values(updates);
-
-                let whereClause, whereValues;
-                if (this.tableName === 'users' || this.tableName === 'admins') {
-                    whereClause = 'email = ?';
-                    whereValues = [row.email];
-                } else if (this.tableName === 'bookings') {
-                    whereClause = 'giorno = ? AND ora = ? AND email = ?';
-                    whereValues = [row.giorno, row.ora, row.email];
-                } else {
-                    whereClause = 'giorno = ? AND ora = ?';
-                    whereValues = [row.giorno, row.ora];
-                }
-
-                db.run(
-                    `UPDATE ${this.tableName} SET ${setClauses} WHERE ${whereClause}`,
-                    [...values, ...whereValues]
-                );
-            }
-        });
-
-        saveDatabase();
-    }
-
-    // Elimina record che matchano il filtro
-    delete(filterFn) {
-        if (!db) return false;
-        const allData = this.readAll();
-        let deleted = false;
-
-        allData.forEach(row => {
-            if (filterFn(row)) {
-                let whereClause, whereValues;
-                if (this.tableName === 'users' || this.tableName === 'admins') {
-                    whereClause = 'email = ?';
-                    whereValues = [row.email];
-                } else if (this.tableName === 'bookings') {
-                    whereClause = 'giorno = ? AND ora = ? AND email = ?';
-                    whereValues = [row.giorno, row.ora, row.email];
-                } else {
-                    whereClause = 'giorno = ? AND ora = ?';
-                    whereValues = [row.giorno, row.ora];
-                }
-
-                db.run(`DELETE FROM ${this.tableName} WHERE ${whereClause}`, whereValues);
-                deleted = true;
-            }
-        });
-
-        if (deleted) saveDatabase();
-        return deleted;
-    }
-
-    // Riscrivi tutti i dati (per compatibilità)
-    writeAll(data) {
-        if (!db) return;
-        db.run(`DELETE FROM ${this.tableName}`);
-
-        for (const record of data) {
-            this.insert(record);
+        let whereClause, whereValues;
+        if (this.tableName === 'users' || this.tableName === 'admins') {
+          whereClause = 'email = ?';
+          whereValues = [row.email];
+        } else if (this.tableName === 'bookings') {
+          whereClause = 'giorno = ? AND ora = ? AND email = ?';
+          whereValues = [row.giorno, row.ora, row.email];
+        } else {
+          whereClause = 'giorno = ? AND ora = ?';
+          whereValues = [row.giorno, row.ora];
         }
 
-        saveDatabase();
+        db.run(`UPDATE ${this.tableName} SET ${setClauses} WHERE ${whereClause}`, [
+          ...values,
+          ...whereValues
+        ]);
+      }
+    });
+
+    saveDatabase();
+  }
+
+  // Elimina record che matchano il filtro
+  delete(filterFn) {
+    if (!db) return false;
+    const allData = this.readAll();
+    let deleted = false;
+
+    allData.forEach(row => {
+      if (filterFn(row)) {
+        let whereClause, whereValues;
+        if (this.tableName === 'users' || this.tableName === 'admins') {
+          whereClause = 'email = ?';
+          whereValues = [row.email];
+        } else if (this.tableName === 'bookings') {
+          whereClause = 'giorno = ? AND ora = ? AND email = ?';
+          whereValues = [row.giorno, row.ora, row.email];
+        } else {
+          whereClause = 'giorno = ? AND ora = ?';
+          whereValues = [row.giorno, row.ora];
+        }
+
+        db.run(`DELETE FROM ${this.tableName} WHERE ${whereClause}`, whereValues);
+        deleted = true;
+      }
+    });
+
+    if (deleted) saveDatabase();
+    return deleted;
+  }
+
+  // Riscrivi tutti i dati (per compatibilità)
+  writeAll(data) {
+    if (!db) return;
+    db.run(`DELETE FROM ${this.tableName}`);
+
+    for (const record of data) {
+      this.insert(record);
     }
+
+    saveDatabase();
+  }
 }
 
 // ==================== INIZIALIZZA TABELLE ====================
 
-const userColumns = ['nome', 'cognome', 'email', 'telefono', 'password', 'vip', 'banned', 'isGuest'];
+const userColumns = [
+  'nome',
+  'cognome',
+  'email',
+  'telefono',
+  'password',
+  'vip',
+  'banned',
+  'isGuest'
+];
 const bookingColumns = ['nome', 'cognome', 'email', 'telefono', 'giorno', 'ora', 'token', 'tipo'];
 const adminColumns = ['email', 'password'];
 const holidayColumns = ['giorno', 'ora'];
@@ -347,69 +355,71 @@ const adminDB = new SQLiteTable('admins', adminColumns);
 const holidaysDB = new SQLiteTable('holidays', holidayColumns);
 
 const globalSettingsDB = {
-    get: function(key) {
-        if (!db) return null;
-        try {
-            const stmt = db.prepare(`SELECT json_data FROM global_settings WHERE key = ?`);
-            stmt.bind([key]);
-            if (stmt.step()) {
-                const rs = stmt.getAsObject();
-                stmt.free();
-                return JSON.parse(rs.json_data);
-            }
-            stmt.free();
-            return null;
-        } catch (e) {
-            console.error(`Errore in globalSettingsDB.get(${key}):`, e);
-            return null;
-        }
-    },
-    set: function(key, data) {
-        if (!db) return;
-        try {
-            const stringData = JSON.stringify(data);
-            const stmt = db.prepare(`INSERT INTO global_settings (key, json_data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET json_data = excluded.json_data`);
-            stmt.run([key, stringData]);
-            stmt.free();
-            saveDatabase();
-        } catch (e) {
-            console.error(`Errore in globalSettingsDB.set(${key}):`, e);
-        }
+  get: function (key) {
+    if (!db) return null;
+    try {
+      const stmt = db.prepare(`SELECT json_data FROM global_settings WHERE key = ?`);
+      stmt.bind([key]);
+      if (stmt.step()) {
+        const rs = stmt.getAsObject();
+        stmt.free();
+        return JSON.parse(rs.json_data);
+      }
+      stmt.free();
+      return null;
+    } catch (e) {
+      console.error(`Errore in globalSettingsDB.get(${key}):`, e);
+      return null;
     }
+  },
+  set: function (key, data) {
+    if (!db) return;
+    try {
+      const stringData = JSON.stringify(data);
+      const stmt = db.prepare(
+        `INSERT INTO global_settings (key, json_data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET json_data = excluded.json_data`
+      );
+      stmt.run([key, stringData]);
+      stmt.free();
+      saveDatabase();
+    } catch (e) {
+      console.error(`Errore in globalSettingsDB.set(${key}):`, e);
+    }
+  }
 };
 
 // ==================== INIZIALIZZA ADMIN ====================
 
 function initializeDefaultAdmin() {
-    if (!db) return;
-    const admins = adminDB.readAll();
-    if (admins.length === 0) {
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!db) return;
+  const admins = adminDB.readAll();
+  if (admins.length === 0) {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
 
-        if (!adminEmail || !adminPassword) {
-            console.log('⚠️  ATTENZIONE: ADMIN_EMAIL e ADMIN_PASSWORD non configurati nel .env');
-            console.log('   Imposta queste variabili per creare l\'account admin');
-            return;
-        }
-
-        const hashedPassword = bcrypt.hashSync(adminPassword, 10);
-        adminDB.insert({
-            email: adminEmail.toLowerCase(),
-            password: hashedPassword
-        });
-        console.log(`👤 Admin creato: ${adminEmail}`);
+    if (!adminEmail || !adminPassword) {
+      console.log('⚠️  ATTENZIONE: ADMIN_EMAIL e ADMIN_PASSWORD non configurati nel .env');
+      console.log("   Imposta queste variabili per creare l'account admin");
+      return;
     }
+
+    const hashedPassword = bcrypt.hashSync(adminPassword, 10);
+    adminDB.insert({
+      email: adminEmail.toLowerCase(),
+      password: hashedPassword
+    });
+    console.log(`👤 Admin creato: ${adminEmail}`);
+  }
 }
 
 // ==================== EXPORT ====================
 
 module.exports = {
-    usersDB,
-    bookingsDB,
-    adminDB,
-    holidaysDB,
-    globalSettingsDB,
-    initDatabase,
-    saveDatabase
+  usersDB,
+  bookingsDB,
+  adminDB,
+  holidaysDB,
+  globalSettingsDB,
+  initDatabase,
+  saveDatabase
 };

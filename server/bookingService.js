@@ -45,15 +45,36 @@ function getSlotsForDay(date, includeExtraSlots = false) {
     const extraSlots = hours.vip.slots || [];
     // Mantieni pre-orario 08:00 fisso o se nel JSON
     if (dayOfWeek !== 0 && !slots.includes('08:00') && !extraSlots.includes('08:00')) {
-         slots = ['08:00', ...slots];
+      slots = ['08:00', ...slots];
     }
     // Aggiungi straordinari
     slots = [...slots, ...extraSlots];
   } else if (includeExtraSlots && !hours.vip) {
     // Fallback legacy se il JSON VIP non è ancora stato salvato tramite la nuova UI
     const preOpeningSlot = ['08:00'];
-    const extraSlotsWeekday = ['18:00', '18:45', '19:30', '20:15', '21:00', '21:45', '22:30', '23:15'];
-    const extraSlotsSaturday = ['15:30', '16:15', '17:00', '17:45', '18:30', '19:15', '20:00', '20:45', '21:30', '22:15', '23:00'];
+    const extraSlotsWeekday = [
+      '18:00',
+      '18:45',
+      '19:30',
+      '20:15',
+      '21:00',
+      '21:45',
+      '22:30',
+      '23:15'
+    ];
+    const extraSlotsSaturday = [
+      '15:30',
+      '16:15',
+      '17:00',
+      '17:45',
+      '18:30',
+      '19:15',
+      '20:00',
+      '20:45',
+      '21:30',
+      '22:15',
+      '23:00'
+    ];
     const extraSlots = dayOfWeek === 6 ? extraSlotsSaturday : extraSlotsWeekday;
     slots = [...preOpeningSlot, ...slots, ...extraSlots];
   }
@@ -73,9 +94,7 @@ function getAvailableSlots(date, includeExtraSlots = false) {
   const allSlots = getSlotsForDay(date, includeExtraSlots);
 
   // Trova prenotazioni esistenti per questa data
-  const existingBookings = bookingsDB.findMany(
-    booking => booking.giorno === date
-  );
+  const existingBookings = bookingsDB.findMany(booking => booking.giorno === date);
 
   const bookedSlots = existingBookings.map(b => b.ora);
 
@@ -145,9 +164,7 @@ function createBooking(userEmail, bookingData) {
     }
 
     // Verifica che lo slot sia ancora disponibile
-    const existingBooking = bookingsDB.findOne(
-      b => b.giorno === data && b.ora === slotTime
-    );
+    const existingBooking = bookingsDB.findOne(b => b.giorno === data && b.ora === slotTime);
 
     if (existingBooking) {
       throw new Error(`Slot ${slotTime} già occupato`);
@@ -291,7 +308,8 @@ function createAdminBooking(bookingData) {
 // settimane, all'interno di una finestra di (mesi * 4) settimane.
 // Salta (senza sovrascrivere) le occorrenze il cui slot è già occupato o in ferie.
 function createRecurringBooking(bookingData) {
-  const { nome, cognome, email, telefono, giorno, ora, mesiRicorrenza, intervalloSettimane } = bookingData;
+  const { nome, cognome, email, telefono, giorno, ora, mesiRicorrenza, intervalloSettimane } =
+    bookingData;
 
   // Validazione base (come per la prenotazione admin normale)
   if (!cognome || !giorno || !ora) {
@@ -356,7 +374,9 @@ function createRecurringBooking(bookingData) {
 
   // Se ogni occorrenza era occupata/in ferie, non è stata creata nessuna prenotazione
   if (inserite.length === 0) {
-    throw new Error('Nessuna occorrenza inserita: tutte le date selezionate sono già occupate o in ferie');
+    throw new Error(
+      'Nessuna occorrenza inserita: tutte le date selezionate sono già occupate o in ferie'
+    );
   }
 
   // Ritorna un riepilogo: prima occorrenza + conteggi inserite/saltate/totale
@@ -462,14 +482,14 @@ function updateBookingByToken(token, updates) {
   const hoursUntilBooking = (bookingDate - now) / (1000 * 60 * 60);
 
   if (hoursUntilBooking < 24) {
-    throw new Error('Non e possibile modificare la prenotazione entro 24 ore dall\'appuntamento');
+    throw new Error("Non e possibile modificare la prenotazione entro 24 ore dall'appuntamento");
   }
 
   // Se cambia data/ora, verifica disponibilita
   if (newGiorno && newOra && (newGiorno !== booking.giorno || newOra !== booking.ora)) {
     // Verifica slot non occupato
-    const existingBooking = bookingsDB.findOne(b =>
-      b.giorno === newGiorno && b.ora === newOra && b.token !== token
+    const existingBooking = bookingsDB.findOne(
+      b => b.giorno === newGiorno && b.ora === newOra && b.token !== token
     );
     if (existingBooking) {
       throw new Error('Questo slot e gia occupato');
@@ -513,7 +533,7 @@ function cancelBookingByToken(token) {
   const hoursUntilBooking = (bookingDate - now) / (1000 * 60 * 60);
 
   if (hoursUntilBooking < 24) {
-    throw new Error('Non e possibile cancellare la prenotazione entro 24 ore dall\'appuntamento');
+    throw new Error("Non e possibile cancellare la prenotazione entro 24 ore dall'appuntamento");
   }
 
   bookingsDB.delete(b => b.token === token);

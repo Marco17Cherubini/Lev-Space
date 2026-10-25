@@ -8,8 +8,20 @@ let selectedGroupSize = 1; // Numero persone per la prenotazione (1-3)
 
 // Giorni della settimana in italiano
 const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
-const monthNames = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
-  'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+const monthNames = [
+  'gennaio',
+  'febbraio',
+  'marzo',
+  'aprile',
+  'maggio',
+  'giugno',
+  'luglio',
+  'agosto',
+  'settembre',
+  'ottobre',
+  'novembre',
+  'dicembre'
+];
 
 // Inizializzazione
 async function init() {
@@ -22,8 +34,7 @@ async function init() {
     }
 
     // Mostra messaggio di benvenuto
-    document.getElementById('welcome-message').textContent =
-      `Bentornato, ${currentUser.nome}`;
+    document.getElementById('welcome-message').textContent = `Bentornato, ${currentUser.nome}`;
 
     // Check for editing mode
     const editingBooking = sessionStorage.getItem('editingBooking');
@@ -43,7 +54,6 @@ async function init() {
 
     // Show group selection modal
     showGroupModal();
-
   } catch (error) {
     console.error('Errore inizializzazione:', error);
     redirectToLogin();
@@ -83,7 +93,8 @@ function showEditingBanner(booking) {
   const container = document.querySelector('.container');
   const banner = document.createElement('div');
   banner.id = 'editing-banner';
-  banner.style.cssText = 'background: var(--color-warning, #ffc107); color: #000; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;';
+  banner.style.cssText =
+    'background: var(--color-warning, #ffc107); color: #000; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;';
   banner.innerHTML = `
     <span><strong>Modalità Modifica:</strong> Seleziona nuova data e orario per sostituire l'appuntamento del ${formatDate(booking.giorno)} alle ${booking.ora}</span>
     <button onclick="cancelEditing()" class="btn" style="padding: 6px 12px; font-size: 0.9rem;">Annulla Modifica</button>
@@ -157,7 +168,6 @@ async function checkRecurringAppointment() {
     };
 
     showRecurringModal(lastDate, nextDate, lastBooking.ora, currentUser.nome);
-
   } catch (error) {
     console.error('Errore verifica appuntamento ricorrente:', error);
   }
@@ -221,18 +231,27 @@ function bookRecurringAppointment() {
   window.location.href = '/summary';
 }
 
-
-
 // Render calendario
 async function renderCalendar() {
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
   // Mostra mese corrente (usa prima lettera maiuscola)
-  const calendarMonthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
-  document.getElementById('current-month').textContent =
-    `${calendarMonthNames[month]} ${year}`;
+  const calendarMonthNames = [
+    'Gennaio',
+    'Febbraio',
+    'Marzo',
+    'Aprile',
+    'Maggio',
+    'Giugno',
+    'Luglio',
+    'Agosto',
+    'Settembre',
+    'Ottobre',
+    'Novembre',
+    'Dicembre'
+  ];
+  document.getElementById('current-month').textContent = `${calendarMonthNames[month]} ${year}`;
 
   // Calcola primo giorno e numero di giorni
   const firstDay = new Date(year, month, 1).getDay();
@@ -366,21 +385,25 @@ async function loadTimeSlots(date) {
     }
 
     if (availableSlots.length === 0) {
-      const message = selectedGroupSize > 1
-        ? `Nessun orario con ${selectedGroupSize} slot consecutivi disponibili`
-        : 'Nessun orario disponibile per questa data';
+      const message =
+        selectedGroupSize > 1
+          ? `Nessun orario con ${selectedGroupSize} slot consecutivi disponibili`
+          : 'Nessun orario disponibile per questa data';
       timeSlotsGrid.innerHTML = `<div class="no-slots-message">${message}</div>`;
       return;
     }
 
-    timeSlotsGrid.innerHTML = availableSlots.map(slot => {
-      const groupLabel = selectedGroupSize > 1 ? ` <small>(+${selectedGroupSize - 1})</small>` : '';
-      return `
+    timeSlotsGrid.innerHTML = availableSlots
+      .map(slot => {
+        const groupLabel =
+          selectedGroupSize > 1 ? ` <small>(+${selectedGroupSize - 1})</small>` : '';
+        return `
         <div class="time-slot" data-time="${slot.time}">
           ${slot.time}${groupLabel}
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     // Aggiungi event listener per slot disponibili (non ferie, non occupati)
     document.querySelectorAll('.time-slot:not(.disabled):not(.holiday)').forEach(slot => {

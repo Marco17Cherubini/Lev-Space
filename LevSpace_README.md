@@ -47,15 +47,15 @@ Lev Space/
 
 ## ⚙️ Stack Tecnologico
 
-| Layer | Tecnologia | Descrizione |
-|-------|------------|-------------|
-| **Backend** | Express.js 4.18 | Framework HTTP/REST |
-| **Database** | SQLite (sql.js) | Database embedded, zero-config |
-| **Autenticazione** | JWT + bcrypt | Token stateless + hash password |
-| **Email** | Resend / Nodemailer | Conferme prenotazioni e reset password |
-| **Sicurezza** | Helmet | Headers HTTP security |
-| **Frontend** | HTML5, CSS3, Vanilla JS | No framework, modulare |
-| **Produzione** | PM2 | Process manager Node.js |
+| Layer              | Tecnologia              | Descrizione                            |
+| ------------------ | ----------------------- | -------------------------------------- |
+| **Backend**        | Express.js 4.18         | Framework HTTP/REST                    |
+| **Database**       | SQLite (sql.js)         | Database embedded, zero-config         |
+| **Autenticazione** | JWT + bcrypt            | Token stateless + hash password        |
+| **Email**          | Resend / Nodemailer     | Conferme prenotazioni e reset password |
+| **Sicurezza**      | Helmet                  | Headers HTTP security                  |
+| **Frontend**       | HTML5, CSS3, Vanilla JS | No framework, modulare                 |
+| **Produzione**     | PM2                     | Process manager Node.js                |
 
 ---
 
@@ -106,10 +106,10 @@ holidays (giorno TEXT, ora TEXT, UNIQUE(giorno, ora))
 
 ### Orari Configurabili
 
-| Giorno | Mattina | Pomeriggio |
-|--------|---------|------------|
+| Giorno  | Mattina       | Pomeriggio    |
+| ------- | ------------- | ------------- |
 | Mar-Ven | 08:30 - 13:00 | 14:00 - 18:00 |
-| Sabato | 08:30 - 13:00 | 14:00 - 15:30 |
+| Sabato  | 08:30 - 13:00 | 14:00 - 15:30 |
 
 ### Funzionalità
 
@@ -136,60 +136,60 @@ Gli utenti **VIP** (impostati da admin) hanno accesso a:
 
 ### Autenticazione
 
-| Metodo | Endpoint | Descrizione |
-|--------|----------|-------------|
-| `POST` | `/api/auth/register` | Registrazione utente |
-| `POST` | `/api/auth/login` | Login (ritorna JWT) |
-| `POST` | `/api/auth/logout` | Logout (clear cookie) |
-| `GET` | `/api/auth/me` | Utente corrente |
+| Metodo | Endpoint                    | Descrizione             |
+| ------ | --------------------------- | ----------------------- |
+| `POST` | `/api/auth/register`        | Registrazione utente    |
+| `POST` | `/api/auth/login`           | Login (ritorna JWT)     |
+| `POST` | `/api/auth/logout`          | Logout (clear cookie)   |
+| `GET`  | `/api/auth/me`              | Utente corrente         |
 | `POST` | `/api/auth/forgot-password` | Richiedi reset password |
-| `POST` | `/api/auth/reset-password` | Reset con token |
+| `POST` | `/api/auth/reset-password`  | Reset con token         |
 
 ### Prenotazioni
 
-| Metodo | Endpoint | Descrizione |
-|--------|----------|-------------|
-| `GET` | `/api/slots/:date` | Slot disponibili |
-| `POST` | `/api/bookings` | Crea prenotazione |
-| `GET` | `/api/bookings` | Le mie prenotazioni |
-| `DELETE` | `/api/bookings` | Cancella prenotazione |
-| `POST` | `/api/bookings/guest` | Prenotazione ospite |
+| Metodo   | Endpoint              | Descrizione           |
+| -------- | --------------------- | --------------------- |
+| `GET`    | `/api/slots/:date`    | Slot disponibili      |
+| `POST`   | `/api/bookings`       | Crea prenotazione     |
+| `GET`    | `/api/bookings`       | Le mie prenotazioni   |
+| `DELETE` | `/api/bookings`       | Cancella prenotazione |
+| `POST`   | `/api/bookings/guest` | Prenotazione ospite   |
 
 ### Admin
 
-| Metodo | Endpoint | Descrizione |
-|--------|----------|-------------|
-| `GET` | `/api/admin/bookings` | Tutte le prenotazioni |
-| `POST` | `/api/admin/bookings` | Crea da admin |
-| `DELETE` | `/api/admin/bookings` | Elimina da admin |
-| `PUT` | `/api/admin/bookings` | Sposta prenotazione |
-| `GET` | `/api/admin/users` | Tutti gli utenti |
-| `PUT` | `/api/admin/users/:email/vip` | Toggle VIP |
-| `PUT` | `/api/admin/users/:email/banned` | Toggle ban |
-| `GET/POST/DELETE` | `/api/admin/holidays` | Gestione ferie |
-| `GET` | `/api/admin/reports/bookings-stats` | Statistiche |
+| Metodo            | Endpoint                            | Descrizione           |
+| ----------------- | ----------------------------------- | --------------------- |
+| `GET`             | `/api/admin/bookings`               | Tutte le prenotazioni |
+| `POST`            | `/api/admin/bookings`               | Crea da admin         |
+| `DELETE`          | `/api/admin/bookings`               | Elimina da admin      |
+| `PUT`             | `/api/admin/bookings`               | Sposta prenotazione   |
+| `GET`             | `/api/admin/users`                  | Tutti gli utenti      |
+| `PUT`             | `/api/admin/users/:email/vip`       | Toggle VIP            |
+| `PUT`             | `/api/admin/users/:email/banned`    | Toggle ban            |
+| `GET/POST/DELETE` | `/api/admin/holidays`               | Gestione ferie        |
+| `GET`             | `/api/admin/reports/bookings-stats` | Statistiche           |
 
 ---
 
 ## 🌐 Pagine Frontend
 
-| Pagina | Descrizione |
-|--------|-------------|
-| `index.html` | Landing page |
-| `login.html` | Form login |
-| `register.html` | Form registrazione |
-| `dashboard.html` | Calendario prenotazioni |
-| `bookings.html` | Le mie prenotazioni |
-| `services.html` | Selezione servizi |
-| `summary.html` | Riepilogo prenotazione |
-| `subscriptions.html` | Abbonamenti disponibili |
-| `subscription-booking.html` | Prenota con abbonamento |
-| `guest-booking.html` | Prenotazione rapida |
-| `admin.html` | Pannello admin principale |
-| `admin-clienti.html` | Gestione clienti |
-| `admin-vip.html` | Gestione VIP |
-| `admin-banned.html` | Utenti bannati |
-| `admin-reports.html` | Report e statistiche |
+| Pagina                      | Descrizione               |
+| --------------------------- | ------------------------- |
+| `index.html`                | Landing page              |
+| `login.html`                | Form login                |
+| `register.html`             | Form registrazione        |
+| `dashboard.html`            | Calendario prenotazioni   |
+| `bookings.html`             | Le mie prenotazioni       |
+| `services.html`             | Selezione servizi         |
+| `summary.html`              | Riepilogo prenotazione    |
+| `subscriptions.html`        | Abbonamenti disponibili   |
+| `subscription-booking.html` | Prenota con abbonamento   |
+| `guest-booking.html`        | Prenotazione rapida       |
+| `admin.html`                | Pannello admin principale |
+| `admin-clienti.html`        | Gestione clienti          |
+| `admin-vip.html`            | Gestione VIP              |
+| `admin-banned.html`         | Utenti bannati            |
+| `admin-reports.html`        | Report e statistiche      |
 
 ---
 
@@ -268,6 +268,7 @@ Il sistema supporta due provider:
 2. **SMTP** (Gmail, etc.) - Configurazione classica
 
 Le email inviate includono:
+
 - ✉️ **Conferma prenotazione** con dettagli appuntamento
 - ✉️ **Link gestione** per modificare/cancellare (24h prima)
 - ✉️ **Reset password** con link monouso
@@ -286,41 +287,41 @@ Il frontend include un sistema di switch tema salvato in `localStorage`:
 
 ## 📜 Script NPM
 
-| Script | Comando | Descrizione |
-|--------|---------|-------------|
-| `start` | `node server/server.js` | Avvio diretto |
-| `dev` | `nodemon server/server.js` | Sviluppo (hot reload) |
-| `start:prod` | `pm2 start ecosystem.config.js` | Produzione PM2 |
-| `stop` | `pm2 stop lev-space` | Ferma PM2 |
-| `restart` | `pm2 restart lev-space` | Riavvia PM2 |
-| `logs` | `pm2 logs lev-space` | Log PM2 |
-| `backup` | `node server/backup.js` | Backup database |
-| `lint` | `eslint .` | Controllo codice |
-| `format` | `prettier --write .` | Formattazione codice |
+| Script       | Comando                         | Descrizione           |
+| ------------ | ------------------------------- | --------------------- |
+| `start`      | `node server/server.js`         | Avvio diretto         |
+| `dev`        | `nodemon server/server.js`      | Sviluppo (hot reload) |
+| `start:prod` | `pm2 start ecosystem.config.js` | Produzione PM2        |
+| `stop`       | `pm2 stop lev-space`            | Ferma PM2             |
+| `restart`    | `pm2 restart lev-space`         | Riavvia PM2           |
+| `logs`       | `pm2 logs lev-space`            | Log PM2               |
+| `backup`     | `node server/backup.js`         | Backup database       |
+| `lint`       | `eslint .`                      | Controllo codice      |
+| `format`     | `prettier --write .`            | Formattazione codice  |
 
 ---
 
 ## 📦 Dipendenze Principali
 
-| Pacchetto | Versione | Scopo |
-|-----------|----------|-------|
-| express | ^4.18.2 | Framework web |
-| sql.js | ^1.13.0 | Database SQLite in-memory |
-| bcryptjs | ^2.4.3 | Hash password |
-| jsonwebtoken | ^9.0.2 | Token JWT |
-| helmet | ^7.1.0 | Security headers |
-| resend | ^6.6.0 | Email API |
-| nodemailer | ^6.9.7 | SMTP email |
-| dotenv | ^16.3.1 | Variabili ambiente |
-| cookie-parser | ^1.4.6 | Parsing cookies |
+| Pacchetto     | Versione | Scopo                     |
+| ------------- | -------- | ------------------------- |
+| express       | ^4.18.2  | Framework web             |
+| sql.js        | ^1.13.0  | Database SQLite in-memory |
+| bcryptjs      | ^2.4.3   | Hash password             |
+| jsonwebtoken  | ^9.0.2   | Token JWT                 |
+| helmet        | ^7.1.0   | Security headers          |
+| resend        | ^6.6.0   | Email API                 |
+| nodemailer    | ^6.9.7   | SMTP email                |
+| dotenv        | ^16.3.1  | Variabili ambiente        |
+| cookie-parser | ^1.4.6   | Parsing cookies           |
 
 ### Dev Dependencies
 
-| Pacchetto | Scopo |
-|-----------|-------|
-| nodemon | Hot reload sviluppo |
-| eslint | Linting codice |
-| prettier | Formattazione codice |
+| Pacchetto | Scopo                |
+| --------- | -------------------- |
+| nodemon   | Hot reload sviluppo  |
+| eslint    | Linting codice       |
+| prettier  | Formattazione codice |
 
 ---
 
@@ -346,4 +347,4 @@ MIT License - Vedi [LICENSE](./LICENSE) per dettagli.
 
 ---
 
-> 📝 *Documentazione generata automaticamente - Ultimo aggiornamento: Febbraio 2026*
+> 📝 _Documentazione generata automaticamente - Ultimo aggiornamento: Febbraio 2026_

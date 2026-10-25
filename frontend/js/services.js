@@ -51,17 +51,20 @@ async function loadServices() {
 
     const servicesList = document.getElementById('services-list');
 
-    servicesList.innerHTML = response.services.map(service => `
+    servicesList.innerHTML = response.services
+      .map(
+        service => `
       <div class="card card-clickable" data-service-id="${service.id}">
         <div class="card-title">${service.name}</div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
 
     // Aggiungi event listener
     document.querySelectorAll('.card').forEach(card => {
       card.addEventListener('click', () => selectService(card));
     });
-
   } catch (error) {
     console.error('Errore caricamento servizi:', error);
     alert('Errore nel caricamento dei servizi');

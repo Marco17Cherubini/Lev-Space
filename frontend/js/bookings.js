@@ -12,7 +12,6 @@ async function init() {
 
     // Carica prenotazioni
     await loadBookings();
-
   } catch (error) {
     console.error('Errore inizializzazione:', error);
     redirectToLogin();
@@ -29,14 +28,16 @@ async function loadBookings() {
 
     // Filtra solo prenotazioni future
     const now = new Date();
-    const activeBookings = response.bookings.filter(booking => {
-      // Costruisci data appuntamento (es. "2023-10-25T14:30:00")
-      const bookingDate = new Date(`${booking.giorno}T${booking.ora}:00`);
-      return bookingDate >= now;
-    }).sort((a, b) => {
-      // Ordina per data crescente (più vicini prima)
-      return new Date(`${a.giorno}T${a.ora}:00`) - new Date(`${b.giorno}T${b.ora}:00`);
-    });
+    const activeBookings = response.bookings
+      .filter(booking => {
+        // Costruisci data appuntamento (es. "2023-10-25T14:30:00")
+        const bookingDate = new Date(`${booking.giorno}T${booking.ora}:00`);
+        return bookingDate >= now;
+      })
+      .sort((a, b) => {
+        // Ordina per data crescente (più vicini prima)
+        return new Date(`${a.giorno}T${a.ora}:00`) - new Date(`${b.giorno}T${b.ora}:00`);
+      });
 
     if (activeBookings.length === 0) {
       bookingsList.classList.add('hidden');
@@ -44,8 +45,9 @@ async function loadBookings() {
       return;
     }
 
-    bookingsList.innerHTML = activeBookings.map(booking => {
-      return `
+    bookingsList.innerHTML = activeBookings
+      .map(booking => {
+        return `
       <div class="card booking-card" data-giorno="${booking.giorno}" data-ora="${booking.ora}">
         <div class="booking-info">
           <div class="card-title">${booking.servizio}</div>
@@ -63,8 +65,9 @@ async function loadBookings() {
           </button>
         </div>
       </div>
-    `}).join('');
-
+    `;
+      })
+      .join('');
   } catch (error) {
     console.error('Errore caricamento prenotazioni:', error);
     document.getElementById('bookings-list').innerHTML =
@@ -110,7 +113,9 @@ document.getElementById('delete-cancel').addEventListener('click', closeDeleteMo
 document.getElementById('delete-confirm').addEventListener('click', executeDelete);
 
 // Chiudi modal cliccando sull'overlay
-document.querySelector('#delete-confirm-modal .modal-overlay').addEventListener('click', closeDeleteModal);
+document
+  .querySelector('#delete-confirm-modal .modal-overlay')
+  .addEventListener('click', closeDeleteModal);
 
 // Esegui cancellazione
 async function executeDelete() {
@@ -131,7 +136,6 @@ async function executeDelete() {
     deleteBtn.textContent = 'Sì, Cancella';
     closeDeleteModal();
     await loadBookings();
-
   } catch (error) {
     console.error('Errore cancellazione:', error);
     alert('Errore nella cancellazione: ' + error.message);

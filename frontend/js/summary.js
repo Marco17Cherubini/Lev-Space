@@ -26,7 +26,6 @@ async function init() {
 
     // Mostra riepilogo
     displaySummary();
-
   } catch (error) {
     console.error('Errore inizializzazione:', error);
     redirectToLogin();
@@ -125,7 +124,6 @@ document.getElementById('modal-confirm').addEventListener('click', async () => {
       // Mostra messaggio di conferma
       showSuccessModal();
     }
-
   } catch (error) {
     console.error('Errore completamento prenotazione:', error);
     hideConfirmModal();
