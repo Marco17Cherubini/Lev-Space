@@ -100,6 +100,15 @@ The admin weekly calendar supports **drag & drop** to move appointments (with **
 
 ![Admin weekly calendar with bookings, a recurring appointment, holidays and an extra 08:00 slot (names blurred)](docs/images/admin-calendar.png)
 
+### Privacy by design (GDPR)
+
+Lev Space ships with its own **[Privacy Policy](frontend/privacy-policy.html)** and **[Cookie Policy](frontend/cookie-policy.html)** (in Italian), written from what the code actually does and linked from a legal footer on every page:
+
+- **only one technical cookie** (the `httpOnly` session) and no third-party scripts, fonts or analytics, so no cookie banner is needed; a test fails if a script starts saving data in the browser without it being declared in the Cookie Policy;
+- registration and guest booking require acknowledging the privacy notice, and the server stores **when** it was accepted;
+- **personal data is deleted automatically** when its retention period ends (24 months for clients and their bookings, 12 months for guests), with a dry-run command to preview what would be removed;
+- no client email addresses are written to the server logs.
+
 Also included: email confirmations and password reset (via Resend), and a light/dark theme with an animated switch.
 
 ---
@@ -135,7 +144,7 @@ Routes only translate HTTP; the rules of the shop live in the services, which th
 
 ### Quality and security
 
-- **75 automated tests** run against the real server and a temporary database: slot calculation, bookings, groups, recurring series, holidays, auth, sessions, bans, rate limiting, persistence and database migrations.
+- **83 automated tests** run against the real server and a temporary database: slot calculation, bookings, groups, recurring series, holidays, auth, sessions, bans, rate limiting, persistence, database migrations, privacy notices and data retention.
 - **Content Security Policy** with no inline scripts, HTML escaping of every user-provided value, JSON-only API (no CSRF via forms), rate limiting on login and guest bookings, single-use password-reset links.
 - **Accessibility** (WCAG 2.2): semantic landmarks, keyboard-operable calendars, accessible dialogs with focus management, AA colour contrast in both themes, reduced-motion support.
 - ESLint + Prettier, and a GitHub Actions workflow that runs lint, formatting check and tests on every push.
@@ -169,14 +178,15 @@ Demo logins: the admin from your `.env`, or any demo client such as `luca.bianch
 
 ### Useful scripts
 
-| Command                                 | What it does                                         |
-| --------------------------------------- | ---------------------------------------------------- |
-| `npm run dev`                           | Start with auto-reload (nodemon)                     |
-| `npm test`                              | Run the test suite                                   |
-| `npm run lint` / `npm run format:check` | ESLint and Prettier checks                           |
-| `npm run seed`                          | Fill an **empty** database with demo data            |
-| `npm run backup`                        | Copy the database to `BACKUP_DIR` (keeps the last 4) |
-| `npm run start:prod`                    | Start in production with PM2                         |
+| Command                                 | What it does                                                                  |
+| --------------------------------------- | ----------------------------------------------------------------------------- |
+| `npm run dev`                           | Start with auto-reload (nodemon)                                              |
+| `npm test`                              | Run the test suite                                                            |
+| `npm run lint` / `npm run format:check` | ESLint and Prettier checks                                                    |
+| `npm run seed`                          | Fill an **empty** database with demo data                                     |
+| `npm run backup`                        | Copy the database to `BACKUP_DIR` (keeps the last 4)                          |
+| `npm run retention`                     | Preview the personal data past its retention period (`-- --apply` deletes it) |
+| `npm run start:prod`                    | Start in production with PM2                                                  |
 
 ### Configuration
 
@@ -192,6 +202,7 @@ Demo logins: the admin from your `.env`, or any demo client such as `luca.bianch
 | `TZ`                                          | no          | `Europe/Rome`              | Time zone of slots and bookings                                |
 | `RATE_LIMIT_AUTH_MAX`, `RATE_LIMIT_GUEST_MAX` | no          | `20`, `10`                 | Requests per IP every 15 minutes                               |
 | `BACKUP_DIR`                                  | no          | `backups/`                 | Destination of `npm run backup`                                |
+| `RETENTION_ENABLED`                           | no          | `true`                     | Daily deletion of personal data past its retention period      |
 
 ### Deployment
 
