@@ -18,7 +18,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "node --test",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "seed": "node server/seed.js"
   },
   "keywords": [
     "barber",
