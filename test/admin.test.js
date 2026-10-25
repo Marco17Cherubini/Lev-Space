@@ -207,3 +207,31 @@ test('availability rifiuta anno o mese non validi', async () => {
   assert.equal((await api.request('GET', '/api/availability/2030/13')).status, 400);
   assert.equal((await api.request('GET', '/api/availability/abc/1')).status, 400);
 });
+
+test("la prenotazione singola dell'admin rispetta le ferie ma non il calendario standard", async () => {
+  const day = futureWeekday(2, 9);
+  await api.request('POST', '/api/admin/holidays', {
+    cookie: admin,
+    body: { slots: [{ giorno: day, ora: '09:15' }] }
+  });
+
+  const onHoliday = await api.request('POST', '/api/admin/bookings', {
+    cookie: admin,
+    body: { cognome: 'Ferie', giorno: day, ora: '09:15' }
+  });
+  assert.equal(onHoliday.status, 400);
+  assert.match(onHoliday.data.error, /ferie/);
+
+  // Orario fuori calendario (pausa pranzo): consentito all'admin
+  const offHours = await api.request('POST', '/api/admin/bookings', {
+    cookie: admin,
+    body: { cognome: 'Fuori', giorno: day, ora: '13:00' }
+  });
+  assert.equal(offHours.status, 201);
+
+  const invalid = await api.request('POST', '/api/admin/bookings', {
+    cookie: admin,
+    body: { cognome: 'Errato', giorno: day, ora: '25:00' }
+  });
+  assert.equal(invalid.status, 400);
+});

@@ -8,7 +8,7 @@ const {
 const { generateId } = require('./authService');
 const config = require('../config/config');
 const crypto = require('crypto');
-const { parseDate, slotStart, toMinutes } = require('./dates');
+const { parseDate, isValidTime, slotStart, toMinutes } = require('./dates');
 
 // Helper
 function getBusinessHours() {
@@ -314,6 +314,11 @@ function createAdminBooking(bookingData) {
     throw new Error('Cognome, giorno e ora sono obbligatori');
   }
 
+  // L'admin può usare orari fuori dal calendario standard, ma in un formato valido
+  if (!parseDate(giorno) || !isValidTime(ora)) {
+    throw new Error('Data o orario non validi');
+  }
+
   // Se richiesta una prenotazione ricorrente, delega alla logica dedicata
   if (ricorrente) {
     return createRecurringBooking(bookingData);
@@ -323,6 +328,11 @@ function createAdminBooking(bookingData) {
   const existingBooking = bookingsDB.findOne(b => b.giorno === giorno && b.ora === ora);
   if (existingBooking) {
     throw new Error('Questo slot è già occupato');
+  }
+
+  // Le ferie valgono anche per l'admin, come già per le serie ricorrenti
+  if (isHolidaySlot(giorno, ora)) {
+    throw new Error('Slot non disponibile (ferie)');
   }
 
   // Crea prenotazione (campi opzionali possono essere vuoti)
