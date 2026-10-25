@@ -1,77 +1,36 @@
 # Contributing to Lev Space
 
-Welcome to the Lev Space project! We appreciate your interest in contributing to our codebase. This document establishes the standards and guidelines for contributing, ensuring high code quality and consistency suitable for a professional environment.
+Thanks for your interest! This guide describes how the project is organised and the checks every change should pass.
 
-## 🛠 Project Structure
+## Setup
 
-The project follows a modular architecture:
+```bash
+npm install
+cp .env.example .env     # set JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
+npm run seed             # optional: demo data on an empty database
+npm run dev              # http://localhost:3000 with auto-reload
+```
 
-- `frontend/styles/` - CSS Modules (Tokens, Components, Layout, Pages)
-- `frontend/js/components/` - Reusable UI components (Classes)
-- `server/` - Backend Logic (Express.js)
+## Before opening a pull request
 
-## 🎨 Code Style & Standards
+```bash
+npm run lint             # ESLint: 0 errors expected
+npm run format:check     # Prettier (use `npm run format` to fix)
+npm test                 # node:test suites in test/
+```
 
-We use **ESLint** and **Prettier** to enforce code quality and formatting.
+The same checks run in GitHub Actions on Node 20 and 22.
 
-### CSS Architecture
+## Code organisation
 
-We follow the **BEM (Block Element Modifier)** naming convention for all new components.
+- **Server** (`server/`): routes in `routes/` only translate HTTP; business rules live in the services (`bookingService`, `authService`, `holidayService`, `reportService`, `businessHours`). Services throw `HttpError(status, message)` from `errors.js`; a single handler turns them into `{ success: false, error }` responses. Multi-row writes go through `withTransaction()`.
+- **Frontend** (`frontend/`): one script per page in `js/`, shared helpers in `js/utils.js` (`apiRequest`, `escapeHtml`, `showToast`, …) and `js/layout.js` (menu, logout, `requireAuth`). No inline scripts or `onclick` attributes: the Content Security Policy blocks them.
+- **CSS** (`frontend/styles/`): `tokens` → `base` → `components` → `layout` → `pages`, all imported by `styles.css`. Use the semantic tokens (`--color-text-primary`, `--color-accent-text`, `--on-accent`, …) instead of hex values so both themes keep AA contrast. New components may use BEM-style names (`block__element--modifier`), as in the admin calendar; existing class names are kept as they are.
 
-- **Block**: `.admin-calendar`
-- **Element**: `.admin-calendar__cell`
-- **Modifier**: `.admin-calendar__cell--active`
+## Conventions
 
-CSS is organized into layers:
-
-1. **Tokens**: Global variables (`global.css`, `admin.css`)
-2. **Base**: Resets and typography
-3. **Components**: Reusable UI elements (`buttons.css`, `cards.css`)
-4. **Layout**: Macro structures (`containers.css`)
-5. **Pages**: Page-specific overrides
-
-### JavaScript Architecture
-
-- Use **ES6+** features (Classes, Async/Await, Arrow Functions).
-- Prefer **Component-based** architecture for UI logic (e.g., `Modal.js`).
-- Avoid inline event listeners; use `addEventListener`.
-
-## 🚀 Development Workflow
-
-1. **Install Dependencies**
-
-   ```bash
-   npm install
-   ```
-
-2. **Start Development Server**
-
-   ```bash
-   npm run dev
-   ```
-
-   Server runs on `http://localhost:3000`.
-
-3. **Linting & Formatting**
-   Run the linter to check for issues:
-   ```bash
-   npm run lint
-   ```
-   Fix automatic formatting issues:
-   ```bash
-   npm run format
-   ```
-
-## 📝 Commit Guidelines
-
-- Use clear, descriptive commit messages.
-- Reference the task/issue ID if applicable.
-- Keep commits atomic (one feature/fix per commit).
-
-## 🧪 Testing
-
-- Before submitting, verify your changes manually in the browser.
-- Check both **Light Mode** and **Dark Mode** for UI changes.
-- Ensure no console errors are present.
-
-Thank you for helping us make Lev Space better!
+- User-facing text and code comments are in Italian; this file and the README are in English.
+- Any value coming from users must go through `escapeHtml()` before being inserted with `innerHTML`.
+- Interactive elements must be reachable and usable with the keyboard; use `makeSelectable()` for non-button elements of the calendars.
+- Commits follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, …), one logical change per commit.
+- Check UI changes in both light and dark theme.

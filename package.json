@@ -1,7 +1,7 @@
 {
   "name": "lev-space",
   "version": "1.0.0",
-  "description": "Sistema gestionale completo per Lev Space",
+  "description": "Booking and management web app for a barbershop",
   "main": "server/server.js",
   "engines": {
     "node": ">=18"
@@ -26,7 +26,7 @@
     "booking",
     "management"
   ],
-  "author": "Lev Space",
+  "author": "Marco Cherubini",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -45,5 +45,9 @@
     "eslint-config-prettier": "^9.1.0",
     "nodemon": "^3.0.2",
     "prettier": "^3.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Marco17Cherubini/Lev-Space.git"
   }
 }
