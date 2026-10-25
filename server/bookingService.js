@@ -264,8 +264,16 @@ function cancelBooking(giorno, ora, userEmail) {
     throw new Error('Non autorizzato');
   }
 
-  // Elimina la prenotazione dal CSV
-  bookingsDB.delete(b => b.giorno === giorno && b.ora === ora);
+  // Gli slot di una prenotazione di gruppo condividono il token: si liberano tutti insieme
+  // (le serie ricorrenti create dall'admin hanno un token di serie e restano escluse)
+  const sameGroup = b =>
+    !!booking.token &&
+    b.token === booking.token &&
+    b.email === userEmail &&
+    b.giorno === giorno &&
+    b.tipo !== 'ricorrente';
+
+  bookingsDB.delete(b => (b.giorno === giorno && b.ora === ora) || sameGroup(b));
 
   return true;
 }

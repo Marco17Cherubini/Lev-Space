@@ -190,17 +190,24 @@ test('un gruppo non scavalca la pausa pranzo', async () => {
   assert.equal(res.status, 400);
 });
 
-test('B3: cancellare un gruppo libera tutti i suoi slot', { todo: 'piano T08 / B3' }, async () => {
+test('cancellare un gruppo libera tutti i suoi slot', async () => {
   const day = futureWeekday(4, 5);
   await api.request('POST', '/api/bookings', {
     cookie: mario,
     body: { data: day, orario: '08:30', numPersone: 2 }
   });
+  // Una prenotazione singola dello stesso cliente nello stesso giorno non va toccata
+  await api.request('POST', '/api/bookings', {
+    cookie: mario,
+    body: { data: day, orario: '10:45' }
+  });
+
   await api.request('DELETE', '/api/bookings', {
     cookie: mario,
     body: { giorno: day, ora: '08:30' }
   });
 
   const slots = (await api.request('GET', `/api/slots/${day}`)).data.slots;
-  assert.ok(slots.every(s => s.available));
+  const busy = slots.filter(s => !s.available).map(s => s.time);
+  assert.deepEqual(busy, ['10:45']);
 });
