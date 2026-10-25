@@ -182,7 +182,7 @@ test('una data passata o malformata non è prenotabile', async () => {
   assert.equal(malformed.status, 400);
 });
 
-test('B2: un gruppo non scavalca la pausa pranzo', { todo: 'piano T08 / B2' }, async () => {
+test('un gruppo non scavalca la pausa pranzo', async () => {
   const res = await api.request('POST', '/api/bookings', {
     cookie: mario,
     body: { data: futureWeekday(2, 5), orario: '11:30', numPersone: 2 }

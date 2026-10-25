@@ -163,8 +163,13 @@ function createBooking(userEmail, bookingData) {
   const slotsToBook = [];
   for (let i = 0; i < groupSize; i++) {
     const slotTime = allSlots[startIndex + i];
-    if (!slotTime) {
-      throw new Error(`Non ci sono abbastanza slot consecutivi disponibili`);
+    // Consecutivi = senza buchi: ogni slot inizia appena finito il precedente
+    // (esclude per esempio 11:30 + 14:00, a cavallo della pausa pranzo)
+    const isContiguous =
+      i === 0 ||
+      (slotTime && toMinutes(slotTime) - toMinutes(slotsToBook[i - 1]) === APPOINTMENT_DURATION);
+    if (!slotTime || !isContiguous) {
+      throw new Error('Non ci sono abbastanza slot consecutivi disponibili');
     }
 
     // Verifica che lo slot non sia in ferie

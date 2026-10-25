@@ -30,6 +30,19 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+// Durata di un appuntamento (config.appointmentDuration lato server)
+const APPOINTMENT_MINUTES = 45;
+
+// true se lo slot `next` ('HH:MM') inizia appena finito `prev`: serve per le
+// prenotazioni di gruppo, che non possono scavalcare pause come quella di pranzo
+function isFollowingSlot(prev, next) {
+  const toMinutes = time => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+  return toMinutes(next) - toMinutes(prev) === APPOINTMENT_MINUTES;
+}
+
 function showError(elementId, message) {
   const errorElement = document.getElementById(elementId);
   errorElement.textContent = message;

@@ -63,7 +63,9 @@
         "redirectToLogin": "readonly",
         "redirectToDashboard": "readonly",
         "Modal": "readonly",
-        "escapeHtml": "readonly"
+        "escapeHtml": "readonly",
+        "APPOINTMENT_MINUTES": "readonly",
+        "isFollowingSlot": "readonly"
       }
     }
   ]

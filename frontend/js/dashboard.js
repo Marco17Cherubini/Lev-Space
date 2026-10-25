@@ -376,7 +376,11 @@ async function loadTimeSlots(date) {
         // Verifica che i prossimi N-1 slot siano disponibili
         for (let i = 1; i < selectedGroupSize; i++) {
           const nextSlotTime = allSlotTimes[startIndex + i];
-          if (!nextSlotTime || !availableTimes.has(nextSlotTime)) {
+          if (
+            !nextSlotTime ||
+            !availableTimes.has(nextSlotTime) ||
+            !isFollowingSlot(allSlotTimes[startIndex + i - 1], nextSlotTime)
+          ) {
             return false;
           }
         }

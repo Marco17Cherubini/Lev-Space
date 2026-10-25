@@ -270,7 +270,11 @@
           let canBook = true;
           for (let i = 1; i < selectedGroupSize; i++) {
             const nextSlotTime = allSlotTimes[startIndex + i];
-            if (!nextSlotTime || !availableTimes.has(nextSlotTime)) {
+            if (
+              !nextSlotTime ||
+              !availableTimes.has(nextSlotTime) ||
+              !isFollowingSlot(allSlotTimes[startIndex + i - 1], nextSlotTime)
+            ) {
               canBook = false;
               break;
             }
