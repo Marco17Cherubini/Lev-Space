@@ -153,20 +153,24 @@ test('le ferie bloccano lo slot e si possono rimuovere', async () => {
   assert.equal(del.data.removed, 1);
 });
 
-test(
-  'B7: slot di ferie duplicati nella stessa richiesta non causano errori',
-  { todo: 'piano T08 / B7' },
-  async () => {
-    const day = futureWeekday(2, 8);
-    const slot = { giorno: day, ora: '11:30' };
-    const res = await api.request('POST', '/api/admin/holidays', {
-      cookie: admin,
-      body: { slots: [slot, slot] }
-    });
-    assert.equal(res.status, 201);
-    assert.equal(res.data.count, 1);
-  }
-);
+test('slot di ferie duplicati nella stessa richiesta vengono inseriti una volta', async () => {
+  const day = futureWeekday(2, 8);
+  const slot = { giorno: day, ora: '11:30' };
+  const res = await api.request('POST', '/api/admin/holidays', {
+    cookie: admin,
+    body: { slots: [slot, slot] }
+  });
+  assert.equal(res.status, 201);
+  assert.equal(res.data.count, 1);
+});
+
+test('slot di ferie con data o ora non valide vengono rifiutati', async () => {
+  const res = await api.request('POST', '/api/admin/holidays', {
+    cookie: admin,
+    body: { slots: [{ giorno: '2030-13-01', ora: '10:00' }] }
+  });
+  assert.equal(res.status, 400);
+});
 
 test("gli slot extra sono solo per l'admin: un VIP vede gli orari normali", async () => {
   const { makeUser } = require('./helpers');

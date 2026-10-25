@@ -33,6 +33,7 @@ const {
   sendPasswordResetEmail
 } = require('./emailService');
 const { initDatabase, withTransaction } = require('./database');
+const { parseDate, isValidTime } = require('./dates');
 
 // ==================== VALIDAZIONE SICUREZZA ====================
 
@@ -603,21 +604,22 @@ app.post('/api/admin/holidays', authenticateToken, (req, res) => {
     }
     const { slots } = req.body; // Array di { giorno, ora }
 
-    if (!slots || !Array.isArray(slots) || slots.length === 0) {
+    const isValidSlot = slot => slot && parseDate(slot.giorno) && isValidTime(slot.ora);
+    if (!Array.isArray(slots) || slots.length === 0 || !slots.every(isValidSlot)) {
       return res.status(400).json({ success: false, error: 'Slot ferie non validi' });
     }
 
-    // Aggiungi ogni slot
+    // Aggiungi ogni slot, saltando quelli già in ferie e i doppioni nella richiesta
     const added = [];
-    const existingHolidays = holidaysDB.readAll();
+    const seen = new Set(holidaysDB.readAll().map(h => `${h.giorno} ${h.ora}`));
 
     withTransaction(() => {
-      for (const slot of slots) {
-        // Verifica che non esista già
-        const exists = existingHolidays.find(h => h.giorno === slot.giorno && h.ora === slot.ora);
-        if (!exists) {
-          holidaysDB.insert({ giorno: slot.giorno, ora: slot.ora });
-          added.push(slot);
+      for (const { giorno, ora } of slots) {
+        const key = `${giorno} ${ora}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          holidaysDB.insert({ giorno, ora });
+          added.push({ giorno, ora });
         }
       }
     });
