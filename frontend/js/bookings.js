@@ -53,10 +53,10 @@ async function loadBookings() {
           </div>
         </div>
         <div class="booking-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-edit" onclick="editBooking('${booking.giorno}', '${booking.ora}')">
+          <button type="button" class="btn btn-edit" data-action="edit">
             Modifica
           </button>
-          <button class="btn btn-cancel" onclick="showDeleteConfirm('${booking.giorno}', '${booking.ora}')">
+          <button type="button" class="btn btn-cancel" data-action="delete">
             Cancella
           </button>
         </div>
@@ -70,6 +70,18 @@ async function loadBookings() {
       '<div class="alert">Errore nel caricamento delle prenotazioni</div>';
   }
 }
+
+// Pulsanti Modifica/Cancella delle card (delegazione: le card vengono ridisegnate)
+document.getElementById('bookings-list').addEventListener('click', event => {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  const { giorno, ora } = button.closest('.booking-card').dataset;
+  if (button.dataset.action === 'edit') {
+    editBooking(giorno, ora);
+  } else {
+    showDeleteConfirm(giorno, ora);
+  }
+});
 
 // Funzione per modificare una prenotazione
 function editBooking(giorno, ora) {

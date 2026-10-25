@@ -48,7 +48,7 @@
       btn.addEventListener('click', () => {
         selectedGroupSize = parseInt(btn.dataset.group);
         guestData.numPersone = selectedGroupSize;
-        window.goToStep(1);
+        goToStep(1);
         renderCalendar();
       });
     });
@@ -59,11 +59,16 @@
 
     // Step 2: Form dati personali
     document.getElementById('guest-info-form').addEventListener('submit', handleConfirmBooking);
+
+    // Pulsanti "Indietro"
+    document.querySelectorAll('[data-go-to-step]').forEach(btn => {
+      btn.addEventListener('click', () => goToStep(Number(btn.dataset.goToStep)));
+    });
   }
 
   // ==================== STEP NAVIGATION ====================
 
-  window.goToStep = function (step) {
+  function goToStep(step) {
     // Hide all sections
     Object.values(sections).forEach(s => {
       if (s) s.classList.remove('active');
@@ -91,7 +96,7 @@
       document.getElementById('summary-date').textContent = formatDateDisplay(guestData.giorno);
       document.getElementById('summary-time').textContent = guestData.ora;
     }
-  };
+  }
 
   // ==================== STEP 1: CALENDARIO ====================
 
@@ -300,7 +305,7 @@
     guestData.ora = time;
 
     // Auto-advance to step 2 (personal data)
-    setTimeout(() => window.goToStep(2), 300);
+    setTimeout(() => goToStep(2), 300);
   }
 
   // ==================== STEP 2: CONFERMA PRENOTAZIONE ====================

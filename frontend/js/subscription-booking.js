@@ -89,7 +89,7 @@
                     <div class="selected-booking-time">${escapeHtml(booking.ora)}</div>
                     <div class="selected-booking-week">Settimana ${index + 1}</div>
                 </div>
-                <button class="btn-modify" onclick="modifyBooking(${index})">Modifica</button>
+                <button type="button" class="btn-modify" data-modify-index="${index}">Modifica</button>
             </div>
         `
       )
@@ -296,21 +296,25 @@
         return `
                 <div class="${classes.join(' ')}" 
                      data-time="${slot.time}"
-                     ${isHoliday || isBooked ? '' : `onclick="selectTime('${slot.time}')"`}>
+                     >
                     ${slot.time}
                 </div>
             `;
       })
       .join('');
+
+    timeSlotsGrid.querySelectorAll('.time-slot:not(.disabled)').forEach(slot => {
+      slot.addEventListener('click', () => selectTime(slot.dataset.time));
+    });
   }
 
   // ==================== TIME SELECTION ====================
 
-  window.selectTime = function (time) {
+  function selectTime(time) {
     selectedTime = time;
     // Aggiungi prenotazione direttamente senza modal servizio
     addBooking(selectedDate, selectedTime);
-  };
+  }
 
   function addBooking(giorno, ora) {
     // Add to selected bookings
@@ -344,7 +348,7 @@
 
   // ==================== MODIFY BOOKING ====================
 
-  window.modifyBooking = function (index) {
+  function modifyBooking(index) {
     const booking = selectedBookings[index];
 
     // Remove this booking
@@ -360,7 +364,7 @@
     saveSubscriptionState();
     updateUI();
     renderCalendar();
-  };
+  }
 
   // ==================== CONFIRM MODAL ====================
 
@@ -376,7 +380,7 @@
                     <strong>Settimana ${index + 1}</strong><br>
                     ${escapeHtml(formatDate(booking.giorno))} alle ${escapeHtml(booking.ora)}
                 </div>
-                <button class="btn-modify" onclick="closeModalAndModify(${index})">Modifica</button>
+                <button type="button" class="btn-modify" data-modify-index="${index}">Modifica</button>
             </div>
         `
       )
@@ -385,10 +389,19 @@
     modal.classList.remove('hidden');
   }
 
-  window.closeModalAndModify = function (index) {
-    document.getElementById('confirm-modal').classList.add('hidden');
-    window.modifyBooking(index);
-  };
+  // Pulsanti "Modifica" nell'elenco e nel modal di conferma (ridisegnati a ogni modifica)
+  function initModifyButtons() {
+    document.getElementById('selected-bookings-list').addEventListener('click', event => {
+      const button = event.target.closest('[data-modify-index]');
+      if (button) modifyBooking(Number(button.dataset.modifyIndex));
+    });
+    document.getElementById('modal-booking-list').addEventListener('click', event => {
+      const button = event.target.closest('[data-modify-index]');
+      if (!button) return;
+      document.getElementById('confirm-modal').classList.add('hidden');
+      modifyBooking(Number(button.dataset.modifyIndex));
+    });
+  }
 
   function initConfirmModal() {
     const modal = document.getElementById('confirm-modal');
@@ -510,6 +523,7 @@
 
     initCalendar();
     initConfirmModal();
+    initModifyButtons();
     initSuccessModal();
     initCancelButton();
     updateUI();

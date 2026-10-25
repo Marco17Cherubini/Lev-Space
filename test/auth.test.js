@@ -275,3 +275,14 @@ test('errori uniformi: JSON malformato, endpoint inesistente, campi del tipo sba
   const noSession = await api.request('GET', '/api/admin/users');
   assert.deepEqual(noSession.data, { success: false, error: 'Accesso non autorizzato' });
 });
+
+test('le pagine hanno una CSP senza script inline e Chart.js è servito localmente', async () => {
+  const page = await fetch(`${api.baseUrl}/admin/reports`);
+  const csp = page.headers.get('content-security-policy');
+  assert.match(csp, /script-src 'self'/);
+  assert.match(csp, /script-src-attr 'none'/);
+  assert.doesNotMatch(await page.text(), /<script>|onclick=/);
+
+  const chart = await fetch(`${api.baseUrl}/vendor/chart.umd.min.js`);
+  assert.equal(chart.status, 200);
+});

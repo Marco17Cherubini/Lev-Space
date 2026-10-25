@@ -1,6 +1,7 @@
 // Applicazione Express: middleware comuni, file statici, rotte e gestione errori.
 // L'avvio (controlli di configurazione, database, listen) è in server.js.
 const express = require('express');
+const path = require('path');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const config = require('../config/config');
@@ -12,9 +13,16 @@ const { router: pageRoutes, FRONTEND_DIR } = require('./routes/pages');
 
 const app = express();
 
+// Content Security Policy con i default di helmet: script solo da questo server, nessun
+// script o handler inline (un eventuale XSS non può eseguire codice iniettato).
+// In locale (http) non si forza l'upgrade a https delle risorse.
 app.use(
   helmet({
-    contentSecurityPolicy: false // Disabilita per permettere inline scripts
+    contentSecurityPolicy: {
+      directives: {
+        upgradeInsecureRequests: config.server.env === 'production' ? [] : null
+      }
+    }
   })
 );
 
@@ -29,6 +37,10 @@ if (config.server.env === 'production') {
 }
 
 app.use(express.static(FRONTEND_DIR));
+
+// Chart.js (pagina Report) servito dalla dipendenza npm, con versione fissata nel lockfile
+const CHART_JS = path.join(path.dirname(require.resolve('chart.js')), 'chart.umd.min.js');
+app.get('/vendor/chart.umd.min.js', (req, res) => res.sendFile(CHART_JS));
 
 app.use(authRoutes);
 app.use(bookingRoutes);
