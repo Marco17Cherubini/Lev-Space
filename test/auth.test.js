@@ -115,7 +115,7 @@ test('forgot-password risponde sempre allo stesso modo (anti-enumerazione)', asy
   assert.deepEqual(known.data, unknown.data);
 });
 
-test('S2: il token di reset non vale come sessione', { todo: 'piano T06 / S2' }, async () => {
+test('il token di reset non vale come sessione', async () => {
   const { generateResetToken } = require('../server/authService');
   const user = makeUser('resetsession');
   await api.request('POST', '/api/auth/register', { body: user });
@@ -125,24 +125,68 @@ test('S2: il token di reset non vale come sessione', { todo: 'piano T06 / S2' },
   assert.equal(me.status, 401);
 });
 
-test(
-  'S3: un utente bannato con sessione già aperta non può prenotare',
-  { todo: 'piano T06 / S3' },
-  async () => {
-    const user = makeUser('bannedsession');
-    const cookie = await api.registerAndLogin(user);
-    const admin = (await api.login(ADMIN.email, ADMIN.password)).cookie;
-    await api.request('PUT', `/api/admin/users/${encodeURIComponent(user.email)}/banned`, {
-      cookie: admin
-    });
+test('il link di reset funziona una sola volta', async () => {
+  const { generateResetToken } = require('../server/authService');
+  const user = makeUser('resetonce');
+  await api.request('POST', '/api/auth/register', { body: user });
 
-    const res = await api.request('POST', '/api/bookings', {
-      cookie,
-      body: { data: futureWeekday(2), orario: '16:15' }
-    });
-    assert.notEqual(res.status, 201);
-  }
-);
+  const token = generateResetToken(user.email);
+  const first = await api.request('POST', '/api/auth/reset-password', {
+    body: { token, password: 'PrimaNuova123!' }
+  });
+  assert.equal(first.status, 200);
+
+  const second = await api.request('POST', '/api/auth/reset-password', {
+    body: { token, password: 'SecondaNuova123!' }
+  });
+  assert.equal(second.status, 400);
+  assert.equal((await api.login(user.email, 'PrimaNuova123!')).status, 200);
+});
+
+test('un utente bannato con sessione già aperta riceve 403', async () => {
+  const user = makeUser('bannedsession');
+  const cookie = await api.registerAndLogin(user);
+  const admin = (await api.login(ADMIN.email, ADMIN.password)).cookie;
+  await api.request('PUT', `/api/admin/users/${encodeURIComponent(user.email)}/banned`, {
+    cookie: admin
+  });
+
+  const res = await api.request('POST', '/api/bookings', {
+    cookie,
+    body: { data: futureWeekday(2), orario: '16:15' }
+  });
+  assert.equal(res.status, 403);
+  assert.equal((await api.request('GET', '/api/auth/me', { cookie })).status, 403);
+});
+
+test("un admin rimosso dalla tabella admins perde l'accesso", async () => {
+  const { adminDB } = require('../server/database');
+  const bcrypt = require('bcryptjs');
+  adminDB.insert({ email: 'ex-admin@test.local', password: bcrypt.hashSync('ExAdmin12345!', 4) });
+  const cookie = (await api.login('ex-admin@test.local', 'ExAdmin12345!')).cookie;
+  assert.equal((await api.request('GET', '/api/admin/users', { cookie })).status, 200);
+
+  adminDB.delete(a => a.email === 'ex-admin@test.local');
+  assert.equal((await api.request('GET', '/api/admin/users', { cookie })).status, 401);
+});
+
+test('il cookie di sessione è SameSite=Lax', async () => {
+  const user = makeUser('samesite');
+  await api.request('POST', '/api/auth/register', { body: user });
+  const res = await api.login(user.email, user.password);
+  assert.match(res.headers.get('set-cookie'), /SameSite=Lax/i);
+});
+
+test('le richieste urlencoded non vengono interpretate (solo JSON)', async () => {
+  const user = makeUser('urlenc');
+  await api.request('POST', '/api/auth/register', { body: user });
+  const res = await fetch(`${api.baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ email: user.email, password: user.password })
+  });
+  assert.notEqual(res.status, 200);
+});
 
 test(
   "B6: l'email doppia con maiuscole diverse dà un errore chiaro",

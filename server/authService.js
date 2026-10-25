@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { usersDB, adminDB } = require('./database');
 const config = require('../config/config');
 
@@ -187,7 +188,17 @@ function isBanned(email) {
   return user.banned === '1' || user.banned === 1;
 }
 
-// Genera token per reset password (JWT con scadenza 1 ora)
+// Impronta della password attuale: inserita nel token di reset, lo invalida
+// appena la password cambia, rendendo il link utilizzabile una sola volta
+function passwordFingerprint(user) {
+  return crypto
+    .createHash('sha256')
+    .update(user.password || '')
+    .digest('hex')
+    .slice(0, 16);
+}
+
+// Genera token per reset password (JWT con scadenza 1 ora, monouso)
 function generateResetToken(email) {
   const emailLower = email.trim().toLowerCase();
   const user = usersDB.findOne(u => u.email === emailLower);
@@ -197,10 +208,11 @@ function generateResetToken(email) {
     return null;
   }
 
-  // Genera token con email e timestamp per invalidazione automatica
-  const token = jwt.sign({ email: emailLower, purpose: 'password-reset' }, config.jwt.secret, {
-    expiresIn: '1h'
-  });
+  const token = jwt.sign(
+    { email: emailLower, purpose: 'password-reset', pwd: passwordFingerprint(user) },
+    config.jwt.secret,
+    { expiresIn: '1h' }
+  );
 
   return token;
 }
@@ -232,6 +244,11 @@ async function resetPassword(token, newPassword) {
   const user = usersDB.findOne(u => u.email === decoded.email);
   if (!user) {
     throw new Error('Utente non trovato');
+  }
+
+  // Link già usato: la password è cambiata dopo l'emissione del token
+  if (decoded.pwd !== passwordFingerprint(user)) {
+    throw new Error('Link scaduto o non valido');
   }
 
   // Hash nuova password

@@ -11,8 +11,16 @@ function authenticateToken(req, res, next) {
   try {
     const decoded = verifyToken(token);
 
-    // Controlla se è admin
+    // I token con uno scopo dedicato (es. reset password) non valgono come sessione
+    if (decoded.purpose) {
+      return res.status(401).json({ error: 'Token non valido' });
+    }
+
+    // Controlla se è admin (ancora presente in tabella: un admin rimosso perde l'accesso)
     if (decoded.isAdmin) {
+      if (!isAdmin(decoded.email)) {
+        return res.status(401).json({ error: 'Token non valido' });
+      }
       req.user = {
         email: decoded.email,
         isAdmin: true
@@ -25,6 +33,11 @@ function authenticateToken(req, res, next) {
 
     if (!user) {
       return res.status(401).json({ error: 'Utente non trovato' });
+    }
+
+    // Il ban vale anche per le sessioni aperte prima del ban
+    if (user.banned === '1' || user.banned === 1) {
+      return res.status(403).json({ error: 'Account sospeso' });
     }
 
     req.user = { ...user, isAdmin: false };

@@ -179,6 +179,11 @@ function createBooking(userEmail, bookingData) {
     throw new Error('Utente non trovato');
   }
 
+  // Copre anche la prenotazione ospite, che non passa dal middleware di autenticazione
+  if (user.banned === '1' || user.banned === 1) {
+    throw new Error('Account sospeso: impossibile prenotare');
+  }
+
   // Crea prenotazioni per tutti gli slot
   const bookingToken = generateBookingToken();
   const createdBookings = [];

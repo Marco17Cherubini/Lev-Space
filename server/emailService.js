@@ -17,6 +17,16 @@ function initializeEmailService() {
   console.log('✅ Email service (Resend) initialized');
 }
 
+// I dati della prenotazione arrivano da input utente: vanno neutralizzati nell'HTML
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Formatta data in italiano
 function formatDate(dateString) {
   const date = new Date(dateString);
@@ -82,13 +92,13 @@ async function sendBookingConfirmation(booking) {
           <h1>${config.studio.name}</h1>
         </div>
         <div class="content">
-          <p>Caro <strong>${booking.nome}</strong>,</p>
+          <p>Caro <strong>${escapeHtml(booking.nome)}</strong>,</p>
           <p>La tua prenotazione e stata confermata!</p>
           <div class="info-row">
-            <span class="label">Data:</span> ${formattedDate}
+            <span class="label">Data:</span> ${escapeHtml(formattedDate)}
           </div>
           <div class="info-row">
-            <span class="label">Orario:</span> ${timeField}
+            <span class="label">Orario:</span> ${escapeHtml(timeField)}
           </div>
         </div>
         <div class="footer">

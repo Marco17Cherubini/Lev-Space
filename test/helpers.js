@@ -21,7 +21,10 @@ function configureTestEnv() {
     DATABASE_PATH: dbPath,
     ADMIN_EMAIL: ADMIN.email,
     ADMIN_PASSWORD: ADMIN.password,
-    RESEND_API_KEY: ''
+    RESEND_API_KEY: '',
+    // I test fanno molte richieste dallo stesso IP: limiti alti salvo override del singolo file
+    RATE_LIMIT_AUTH_MAX: process.env.RATE_LIMIT_AUTH_MAX || '10000',
+    RATE_LIMIT_GUEST_MAX: process.env.RATE_LIMIT_GUEST_MAX || '10000'
   });
   return dbPath;
 }
@@ -74,7 +77,7 @@ async function startTestServer() {
     });
   }
 
-  return { request, login, registerAndLogin, close };
+  return { baseUrl, request, login, registerAndLogin, close };
 }
 
 function makeUser(suffix) {

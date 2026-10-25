@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const path = require('path');
@@ -66,12 +67,40 @@ app.use(
     contentSecurityPolicy: false // Disabilita per permettere inline scripts
   })
 );
+// L'API accetta solo JSON: niente parser urlencoded, così un form HTML
+// di un altro sito non può inviare richieste valide (CSRF)
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Placeholder per authLimiter (rate limiting disabilitato per scelta)
-const authLimiter = (req, res, next) => next();
+// In produzione (Railway) l'app è dietro un proxy: serve per leggere l'IP reale del client
+if (config.server.env === 'production') {
+  app.set('trust proxy', 1);
+}
+
+// Rate limiting sugli endpoint esposti ad abusi (tentativi di login, spam di email/prenotazioni)
+function createLimiter(limit, error) {
+  return rateLimit({
+    windowMs: config.rateLimit.windowMs,
+    limit,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { success: false, error }
+  });
+}
+const authLimiter = createLimiter(
+  config.rateLimit.authMax,
+  'Troppi tentativi, riprova tra qualche minuto'
+);
+const guestLimiter = createLimiter(
+  config.rateLimit.guestMax,
+  'Troppe prenotazioni dallo stesso dispositivo, riprova più tardi'
+);
+
+const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: config.server.env === 'production',
+  sameSite: 'lax'
+};
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../frontend')));
@@ -95,8 +124,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
     // Set cookie HTTP-only
     res.cookie('token', token, {
-      httpOnly: true,
-      secure: config.server.env === 'production',
+      ...SESSION_COOKIE_OPTIONS,
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 giorni
     });
 
@@ -108,7 +136,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
 // POST /api/auth/logout
 app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', SESSION_COOKIE_OPTIONS);
   res.json({ success: true, message: 'Logout effettuato' });
 });
 
@@ -118,11 +146,11 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
 });
 
 // POST /api/auth/forgot-password - Richiedi reset password
-app.post('/api/auth/forgot-password', async (req, res) => {
+app.post('/api/auth/forgot-password', authLimiter, (req, res) => {
   try {
     const { email } = req.body;
 
-    if (!email) {
+    if (!email || typeof email !== 'string') {
       return res.status(400).json({ success: false, error: 'Email obbligatoria' });
     }
 
@@ -133,8 +161,11 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       const baseUrl = process.env.BASE_URL || `http://localhost:${config.server.port}`;
       const resetLink = `${baseUrl}/new-password?token=${token}`;
 
-      // Invia email
-      await sendPasswordResetEmail(email.trim().toLowerCase(), resetLink);
+      // Invio in background: attenderlo solo per le email esistenti renderebbe
+      // la risposta più lenta e quindi rivelerebbe quali account esistono
+      sendPasswordResetEmail(email.trim().toLowerCase(), resetLink).catch(err => {
+        console.error('Errore invio email reset:', err.message);
+      });
     }
 
     // Risposta generica (anti-enumerazione)
@@ -316,7 +347,7 @@ const { usersDB } = require('./database');
 
 // POST /api/bookings/guest - Prenotazione rapida senza account
 // Richiede solo: nome, cognome, email (niente password)
-app.post('/api/bookings/guest', (req, res) => {
+app.post('/api/bookings/guest', guestLimiter, (req, res) => {
   try {
     const { nome, cognome, email, giorno, ora, numPersone } = req.body;
 
@@ -362,8 +393,15 @@ app.post('/api/bookings/guest', (req, res) => {
         isGuest: '1'
       });
       console.log(`[Guest Checkout] Nuovo profilo guest creato: ${emailLower}`);
+    } else if (existingUser.password) {
+      // L'email appartiene a un account registrato: senza login chiunque potrebbe
+      // prenotare a nome di quel cliente, quindi si chiede di accedere
+      return res.status(409).json({
+        success: false,
+        error: 'Esiste già un account con questa email: accedi per prenotare'
+      });
     } else {
-      console.log(`[Guest Checkout] Email esistente, associo prenotazione: ${emailLower}`);
+      console.log(`[Guest Checkout] Profilo guest esistente, associo prenotazione: ${emailLower}`);
     }
 
     // Crea la prenotazione usando la logica esistente

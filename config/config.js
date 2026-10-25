@@ -11,6 +11,12 @@ module.exports = {
     secret: process.env.JWT_SECRET,
     expiresIn: '7d'
   },
+  // Richieste consentite per IP nella finestra temporale (login/registrazione/reset e ospiti)
+  rateLimit: {
+    windowMs: 15 * 60 * 1000,
+    authMax: Number(process.env.RATE_LIMIT_AUTH_MAX) || 20,
+    guestMax: Number(process.env.RATE_LIMIT_GUEST_MAX) || 10
+  },
   studio: {
     name: process.env.STUDIO_NAME || 'Lev Space',
     phone: process.env.STUDIO_PHONE || '+39 123 456 7890',

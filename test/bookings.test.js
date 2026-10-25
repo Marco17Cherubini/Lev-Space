@@ -3,7 +3,7 @@
 // vengono eseguiti ma non fanno fallire la suite finché il bug non è corretto.
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { startTestServer, makeUser, futureWeekday } = require('./helpers');
+const { ADMIN, startTestServer, makeUser, futureWeekday } = require('./helpers');
 
 let api;
 let mario;
@@ -114,6 +114,39 @@ test("l'ospite prenota senza account con nome, cognome ed email", async () => {
   });
   assert.equal(res.status, 201);
   assert.equal(res.data.booking.email, 'anna@test.local');
+});
+
+test("l'ospite non può prenotare con l'email di un account registrato", async () => {
+  const res = await api.request('POST', '/api/bookings/guest', {
+    body: {
+      nome: 'Finto',
+      cognome: 'Mario',
+      email: makeUser('mario').email,
+      giorno: futureWeekday(3, 3),
+      ora: '14:00'
+    }
+  });
+  assert.equal(res.status, 409);
+  assert.match(res.data.error, /accedi/);
+});
+
+test('un ospite bannato non può prenotare di nuovo con la stessa email', async () => {
+  const guest = { nome: 'G', cognome: 'Bannato', email: 'guest.ban@test.local' };
+  const first = await api.request('POST', '/api/bookings/guest', {
+    body: { ...guest, giorno: futureWeekday(3, 4), ora: '14:00' }
+  });
+  assert.equal(first.status, 201);
+
+  const admin = (await api.login(ADMIN.email, ADMIN.password)).cookie;
+  await api.request('PUT', `/api/admin/users/${encodeURIComponent(guest.email)}/banned`, {
+    cookie: admin
+  });
+
+  const second = await api.request('POST', '/api/bookings/guest', {
+    body: { ...guest, giorno: futureWeekday(3, 4), ora: '14:45' }
+  });
+  assert.equal(second.status, 400);
+  assert.match(second.data.error, /sospeso/);
 });
 
 test("l'ospite riceve 400 se mancano dati o l'email non è valida", async () => {
