@@ -31,3 +31,6 @@ Thumbs.db
 
 # File di lavoro delle skill di design
 .taste-skill/
+
+# Cache locale dell'hook di design
+.impeccable/hook.cache.json
