@@ -125,3 +125,17 @@ npm start               # http://localhost:3000
 ```
 
 Rollback: il branch non tocca `main`; dopo un eventuale merge, `git revert` dei commit del branch riporta l'interfaccia precedente. L'unica modifica di schema (tabella `revoked_tokens`) è additiva e compatibile con il codice precedente.
+
+## 9. Prima e dopo
+
+Stessa viewport (390 × 844, telefono emulato), stessi dati sintetici.
+
+| Prima                                                         | Dopo                                                         |
+| ------------------------------------------------------------- | ------------------------------------------------------------ |
+| ![Ingresso precedente](images/before/01-ingresso.png)          | ![Nuovo ingresso: il distributore](images/after/01-ingresso.png) |
+| ![Prenotazione precedente](images/before/04-prenota-orario.png) | ![Nuova prenotazione a tasti](images/after/04-prenota-orario.png) |
+| ![Agenda precedente](images/before/06-agenda.png)              | ![Nuova agenda del giorno](images/after/06-agenda.png)         |
+| ![Clienti precedente](images/before/07-clienti.png)            | ![Nuovi clienti](images/after/07-clienti.png)                  |
+| ![Report precedente](images/before/08-report.png)              | ![Nuovo report](images/after/08-report.png)                    |
+
+Le schermate storiche con i dati reali del negozio (report di giugno e marzo, 155 clienti, email di conferma; nomi e telefono sfocati) sono in `images/storico/` e mostrano l'interfaccia precedente.

@@ -40,13 +40,11 @@ The app is in daily use and has grown with the shop:
 - in peak months the calendar handled **197 cuts between 28 May and 26 June** and **210 cuts between 27 February and 28 March**;
 - that is **around 7 appointments a day on average**, with best days reaching **14–15 cuts** — all booked without a single message to the barber.
 
-| Peak month — June                                                                                             | Peak month — March                                                                                                   |
-| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| ![Admin report: 197 cuts from 28 May to 26 June, daily average 6.6, best day 15](docs/images/report-june.png) | ![Admin report: 210 cuts from 27 February to 28 March, daily average 7.0, best day 14](docs/images/report-march.png) |
+| Report                                                                                                                             | Clients                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| ![30-day report: totals on segment displays and a bar per day, busiest day highlighted](docs/images/after/16-report-30-giorni.png) | ![Client list with explicit VIP and suspension switches](docs/images/after/07-clienti.png) |
 
-![Client management: 155 clients, 12 VIP (names blurred)](docs/images/admin-clients.png)
-
-_These three screenshots come from the real shop data and show the previous interface._
+_The figures above are the shop's real ones; the screenshots show the current interface with demo data, so no client data is published._
 
 ---
 
@@ -54,12 +52,7 @@ _These three screenshots come from the real shop data and show the previous inte
 
 Lev Space replaces the queue and the phone calls, so its interface is built from the object of that ritual: the **take-a-number dispenser** (_eliminacode_). Times are shown on **7-segment displays** with the unlit segments faintly visible, the day is a **row of keys** split into morning and afternoon, and a confirmed booking is a **thermal ticket** that comes out of a slot. One typeface (Archivo, condensed for signage), black panel, thermal paper and a single LED red. The logo, a pixel-art UFO drawn on black, finally sits on the black it was made for.
 
-| Before                                                                                                   | After                                                                                             |
-| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| ![Previous entrance: logo and three grey buttons](docs/images/before/01-ingresso.png)                    | ![New entrance: dispenser with the first free slot](docs/images/after/01-ingresso.png)            |
-| ![Previous booking: a modal over the calendar on every visit](docs/images/before/04-prenota-orario.png)  | ![New booking: days with an LED dot and the day as keys](docs/images/after/04-prenota-orario.png) |
-| ![Previous admin: seven compressed columns on a phone](docs/images/before/06-agenda.png)                 | ![New admin: day agenda with week strip](docs/images/after/06-agenda.png)                         |
-| ![Previous clients page with a pending-changes bar covering the list](docs/images/before/07-clienti.png) | ![New clients page with explicit VIP and suspension switches](docs/images/after/07-clienti.png)   |
+A side-by-side comparison with the previous interface is in [docs/STATO.md](docs/STATO.md#9-prima-e-dopo).
 
 What changed for the people who use it:
 
@@ -118,7 +111,9 @@ On the phone the barber sees **one day at a time** with a week strip; on desktop
 
 ![Booking detail with the explicit move form](docs/images/after/12-sposta.png)
 
-Also included: email confirmations and password reset (via Resend), and light ("thermal paper") and dark ("panel") themes designed separately.
+Also included: email confirmations and password reset (via Resend) in the same ticket style, and light ("thermal paper") and dark ("panel") themes designed separately.
+
+![Confirmation email styled as the ticket: black header with the LED, date and the time in large type](docs/images/after/15-email-conferma.png)
 
 ---
 
