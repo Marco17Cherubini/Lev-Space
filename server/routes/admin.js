@@ -5,9 +5,10 @@ const {
   createAdminBooking,
   adminCancelBooking,
   adminCancelRecurringSeries,
-  moveBooking
+  moveBooking,
+  getAdminSchedule
 } = require('../bookingService');
-const { getAllUsers, toggleVip, toggleBanned } = require('../authService');
+const { getAllUsers, setUserFlag } = require('../authService');
 const { addHolidays, removeHolidays } = require('../holidayService');
 const { getBusinessHours, saveBusinessHours } = require('../businessHours');
 const { getBookingStats } = require('../reportService');
@@ -21,6 +22,11 @@ const adminOnly = [authenticateToken, requireAdmin];
 
 router.get('/api/admin/bookings', adminOnly, (req, res) => {
   res.json({ success: true, bookings: getAllBookings() });
+});
+
+// Agenda: giorni dell'intervallo con slot, prenotazioni e ferie (vedi getAdminSchedule)
+router.get('/api/admin/schedule', adminOnly, (req, res) => {
+  res.json({ success: true, days: getAdminSchedule(req.query.from, req.query.to) });
 });
 
 router.post('/api/admin/bookings', adminOnly, (req, res) => {
@@ -70,15 +76,14 @@ router.get('/api/admin/users', adminOnly, (req, res) => {
   res.json({ success: true, users: getAllUsers() });
 });
 
-router.put('/api/admin/users/:email/vip', adminOnly, (req, res) => {
-  const email = decodeURIComponent(req.params.email);
-  res.json({ success: true, email, vip: toggleVip(email) });
-});
-
-router.put('/api/admin/users/:email/banned', adminOnly, (req, res) => {
-  const email = decodeURIComponent(req.params.email);
-  res.json({ success: true, email, banned: toggleBanned(email) });
-});
+// Corpo { vip: true|false } / { banned: true|false }; senza corpo inverte lo stato
+for (const flag of ['vip', 'banned']) {
+  router.put(`/api/admin/users/:email/${flag}`, adminOnly, (req, res) => {
+    const email = decodeURIComponent(req.params.email);
+    const value = req.body ? req.body[flag] : undefined;
+    res.json({ success: true, email, [flag]: setUserFlag(email, flag, value) });
+  });
+}
 
 // ==================== FERIE ====================
 

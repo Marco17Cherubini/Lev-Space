@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const { HttpError } = require('./errors');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { usersDB, adminDB } = require('./database');
+const { usersDB, adminDB, revokedTokensDB } = require('./database');
 const config = require('../config/config');
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -129,9 +129,7 @@ async function loginUser(email, password) {
   const adminCheck = await verifyAdminPassword(emailLower, password);
   if (adminCheck) {
     // È un admin - genera token con flag isAdmin
-    const token = jwt.sign({ email: emailLower, isAdmin: true }, config.jwt.secret, {
-      expiresIn: config.jwt.expiresIn
-    });
+    const token = signSession({ email: emailLower, isAdmin: true });
 
     return {
       user: { email: emailLower, isAdmin: true },
@@ -159,14 +157,33 @@ async function loginUser(email, password) {
 
   // Genera JWT token (utente normale). L'impronta della password fa decadere
   // la sessione appena la password cambia (vedi getSessionUser)
-  const token = jwt.sign(
-    { email: user.email, isAdmin: false, pwd: passwordFingerprint(user) },
-    config.jwt.secret,
-    { expiresIn: config.jwt.expiresIn }
-  );
+  const token = signSession({ email: user.email, isAdmin: false, pwd: passwordFingerprint(user) });
 
   const { password: _, ...userWithoutPassword } = user;
   return { user: { ...userWithoutPassword, isAdmin: false }, token, isAdmin: false };
+}
+
+// Token di sessione: il jti permette di revocarlo singolarmente al logout
+function signSession(payload) {
+  return jwt.sign(payload, config.jwt.secret, {
+    expiresIn: config.jwt.expiresIn,
+    jwtid: crypto.randomUUID()
+  });
+}
+
+// Logout: il token smette di valere subito, non solo nel browser che cancella il cookie.
+// I token emessi prima dell'introduzione del jti non sono revocabili e scadono da soli.
+function revokeSession(token) {
+  if (!token) return;
+  let decoded;
+  try {
+    decoded = jwt.verify(token, config.jwt.secret);
+  } catch (error) {
+    return; // già scaduto o non valido: non c'è nulla da revocare
+  }
+  if (decoded.jti && !decoded.purpose) {
+    revokedTokensDB.add(decoded.jti, decoded.exp);
+  }
 }
 
 // Verifica token JWT
@@ -190,6 +207,10 @@ function getSessionUser(token) {
   // I token con uno scopo dedicato (es. reset password) non valgono come sessione
   if (decoded.purpose) {
     throw new HttpError(401, 'Token non valido');
+  }
+
+  if (revokedTokensDB.has(decoded.jti)) {
+    throw new HttpError(401, 'Sessione chiusa, accedi di nuovo');
   }
 
   // Admin ancora presente in tabella: un admin rimosso perde l'accesso
@@ -225,30 +246,21 @@ function getAllUsers() {
   return users.map(toPublicUser);
 }
 
-// Toggle VIP status per un utente
-function toggleVip(email) {
+// Imposta VIP o BAN (flag: 'vip' | 'banned'). Con un valore esplicito l'operazione è
+// idempotente: un doppio clic o un retry non invertono lo stato. Senza valore resta il
+// vecchio comportamento a interruttore, per compatibilità.
+function setUserFlag(email, flag, value) {
+  if (value !== undefined && typeof value !== 'boolean') {
+    throw new HttpError(400, 'Valore non valido: usa true o false');
+  }
   const user = usersDB.findOne(u => u.email === email);
   if (!user) {
     throw new HttpError(404, 'Utente non trovato');
   }
 
-  const newVipStatus = isFlagOn(user.vip) ? '0' : '1';
-  usersDB.update(u => u.email === email, { vip: newVipStatus });
-
-  return newVipStatus === '1';
-}
-
-// Toggle banned status per un utente
-function toggleBanned(email) {
-  const user = usersDB.findOne(u => u.email === email);
-  if (!user) {
-    throw new HttpError(404, 'Utente non trovato');
-  }
-
-  const newBannedStatus = isFlagOn(user.banned) ? '0' : '1';
-  usersDB.update(u => u.email === email, { banned: newBannedStatus });
-
-  return newBannedStatus === '1';
+  const enabled = value === undefined ? !isFlagOn(user[flag]) : value;
+  usersDB.update(u => u.email === email, { [flag]: enabled ? '1' : '0' });
+  return enabled;
 }
 
 // Impronta della password attuale: inserita nel token di reset, lo invalida
@@ -331,8 +343,8 @@ module.exports = {
   isValidEmail,
   ensureGuestProfile,
   getAllUsers,
-  toggleVip,
-  toggleBanned,
+  setUserFlag,
+  revokeSession,
   generateResetToken,
   resetPassword
 };

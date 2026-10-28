@@ -112,7 +112,45 @@ function getAvailableSlots(date, includeExtraSlots = false) {
     }));
 }
 
-// Crea una nuova prenotazione (supporta gruppi fino a 3 persone)
+// Numero di persone del gruppo: da 1 a 3, 1 se assente o non valido
+function parseGroupSize(numPersone) {
+  return Math.min(Math.max(parseInt(numPersone) || 1, 1), 3);
+}
+
+// Slot consecutivi (senza buchi) da `orario` per `groupSize` persone, solo tra quelli
+// standard del giorno: un gruppo non scavalca mai la pausa pranzo o la chiusura
+function groupSlots(data, orario, groupSize) {
+  const allSlots = getSlotsForDay(data, false);
+  const startIndex = allSlots.indexOf(orario);
+  if (startIndex === -1) {
+    throw new HttpError(400, 'Orario non valido');
+  }
+
+  const slots = allSlots.slice(startIndex, startIndex + groupSize);
+  const contiguous = slots.every(
+    (slot, i) => i === 0 || toMinutes(slot) - toMinutes(slots[i - 1]) === APPOINTMENT_DURATION
+  );
+  if (slots.length < groupSize || !contiguous) {
+    throw new HttpError(409, 'Non ci sono abbastanza slot consecutivi disponibili');
+  }
+  return slots;
+}
+
+// Doppio invio o retry dopo una risposta persa: gli slot richiesti sono già tutti di
+// questo cliente e formano esattamente un suo gruppo. Restituisce la prima prenotazione.
+function findSameGroupBooking(userEmail, data, slots) {
+  const dayBookings = bookingsDB.findMany(b => b.giorno === data);
+  const mine = slots.map(ora => dayBookings.find(b => b.ora === ora && b.email === userEmail));
+  const token = mine[0]?.token;
+  if (!token || mine.some(b => !b || b.token !== token)) return null;
+
+  const groupLength = dayBookings.filter(b => b.token === token).length;
+  return groupLength === slots.length ? mine[0] : null;
+}
+
+// Crea una nuova prenotazione (supporta gruppi fino a 3 persone).
+// Restituisce { booking, created }: created è false se la stessa prenotazione esisteva
+// già (retry), così il chiamante non risponde con un errore né rimanda l'email.
 function createBooking(userEmail, bookingData) {
   const { data, orario, numPersone = 1 } = bookingData;
 
@@ -121,8 +159,7 @@ function createBooking(userEmail, bookingData) {
     throw new HttpError(400, 'Data e orario sono obbligatori');
   }
 
-  // Validazione numero persone
-  const groupSize = Math.min(Math.max(parseInt(numPersone) || 1, 1), 3);
+  const groupSize = parseGroupSize(numPersone);
 
   const start = slotStart(data, orario);
   if (!start) {
@@ -137,40 +174,21 @@ function createBooking(userEmail, bookingData) {
     throw new HttpError(400, 'Il giorno selezionato non è disponibile');
   }
 
-  // Ottieni tutti gli slot per il giorno (i clienti/VIP non accedono agli slot extra)
-  const allSlots = getSlotsForDay(data, false);
-  const startIndex = allSlots.indexOf(orario);
+  // I clienti e i VIP non accedono agli slot extra
+  const slotsToBook = groupSlots(data, orario, groupSize);
 
-  if (startIndex === -1) {
-    throw new HttpError(400, 'Orario non valido');
+  const sameBooking = findSameGroupBooking(userEmail, data, slotsToBook);
+  if (sameBooking) {
+    return { booking: { ...sameBooking, numPersone: groupSize }, created: false };
   }
 
-  // Verifica che ci siano abbastanza slot consecutivi
-  const slotsToBook = [];
-  for (let i = 0; i < groupSize; i++) {
-    const slotTime = allSlots[startIndex + i];
-    // Consecutivi = senza buchi: ogni slot inizia appena finito il precedente
-    // (esclude per esempio 11:30 + 14:00, a cavallo della pausa pranzo)
-    const isContiguous =
-      i === 0 ||
-      (slotTime && toMinutes(slotTime) - toMinutes(slotsToBook[i - 1]) === APPOINTMENT_DURATION);
-    if (!slotTime || !isContiguous) {
-      throw new HttpError(409, 'Non ci sono abbastanza slot consecutivi disponibili');
-    }
-
-    // Verifica che lo slot non sia in ferie
+  for (const slotTime of slotsToBook) {
     if (isHolidaySlot(data, slotTime)) {
       throw new HttpError(409, `Slot ${slotTime} non disponibile (ferie)`);
     }
-
-    // Verifica che lo slot sia ancora disponibile
-    const existingBooking = bookingsDB.findOne(b => b.giorno === data && b.ora === slotTime);
-
-    if (existingBooking) {
+    if (bookingsDB.findOne(b => b.giorno === data && b.ora === slotTime)) {
       throw new HttpError(409, `Slot ${slotTime} già occupato`);
     }
-
-    slotsToBook.push(slotTime);
   }
 
   // Ottieni dati utente
@@ -207,8 +225,58 @@ function createBooking(userEmail, bookingData) {
     })
   );
 
-  // Ritorna la prima prenotazione (principale)
-  return createdBookings[0];
+  // La prima prenotazione è quella principale del gruppo
+  return { booking: createdBookings[0], created: true };
+}
+
+// Lunedì (YYYY-MM-DD) della settimana di una data: identifica la settimana
+function weekKey(dateStr) {
+  const date = parseDate(dateStr);
+  const offset = (date.getDay() + 6) % 7; // lunedì = 0 ... domenica = 6
+  return addDaysToDateString(dateStr, -offset);
+}
+
+const SERIES_LENGTHS = [4, 8, 12];
+
+// Prenotazione di lungo periodo: un appuntamento a settimana per 4, 8 o 12 settimane.
+// Tutte le settimane vengono create insieme oppure nessuna: se qualcuna non è più
+// disponibile si risponde 409 con l'elenco, così il cliente cambia solo quelle.
+function createBookingSeries(userEmail, items) {
+  if (!Array.isArray(items) || !SERIES_LENGTHS.includes(items.length)) {
+    throw new HttpError(400, 'Scegli 4, 8 o 12 appuntamenti');
+  }
+  if (!items.every(item => item && parseDate(item.data) && isValidTime(item.orario))) {
+    throw new HttpError(400, 'Data o orario non validi');
+  }
+  if (new Set(items.map(item => weekKey(item.data))).size !== items.length) {
+    throw new HttpError(400, 'Puoi fissare un solo appuntamento per settimana');
+  }
+
+  const conflicts = [];
+  const results = [];
+  try {
+    withTransaction(() => {
+      for (const { data, orario } of items) {
+        try {
+          results.push(createBooking(userEmail, { data, orario, numPersone: 1 }));
+        } catch (error) {
+          if (!(error instanceof HttpError) || error.status !== 409) throw error;
+          conflicts.push({ data, orario, error: error.message });
+        }
+      }
+      // Annulla anche le settimane già inserite in questa transazione
+      if (conflicts.length > 0) throw new HttpError(409, 'conflitti');
+    });
+  } catch (error) {
+    if (conflicts.length === 0) throw error;
+    const label = conflicts.length === 1 ? 'Una settimana non è' : 'Alcune settimane non sono';
+    throw new HttpError(409, `${label} più disponibile: scegli un altro orario`, { conflicts });
+  }
+
+  return {
+    bookings: results.map(result => result.booking),
+    created: results.some(result => result.created)
+  };
 }
 
 // Prenotazione senza account: profilo ospite e prenotazione nella stessa transazione,
@@ -264,6 +332,12 @@ function cancelBooking(giorno, ora, userEmail) {
     throw new HttpError(403, 'Non autorizzato');
   }
 
+  // Un appuntamento già iniziato fa parte dello storico (e dei report): lo modifica
+  // solo il salone
+  if (slotStart(giorno, ora) <= new Date()) {
+    throw new HttpError(400, 'Questo appuntamento è già passato: contatta il salone');
+  }
+
   // Gli slot di una prenotazione di gruppo condividono il token: si liberano tutti insieme
   // (le serie ricorrenti create dall'admin hanno un token di serie e restano escluse)
   const sameGroup = b =>
@@ -281,10 +355,66 @@ function cancelBooking(giorno, ora, userEmail) {
 // Sposta una prenotazione del cliente: cancellazione della vecchia e creazione della nuova
 // avvengono insieme, quindi se la nuova non è valida la vecchia resta com'era
 function rescheduleBooking(userEmail, oldGiorno, oldOra, bookingData) {
+  // Retry dopo una risposta persa: la vecchia non c'è più e la nuova è già del cliente
+  const oldStillThere = bookingsDB.findOne(b => b.giorno === oldGiorno && b.ora === oldOra);
+  if (!oldStillThere && slotStart(bookingData.data, bookingData.orario)) {
+    const size = parseGroupSize(bookingData.numPersone);
+    const slots = getSlotsForDay(bookingData.data, false);
+    const start = slots.indexOf(bookingData.orario);
+    const same =
+      start !== -1 &&
+      findSameGroupBooking(userEmail, bookingData.data, slots.slice(start, start + size));
+    if (same) return { booking: same, created: false };
+  }
+
   return withTransaction(() => {
     cancelBooking(oldGiorno, oldOra, userEmail);
     return createBooking(userEmail, bookingData);
   });
+}
+
+// Calendario admin per un intervallo di giorni (max 6 settimane): per ogni giorno gli
+// slot in vigore (extra compresi), le prenotazioni e le ferie. È l'unica fonte degli
+// orari per il pannello, che così non ricalcola le regole nel browser.
+const MAX_SCHEDULE_DAYS = 42;
+
+function getAdminSchedule(from, to) {
+  const start = parseDate(from);
+  const end = parseDate(to);
+  if (!start || !end || end < start) {
+    throw new HttpError(400, 'Intervallo di date non valido');
+  }
+  const length = Math.round((end - start) / 86400000) + 1;
+  if (length > MAX_SCHEDULE_DAYS) {
+    throw new HttpError(400, `Intervallo troppo lungo (massimo ${MAX_SCHEDULE_DAYS} giorni)`);
+  }
+
+  const { daysOpen } = getBusinessHours();
+  const bookings = bookingsDB.readAll();
+  const holidays = getHolidays();
+
+  return Array.from({ length }, (_, i) => {
+    const date = addDaysToDateString(from, i);
+    return {
+      date,
+      open: daysOpen.includes(parseDate(date).getDay()),
+      slots: getSlotsForDay(date, true),
+      bookings: bookings.filter(b => b.giorno === date),
+      holidays: holidays.filter(h => h.giorno === date).map(h => h.ora)
+    };
+  });
+}
+
+// Orari pubblici (pagina d'ingresso): solo i turni standard, senza gli extra VIP
+function getPublicHours() {
+  const { daysOpen, days } = getBusinessHours();
+  const shift = s => (s ? { start: s.start, end: s.end } : null);
+  const publicDays = {};
+  for (const day of daysOpen) {
+    const hours = days[day];
+    publicDays[day] = { morning: shift(hours?.morning), afternoon: shift(hours?.afternoon) };
+  }
+  return { daysOpen, days: publicDays };
 }
 
 // Ottieni tutte le prenotazioni (per admin)
@@ -479,6 +609,11 @@ function moveBooking(oldGiorno, oldOra, newGiorno, newOra) {
     throw new HttpError(400, 'Tutti i campi sono obbligatori');
   }
 
+  // Come per l'inserimento: orari anche fuori calendario, ma in un formato valido
+  if (!parseDate(newGiorno) || !isValidTime(newOra)) {
+    throw new HttpError(400, 'Data o orario di destinazione non validi');
+  }
+
   // Trova la prenotazione da spostare
   const booking = bookingsDB.findOne(b => b.giorno === oldGiorno && b.ora === oldOra);
   if (!booking) {
@@ -516,6 +651,9 @@ module.exports = {
   getMonthAvailability,
   createGuestBooking,
   createBooking,
+  createBookingSeries,
+  getAdminSchedule,
+  getPublicHours,
   getUserBookings,
   cancelBooking,
   rescheduleBooking,

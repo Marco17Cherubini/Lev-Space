@@ -2,11 +2,13 @@
 // I servizi lanciano HttpError con lo status corretto e un messaggio per l'utente;
 // tutto il resto (bug, errori SQLite, ecc.) diventa un 500 generico senza dettagli interni.
 
+// details: campi aggiuntivi per il client (es. le settimane in conflitto di una serie)
 class HttpError extends Error {
-  constructor(status, message) {
+  constructor(status, message, details = {}) {
     super(message);
     this.name = 'HttpError';
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -21,7 +23,7 @@ function notFoundHandler(req, res) {
 
 function errorHandler(err, req, res, _next) {
   if (err instanceof HttpError) {
-    return res.status(err.status).json({ success: false, error: err.message });
+    return res.status(err.status).json({ ...err.details, success: false, error: err.message });
   }
 
   // Errori del parser JSON di Express (corpo malformato, troppo grande, ...)

@@ -1,7 +1,13 @@
 // Registrazione, login/logout, sessione corrente e reset password
 const express = require('express');
 const config = require('../../config/config');
-const { registerUser, loginUser, generateResetToken, resetPassword } = require('../authService');
+const {
+  registerUser,
+  loginUser,
+  generateResetToken,
+  resetPassword,
+  revokeSession
+} = require('../authService');
 const { sendPasswordResetEmail } = require('../emailService');
 const { authenticateToken, authLimiter } = require('../middleware');
 const { HttpError, asyncHandler } = require('../errors');
@@ -35,6 +41,7 @@ router.post(
 );
 
 router.post('/api/auth/logout', (req, res) => {
+  revokeSession(req.cookies.token);
   res.clearCookie('token', SESSION_COOKIE_OPTIONS);
   res.json({ success: true, message: 'Logout effettuato' });
 });

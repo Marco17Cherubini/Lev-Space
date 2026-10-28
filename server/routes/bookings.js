@@ -3,7 +3,9 @@ const express = require('express');
 const {
   getAvailableSlots,
   getMonthAvailability,
+  getPublicHours,
   createBooking,
+  createBookingSeries,
   createGuestBooking,
   getUserBookings,
   rescheduleBooking,
@@ -14,6 +16,19 @@ const { sendConfirmationInBackground } = require('../emailService');
 const { authenticateToken, isAdminRequest, guestLimiter } = require('../middleware');
 
 const router = express.Router();
+
+// Risposta a una prenotazione: 201 se è stata creata ora; 200 senza nuova email se era
+// già stata registrata (doppio invio o retry dopo una risposta persa)
+function sendBookingResult(res, { booking, created }, extra = {}) {
+  if (created) sendConfirmationInBackground(booking);
+  res.status(created ? 201 : 200).json({
+    success: true,
+    booking,
+    alreadyBooked: !created,
+    emailSent: created ? 'pending' : 'skipped',
+    ...extra
+  });
+}
 
 // La sessione è facoltativa: gli slot extra (pre-apertura e serali) sono solo per l'admin,
 // i VIP vedono gli stessi orari degli altri clienti
@@ -36,10 +51,20 @@ router.get('/api/holidays', (req, res) => {
   res.json({ success: true, holidays: getHolidays() });
 });
 
+// Orari di apertura per la pagina pubblica (senza gli extra VIP)
+router.get('/api/hours', (req, res) => {
+  res.json({ success: true, ...getPublicHours() });
+});
+
 router.post('/api/bookings', authenticateToken, (req, res) => {
-  const booking = createBooking(req.user.email, req.body);
-  sendConfirmationInBackground(booking);
-  res.status(201).json({ success: true, booking, emailSent: 'pending' });
+  sendBookingResult(res, createBooking(req.user.email, req.body));
+});
+
+// Lungo periodo: tutte le settimane in un'unica operazione (vedi createBookingSeries)
+router.post('/api/bookings/series', authenticateToken, (req, res) => {
+  const { bookings, created } = createBookingSeries(req.user.email, req.body.bookings);
+  if (created) bookings.forEach(sendConfirmationInBackground);
+  res.status(created ? 201 : 200).json({ success: true, bookings, alreadyBooked: !created });
 });
 
 router.get('/api/bookings', authenticateToken, (req, res) => {
@@ -49,13 +74,13 @@ router.get('/api/bookings', authenticateToken, (req, res) => {
 // Sposta una propria prenotazione su un nuovo giorno/orario (operazione atomica)
 router.put('/api/bookings', authenticateToken, (req, res) => {
   const { oldGiorno, oldOra, data, orario, numPersone } = req.body;
-  const booking = rescheduleBooking(req.user.email, oldGiorno, oldOra, {
+  const result = rescheduleBooking(req.user.email, oldGiorno, oldOra, {
     data,
     orario,
     numPersone
   });
-  sendConfirmationInBackground(booking);
-  res.json({ success: true, booking, emailSent: 'pending' });
+  if (result.created) sendConfirmationInBackground(result.booking);
+  res.json({ success: true, booking: result.booking, alreadyBooked: !result.created });
 });
 
 router.delete('/api/bookings', authenticateToken, (req, res) => {
@@ -66,13 +91,8 @@ router.delete('/api/bookings', authenticateToken, (req, res) => {
 
 // Prenotazione rapida senza account: bastano nome, cognome ed email
 router.post('/api/bookings/guest', guestLimiter, (req, res) => {
-  const booking = createGuestBooking(req.body);
-  sendConfirmationInBackground(booking);
-  res.status(201).json({
-    success: true,
-    booking,
-    message: 'Prenotazione confermata! Riceverai una email con i dettagli.',
-    emailSent: 'pending'
+  sendBookingResult(res, createGuestBooking(req.body), {
+    message: 'Prenotazione confermata! Riceverai una email con i dettagli.'
   });
 });
 

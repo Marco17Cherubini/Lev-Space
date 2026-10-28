@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const config = require('../config/config');
 const { notFoundHandler, errorHandler } = require('./errors');
+const { rejectCrossSiteRequests } = require('./middleware');
 const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./routes/bookings');
 const adminRoutes = require('./routes/admin');
@@ -26,15 +27,16 @@ app.use(
   })
 );
 
-// L'API accetta solo JSON: niente parser urlencoded, così un form HTML
-// di un altro sito non può inviare richieste valide (CSRF)
-app.use(express.json());
-app.use(cookieParser());
-
 // In produzione (Railway) l'app è dietro un proxy: serve per leggere l'IP reale del client
 if (config.server.env === 'production') {
   app.set('trust proxy', 1);
 }
+
+// CSRF: richieste che modificano dati solo dalla stessa origine e solo in JSON (vedi
+// rejectCrossSiteRequests); niente parser urlencoded
+app.use(rejectCrossSiteRequests);
+app.use(express.json());
+app.use(cookieParser());
 
 app.use(express.static(FRONTEND_DIR));
 
