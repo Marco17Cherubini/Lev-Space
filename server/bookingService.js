@@ -43,8 +43,9 @@ function getSlotsForDay(date, includeExtraSlots = false) {
     }
     // Aggiungi straordinari
     slots = [...slots, ...extraSlots];
-  } else if (includeExtraSlots && !hours.vip) {
-    // Fallback legacy se il JSON VIP non è ancora stato salvato tramite la nuova UI
+  } else if (includeExtraSlots && !('vip' in hours)) {
+    // Fallback legacy solo se gli orari non sono mai stati salvati da Gestione Orari
+    // (manca del tutto la chiave vip). vip: null vuol dire "extra spenti": nessun extra.
     const preOpeningSlot = ['08:00'];
     const extraSlotsWeekday = [
       '18:00',

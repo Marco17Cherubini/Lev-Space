@@ -79,3 +79,31 @@ test('uno slot prenotato o in ferie risulta non disponibile', () => {
 test('gli slot di una data passata non vengono restituiti', () => {
   assert.deepEqual(getAvailableSlots('2020-01-07'), []);
 });
+
+test('B29: con gli extra VIP spenti in Gestione Orari l’admin non vede orari extra', () => {
+  const { getBusinessHours, saveBusinessHours } = require('../server/businessHours');
+  const original = getBusinessHours();
+  const day = futureWeekday(2);
+
+  // Extra spenti esplicitamente (vip: null): niente fallback agli orari "storici"
+  saveBusinessHours({
+    ...original,
+    days: { ...original.days, 2: { ...original.days[2], vip: null } }
+  });
+  assert.deepEqual(
+    getAvailableSlots(day, true).map(s => s.time),
+    TUESDAY_SLOTS
+  );
+
+  // Extra accesi: pre-apertura delle 08:00 e i soli orari scelti
+  saveBusinessHours({
+    ...original,
+    days: { ...original.days, 2: { ...original.days[2], vip: { start: '18:00', end: '19:30' } } }
+  });
+  assert.deepEqual(
+    getAvailableSlots(day, true).map(s => s.time),
+    ['08:00', ...TUESDAY_SLOTS, '18:00', '18:45']
+  );
+
+  saveBusinessHours(original);
+});

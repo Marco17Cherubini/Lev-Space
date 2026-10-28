@@ -54,7 +54,8 @@
         const value = choice
           ? `<span class="week__value">${escapeHtml(formatDateShort(choice.data))} · <span class="num">${escapeHtml(choice.orario)}</span></span>`
           : '<span class="week__value week__value--empty">Scegli giorno e orario</span>';
-        return `<li class="week${choice ? ' week--set' : ''}${conflict ? ' week--conflict' : ''}">
+        const chosen = choice ? ` data-date="${choice.data}" data-time="${choice.orario}"` : '';
+        return `<li class="week${choice ? ' week--set' : ''}${conflict ? ' week--conflict' : ''}"${chosen}>
             <button type="button" class="week__button" data-week="${i}">
               <span class="week__label">Settimana ${i + 1} · dal ${escapeHtml(formatDateShort(monday))}</span>
               ${value}
