@@ -2,24 +2,50 @@
 // Gli orari guidano il calcolo di tutti gli slot: un formato errato
 // (es. giorni come stringhe, turni senza slot) chiuderebbe il salone o farebbe
 // fallire ogni richiesta, quindi si accetta solo la forma attesa.
-const { isValidTime } = require('./dates');
+const { isValidTime, toMinutes } = require('./dates');
 const { globalSettingsDB } = require('./database');
 const config = require('../config/config');
 const { HttpError } = require('./errors');
 
 const SHIFTS = ['morning', 'afternoon', 'vip'];
 
+const APPOINTMENT_MINUTES = config.appointmentDuration || 45;
+
+const toTime = minutes =>
+  `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+
+// Inizi degli appuntamenti di un turno: ogni 45 minuti da `start`, finché l'appuntamento
+// finisce entro `end` (08:30-12:15 → 08:30 ... 11:30). Gli slot si ricavano sempre qui,
+// così due appuntamenti dello stesso turno non possono sovrapporsi.
+function shiftSlots(start, end) {
+  const slots = [];
+  for (
+    let t = toMinutes(start);
+    t + APPOINTMENT_MINUTES <= toMinutes(end);
+    t += APPOINTMENT_MINUTES
+  ) {
+    slots.push(toTime(t));
+  }
+  return slots;
+}
+
+// Gli slot inviati dal client vengono solo validati (compatibilità con il vecchio
+// formato), poi sostituiti da quelli calcolati da inizio e fine
 function normalizeShift(shift, label) {
   if (shift === null || shift === undefined) return null;
 
   const { start, end, slots } = shift;
-  if (!isValidTime(start) || !isValidTime(end) || !Array.isArray(slots)) {
+  if (!isValidTime(start) || !isValidTime(end)) {
     throw new HttpError(400, `Turno ${label} non valido`);
   }
-  if (!slots.every(isValidTime)) {
+  if (slots !== undefined && (!Array.isArray(slots) || !slots.every(isValidTime))) {
     throw new HttpError(400, `Orari non validi nel turno ${label}`);
   }
-  return { start, end, slots: [...slots] };
+  const computed = shiftSlots(start, end);
+  if (computed.length === 0) {
+    throw new HttpError(400, `Il turno ${label} è più corto di un appuntamento`);
+  }
+  return { start, end, slots: computed };
 }
 
 // Restituisce una copia pulita degli orari (solo i campi noti) o lancia un errore

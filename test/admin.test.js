@@ -314,3 +314,37 @@ test('report: conteggi per giorno e navigazione nei periodi precedenti', async (
   assert.equal(month.counts[28], 2);
   assert.match(month.labels[0], /^\d+\/\d+$/);
 });
+
+test('B28: gli slot di un turno si ricavano da inizio e fine, a passi di 45 minuti', async () => {
+  const save = body => api.request('POST', '/api/admin/settings/hours', { cookie: admin, body });
+  const current = (await api.request('GET', '/api/admin/settings/hours', { cookie: admin })).data
+    .businessHours;
+
+  // La vecchia pagina mandava slot da una lista irregolare (18:00, 18:30, 18:45...):
+  // appuntamenti da 45 minuti sovrapposti. Il server ora li ignora e li ricalcola.
+  const res = await save({
+    ...current,
+    days: {
+      ...current.days,
+      2: {
+        morning: { start: '08:30', end: '12:15', slots: ['08:30', '09:15'] },
+        afternoon: null,
+        vip: { start: '18:00', end: '21:00', slots: ['18:00', '18:30', '18:45'] }
+      }
+    }
+  });
+  assert.equal(res.status, 200);
+  const saved = (await api.request('GET', '/api/admin/settings/hours', { cookie: admin })).data
+    .businessHours.days[2];
+  assert.deepEqual(saved.morning.slots, ['08:30', '09:15', '10:00', '10:45', '11:30']);
+  assert.deepEqual(saved.vip.slots, ['18:00', '18:45', '19:30', '20:15']);
+
+  // Un turno più corto di un appuntamento non è valido
+  const tooShort = await save({
+    ...current,
+    days: { ...current.days, 2: { morning: { start: '08:30', end: '09:00' } } }
+  });
+  assert.equal(tooShort.status, 400);
+
+  assert.equal((await save(current)).status, 200);
+});
