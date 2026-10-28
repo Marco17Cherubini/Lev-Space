@@ -316,3 +316,29 @@ test('cambio dell’ora legale: le serie ricorrenti restano sullo stesso giorno 
     ['2031-10-21 09:15', '2031-10-28 09:15', '2031-11-04 09:15', '2031-11-11 09:15']
   );
 });
+
+test('revisione sicurezza: il retry ospite non rivela i dati di un altro ospite', async () => {
+  const guest = { nome: 'Gina', cognome: 'Ospite', email: 'gina.ospite@test.local' };
+  const slot = { giorno: futureWeekday(4, 6), ora: '14:45' };
+  const first = await api.request('POST', '/api/bookings/guest', { body: { ...guest, ...slot } });
+  assert.equal(first.status, 201);
+
+  const probe = await api.request('POST', '/api/bookings/guest', {
+    body: { nome: 'x', cognome: 'y', email: guest.email, ...slot }
+  });
+  assert.equal(probe.status, 200);
+  assert.deepEqual(probe.data.booking, slot);
+});
+
+test('revisione sicurezza: parametri malformati danno 400/404, non 500', async () => {
+  const schedule = await api.request('GET', '/api/admin/schedule?from[]=2031-01-06&to=2031-01-07', {
+    cookie: admin
+  });
+  assert.equal(schedule.status, 400);
+
+  const flag = await api.request('PUT', '/api/admin/users/%25E0/vip', {
+    cookie: admin,
+    body: { vip: true }
+  });
+  assert.equal(flag.status, 404);
+});

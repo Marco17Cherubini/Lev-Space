@@ -40,7 +40,13 @@ function pause(ms) {
 // troncato. Non si ripiega mai sulla scrittura diretta, che non sarebbe atomica.
 function writeAtomically(buffer) {
   const tmpPath = `${DB_PATH}.tmp`;
-  fs.writeFileSync(tmpPath, buffer);
+  try {
+    fs.writeFileSync(tmpPath, buffer);
+  } catch (error) {
+    // Disco pieno o cartella non scrivibile: niente file temporanei a metà
+    fs.rmSync(tmpPath, { force: true });
+    throw error;
+  }
   for (let attempt = 1; ; attempt++) {
     try {
       fs.renameSync(tmpPath, DB_PATH);
@@ -62,9 +68,11 @@ function openFromBuffer(buffer) {
 }
 
 // Riporta la memoria all'ultimo stato salvato (dopo un salvataggio fallito)
+// (si apre la copia prima di chiudere l'attuale: se fallisse, il database resta aperto)
 function restoreLastSaved() {
+  const restored = openFromBuffer(lastSaved);
   db.close();
-  db = openFromBuffer(lastSaved);
+  db = restored;
 }
 
 // Salva il database su disco. sql.js tiene il DB in memoria e lo riscrive per intero.
@@ -73,8 +81,9 @@ function restoreLastSaved() {
 function saveDatabase() {
   if (!db || inTransaction) return;
 
-  const buffer = Buffer.from(db.export());
+  let buffer;
   try {
+    buffer = Buffer.from(db.export());
     writeAtomically(buffer);
   } catch (error) {
     console.error('❌ Salvataggio del database non riuscito, modifiche annullate:', error.code);

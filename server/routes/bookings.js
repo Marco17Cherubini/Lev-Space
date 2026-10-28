@@ -19,11 +19,14 @@ const router = express.Router();
 
 // Risposta a una prenotazione: 201 se è stata creata ora; 200 senza nuova email se era
 // già stata registrata (doppio invio o retry dopo una risposta persa)
-function sendBookingResult(res, { booking, created }, extra = {}) {
+// Con publicOnly (ospiti, senza sessione) un retry restituisce solo giorno e ora: chi
+// conosce l'email di un ospite non deve poter leggere i dati della sua prenotazione
+function sendBookingResult(res, { booking, created }, { publicOnly = false, ...extra } = {}) {
   if (created) sendConfirmationInBackground(booking);
+  const visible = !created && publicOnly ? { giorno: booking.giorno, ora: booking.ora } : booking;
   res.status(created ? 201 : 200).json({
     success: true,
-    booking,
+    booking: visible,
     alreadyBooked: !created,
     emailSent: created ? 'pending' : 'skipped',
     ...extra
@@ -62,8 +65,11 @@ router.post('/api/bookings', authenticateToken, (req, res) => {
 
 // Lungo periodo: tutte le settimane in un'unica operazione (vedi createBookingSeries)
 router.post('/api/bookings/series', authenticateToken, (req, res) => {
-  const { bookings, created } = createBookingSeries(req.user.email, req.body.bookings);
-  if (created) bookings.forEach(sendConfirmationInBackground);
+  const { bookings, createdBookings, created } = createBookingSeries(
+    req.user.email,
+    req.body.bookings
+  );
+  createdBookings.forEach(sendConfirmationInBackground);
   res.status(created ? 201 : 200).json({ success: true, bookings, alreadyBooked: !created });
 });
 
@@ -92,6 +98,7 @@ router.delete('/api/bookings', authenticateToken, (req, res) => {
 // Prenotazione rapida senza account: bastano nome, cognome ed email
 router.post('/api/bookings/guest', guestLimiter, (req, res) => {
   sendBookingResult(res, createGuestBooking(req.body), {
+    publicOnly: true,
     message: 'Prenotazione confermata! Riceverai una email con i dettagli.'
   });
 });

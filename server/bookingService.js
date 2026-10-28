@@ -275,6 +275,8 @@ function createBookingSeries(userEmail, items) {
 
   return {
     bookings: results.map(result => result.booking),
+    // solo quelle create ora ricevono l'email di conferma
+    createdBookings: results.filter(result => result.created).map(result => result.booking),
     created: results.some(result => result.created)
   };
 }
@@ -379,8 +381,8 @@ function rescheduleBooking(userEmail, oldGiorno, oldOra, bookingData) {
 const MAX_SCHEDULE_DAYS = 42;
 
 function getAdminSchedule(from, to) {
-  const start = parseDate(from);
-  const end = parseDate(to);
+  const start = typeof from === 'string' && parseDate(from);
+  const end = typeof to === 'string' && parseDate(to);
   if (!start || !end || end < start) {
     throw new HttpError(400, 'Intervallo di date non valido');
   }

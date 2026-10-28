@@ -79,7 +79,8 @@ router.get('/api/admin/users', adminOnly, (req, res) => {
 // Corpo { vip: true|false } / { banned: true|false }; senza corpo inverte lo stato
 for (const flag of ['vip', 'banned']) {
   router.put(`/api/admin/users/:email/${flag}`, adminOnly, (req, res) => {
-    const email = decodeURIComponent(req.params.email);
+    // Express ha già decodificato il parametro: una seconda decodifica fallirebbe su "%"
+    const { email } = req.params;
     const value = req.body ? req.body[flag] : undefined;
     res.json({ success: true, email, [flag]: setUserFlag(email, flag, value) });
   });
