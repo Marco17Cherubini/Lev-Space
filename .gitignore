@@ -25,3 +25,6 @@ Thumbs.db
 
 # Configurazioni locali e copie di lavoro
 .claude/
+
+# Output degli strumenti di verifica (screenshot, snapshot Playwright)
+.playwright-mcp/

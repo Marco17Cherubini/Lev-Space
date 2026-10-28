@@ -17,27 +17,80 @@ if (!fs.existsSync(dbDir)) {
 
 // Database instance (sarà inizializzato in modo asincrono)
 let db = null;
+let SQL = null;
+
+// Copia dell'ultimo stato scritto su disco: se un salvataggio fallisce la memoria torna
+// a questo stato, così memoria, file e risposta HTTP non divergono mai
+let lastSaved = null;
 
 // true mentre è aperta una transazione: i salvataggi intermedi vengono rimandati al COMMIT
 let inTransaction = false;
 
-// Salva il database su disco. sql.js tiene il DB in memoria e lo riscrive per intero:
-// si scrive prima un file temporaneo e poi lo si rinomina, così un crash a metà
-// scrittura non lascia mai un database troncato.
+// Su Windows la rinomina fallisce se il file è aperto un istante da un altro processo
+// (antivirus, backup): si riprova per poco, poi si rinuncia senza toccare il file
+const RENAME_ATTEMPTS = 5;
+const RENAME_RETRY_MS = 50;
+const RETRYABLE_RENAME_ERRORS = new Set(['EPERM', 'EBUSY', 'EACCES']);
+
+function pause(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+// Scrive un file temporaneo e lo rinomina: un crash a metà non lascia mai un database
+// troncato. Non si ripiega mai sulla scrittura diretta, che non sarebbe atomica.
+function writeAtomically(buffer) {
+  const tmpPath = `${DB_PATH}.tmp`;
+  fs.writeFileSync(tmpPath, buffer);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      fs.renameSync(tmpPath, DB_PATH);
+      return;
+    } catch (error) {
+      if (attempt >= RENAME_ATTEMPTS || !RETRYABLE_RENAME_ERRORS.has(error.code)) {
+        fs.rmSync(tmpPath, { force: true });
+        throw error;
+      }
+      pause(RENAME_RETRY_MS);
+    }
+  }
+}
+
+// sql.js può usare come file in memoria lo stesso buffer ricevuto: gli si passa sempre
+// una copia, altrimenti le scritture successive modificherebbero anche lo snapshot
+function openFromBuffer(buffer) {
+  return new SQL.Database(Uint8Array.from(buffer));
+}
+
+// Riporta la memoria all'ultimo stato salvato (dopo un salvataggio fallito)
+function restoreLastSaved() {
+  db.close();
+  db = openFromBuffer(lastSaved);
+}
+
+// Salva il database su disco. sql.js tiene il DB in memoria e lo riscrive per intero.
+// Se la scrittura fallisce le modifiche vengono annullate anche in memoria e l'errore
+// arriva al chiamante (500 al client): una prenotazione non salvata non esiste.
 function saveDatabase() {
   if (!db || inTransaction) return;
 
   const buffer = Buffer.from(db.export());
-  const tmpPath = `${DB_PATH}.tmp`;
-  fs.writeFileSync(tmpPath, buffer);
   try {
-    fs.renameSync(tmpPath, DB_PATH);
+    writeAtomically(buffer);
   } catch (error) {
-    // Su Windows la rinomina può fallire se il file è aperto da un altro processo
-    // (antivirus, backup): si ripiega sulla scrittura diretta
-    console.warn('⚠️  Rinomina atomica non riuscita, scrittura diretta:', error.code);
-    fs.writeFileSync(DB_PATH, buffer);
-    fs.rmSync(tmpPath, { force: true });
+    console.error('❌ Salvataggio del database non riuscito, modifiche annullate:', error.code);
+    restoreLastSaved();
+    throw error;
+  }
+  lastSaved = buffer;
+}
+
+// Se il COMMIT stesso è fallito SQLite può aver già chiuso la transazione: il ROLLBACK
+// fallirebbe e nasconderebbe l'errore originale, che è quello da propagare
+function rollbackQuietly() {
+  try {
+    db.run('ROLLBACK');
+  } catch (rollbackError) {
+    console.error('ROLLBACK non eseguito:', rollbackError.message);
   }
 }
 
@@ -48,17 +101,20 @@ function withTransaction(fn) {
 
   db.run('BEGIN');
   inTransaction = true;
+  let result;
   try {
-    const result = fn();
+    result = fn();
     db.run('COMMIT');
-    inTransaction = false;
-    saveDatabase();
-    return result;
   } catch (error) {
     inTransaction = false;
-    db.run('ROLLBACK');
+    rollbackQuietly();
     throw error;
   }
+  inTransaction = false;
+  // Dopo il COMMIT non c'è più nulla da annullare con ROLLBACK: se il salvataggio
+  // fallisce è saveDatabase a riportare la memoria allo stato su disco
+  saveDatabase();
+  return result;
 }
 
 // Schema attuale delle prenotazioni: usato per crearla e per ricostruirla nelle migrazioni.
@@ -81,10 +137,50 @@ function tableColumns(table) {
   return (info[0]?.values || []).map(col => ({ name: col[1], notNull: col[3] === 1 }));
 }
 
+// Migrazione additiva: aggiunge la colonna solo se manca. Gli errori veri (non "esiste
+// già") interrompono l'avvio invece di lasciare uno schema a metà.
+function addColumnIfMissing(table, column, definition) {
+  if (tableColumns(table).some(col => col.name === column)) return;
+  db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  console.log(`🔄 Migrazione: aggiunta colonna ${table}.${column}`);
+}
+
+// Slot con più di una prenotazione: [{ giorno, ora, ids: [..] }].
+// Usata all'avvio e da `npm run db:check` (server/db-check.js).
+const DUPLICATE_SLOTS_SQL = `
+  SELECT giorno, ora, group_concat(id) FROM bookings
+  GROUP BY giorno, ora HAVING COUNT(*) > 1 ORDER BY giorno, ora`;
+
+function findDuplicateSlots(database) {
+  const res = database.exec(DUPLICATE_SLOTS_SQL);
+  return (res[0]?.values || []).map(([giorno, ora, ids]) => ({
+    giorno,
+    ora,
+    ids: String(ids).split(',').map(Number)
+  }));
+}
+
+// Il vincolo "un appuntamento per slot" è la garanzia principale contro i doppioni:
+// senza di esso l'app non parte. I doppioni non vengono mai cancellati in automatico
+// (sono clienti reali): li si elenca perché l'admin decida quale spostare.
+function ensureUniqueSlotIndex() {
+  const duplicates = findDuplicateSlots(db);
+  if (duplicates.length > 0) {
+    const list = duplicates
+      .map(d => `${d.giorno} ${d.ora} (prenotazioni ${d.ids.map(id => `#${id}`).join(', ')})`)
+      .join('; ');
+    throw new Error(
+      `Prenotazioni doppie sullo stesso slot, indice univoco non creabile: ${list}. ` +
+        'Nessun dato è stato modificato: sposta o rimuovi i doppioni (npm run db:check) e riavvia.'
+    );
+  }
+  db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_slot ON bookings (giorno, ora)');
+}
+
 // Le prime versioni avevano servizio NOT NULL; i servizi sono stati rimossi e SQLite non
 // permette di cambiare il vincolo, quindi la tabella va ricostruita copiando tutte le
 // colonne in comune (tipo e token compresi). Tutto avviene in una transazione: se qualcosa
-// fallisce la tabella originale resta com'era.
+// fallisce la tabella originale resta com'era e l'avvio si interrompe.
 function migrateBookingsServizioNullable() {
   const oldColumns = tableColumns('bookings');
   const servizio = oldColumns.find(col => col.name === 'servizio');
@@ -106,25 +202,29 @@ function migrateBookingsServizioNullable() {
     db.run('COMMIT');
     console.log('✅ Migrazione completata: servizio ora è opzionale');
   } catch (error) {
-    db.run('ROLLBACK');
-    console.error(
-      '❌ Migrazione della tabella bookings non riuscita, dati invariati:',
-      error.message
+    rollbackQuietly();
+    throw new Error(
+      `Migrazione della tabella bookings non riuscita, dati invariati: ${error.message}`
     );
   }
 }
 
-// Inizializza il database
+// Inizializza il database. Qualunque errore di schema o migrazione interrompe l'avvio:
+// meglio un deploy fallito che un'app che parte con dati incoerenti.
 async function initDatabase() {
-  const SQL = await initSqlJs();
+  SQL = SQL || (await initSqlJs());
+  inTransaction = false;
+  if (db) db.close();
 
   // Carica database esistente o crea nuovo
   if (fs.existsSync(DB_PATH)) {
     const fileBuffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(fileBuffer);
+    db = openFromBuffer(fileBuffer);
+    lastSaved = fileBuffer;
     console.log('📦 Database SQLite caricato da file');
   } else {
     db = new SQL.Database();
+    lastSaved = Buffer.from(db.export());
     console.log('📦 Nuovo database SQLite creato');
   }
 
@@ -169,52 +269,24 @@ async function initDatabase() {
     )
   `);
 
-  // Aggiungi colonna vip se non esiste (migrazione)
-  try {
-    db.run(`ALTER TABLE users ADD COLUMN vip INTEGER DEFAULT 0`);
-  } catch (e) {
-    // Colonna già esiste
-  }
+  // Sessioni chiuse con il logout: restano qui fino alla loro scadenza naturale
+  db.run(`
+    CREATE TABLE IF NOT EXISTS revoked_tokens (
+      jti TEXT PRIMARY KEY,
+      expires_at INTEGER NOT NULL
+    )
+  `);
 
-  // Aggiungi colonna banned se non esiste (migrazione)
-  try {
-    db.run(`ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0`);
-  } catch (e) {
-    // Colonna già esiste
-  }
-
-  // Aggiungi colonna isGuest se non esiste (migrazione per Guest Checkout)
-  try {
-    db.run(`ALTER TABLE users ADD COLUMN isGuest INTEGER DEFAULT 0`);
-  } catch (e) {
-    // Colonna gia esiste
-  }
-
-  // Aggiungi colonna token a bookings se non esiste (migrazione per Smart Rescheduling)
-  try {
-    db.run(`ALTER TABLE bookings ADD COLUMN token TEXT`);
-  } catch (e) {
-    // Colonna gia esiste
-  }
-
-  // Aggiungi colonna tipo a bookings se non esiste (migrazione per Prenotazioni Ricorrenti)
-  // Valori: 'normale' (default) | 'ricorrente'
-  try {
-    db.run(`ALTER TABLE bookings ADD COLUMN tipo TEXT DEFAULT 'normale'`);
-  } catch (e) {
-    // Colonna gia esiste
-  }
+  // Colonne aggiunte nelle versioni successive (VIP, BAN, ospiti, gruppi, ricorrenze)
+  addColumnIfMissing('users', 'vip', 'INTEGER DEFAULT 0');
+  addColumnIfMissing('users', 'banned', 'INTEGER DEFAULT 0');
+  addColumnIfMissing('users', 'isGuest', 'INTEGER DEFAULT 0');
+  addColumnIfMissing('bookings', 'token', 'TEXT');
+  // tipo: 'normale' (default) | 'ricorrente'
+  addColumnIfMissing('bookings', 'tipo', "TEXT DEFAULT 'normale'");
 
   migrateBookingsServizioNullable();
-
-  // Un solo appuntamento per slot. Se i dati esistenti contengono già doppioni
-  // l'indice non può essere creato: lo si segnala senza bloccare l'avvio.
-  try {
-    db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_slot ON bookings (giorno, ora)');
-  } catch (e) {
-    console.warn('⚠️  Prenotazioni duplicate sullo stesso slot: indice univoco non creato.');
-    console.warn('   Rimuovi i doppioni (stesso giorno e ora) e riavvia il server.');
-  }
+  ensureUniqueSlotIndex();
 
   // Salva struttura iniziale
   saveDatabase();
@@ -231,17 +303,10 @@ async function initDatabase() {
 // ==================== INIZIALIZZA SETTINGS (SEED) ====================
 function initializeSettings() {
   if (!db) return;
-  const currentHours = globalSettingsDB.get('businessHours');
-  if (!currentHours) {
-    try {
-      const config = require('../config/config');
-      if (config.businessHours) {
-        globalSettingsDB.set('businessHours', config.businessHours);
-        console.log('⚙️ Impostazioni businessHours migrate da config.js');
-      }
-    } catch (e) {
-      console.error('Errore durante la migrazione di businessHours:', e);
-    }
+  if (!globalSettingsDB.get('businessHours')) {
+    const config = require('../config/config');
+    globalSettingsDB.set('businessHours', config.businessHours);
+    console.log('⚙️ Impostazioni businessHours migrate da config.js');
   }
 }
 
@@ -290,9 +355,11 @@ class SQLiteTable {
     const values = cols.map(c => record[c]);
 
     db.run(`INSERT INTO ${this.tableName} (${cols.join(', ')}) VALUES (${placeholders})`, values);
+    // Letto prima del salvataggio: l'export di sql.js riapre il database e lo azzera
+    const id = db.exec('SELECT last_insert_rowid()')[0]?.values[0]?.[0];
 
     saveDatabase();
-    return db.exec('SELECT last_insert_rowid()')[0]?.values[0]?.[0];
+    return id;
   }
 
   // Aggiorna record che matchano il filtro
@@ -380,37 +447,52 @@ const bookingsDB = new SQLiteTable('bookings', bookingColumns);
 const adminDB = new SQLiteTable('admins', adminColumns);
 const holidaysDB = new SQLiteTable('holidays', holidayColumns);
 
+// Impostazioni in JSON. Gli errori non vengono nascosti: un salvataggio fallito deve
+// arrivare all'admin come errore, e un valore illeggibile non deve far ripiegare in
+// silenzio su orari diversi da quelli scelti.
 const globalSettingsDB = {
-  get: function (key) {
+  get(key) {
     if (!db) return null;
+    const stmt = db.prepare('SELECT json_data FROM global_settings WHERE key = ?');
     try {
-      const stmt = db.prepare(`SELECT json_data FROM global_settings WHERE key = ?`);
       stmt.bind([key]);
-      if (stmt.step()) {
-        const rs = stmt.getAsObject();
-        stmt.free();
-        return JSON.parse(rs.json_data);
-      }
+      return stmt.step() ? JSON.parse(stmt.getAsObject().json_data) : null;
+    } finally {
       stmt.free();
-      return null;
-    } catch (e) {
-      console.error(`Errore in globalSettingsDB.get(${key}):`, e);
-      return null;
     }
   },
-  set: function (key, data) {
+  set(key, data) {
     if (!db) return;
+    db.run(
+      'INSERT INTO global_settings (key, json_data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET json_data = excluded.json_data',
+      [key, JSON.stringify(data)]
+    );
+    saveDatabase();
+  }
+};
+
+// Token di sessione revocati dal logout (jti). Le righe scadute vengono rimosse a ogni
+// nuova revoca, così la tabella resta piccola.
+const revokedTokensDB = {
+  has(jti) {
+    if (!db || !jti) return false;
+    const stmt = db.prepare('SELECT 1 FROM revoked_tokens WHERE jti = ?');
     try {
-      const stringData = JSON.stringify(data);
-      const stmt = db.prepare(
-        `INSERT INTO global_settings (key, json_data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET json_data = excluded.json_data`
-      );
-      stmt.run([key, stringData]);
+      stmt.bind([jti]);
+      return stmt.step();
+    } finally {
       stmt.free();
-      saveDatabase();
-    } catch (e) {
-      console.error(`Errore in globalSettingsDB.set(${key}):`, e);
     }
+  },
+  add(jti, expiresAt) {
+    if (!db) return;
+    withTransaction(() => {
+      db.run('DELETE FROM revoked_tokens WHERE expires_at < ?', [Math.floor(Date.now() / 1000)]);
+      db.run('INSERT OR IGNORE INTO revoked_tokens (jti, expires_at) VALUES (?, ?)', [
+        jti,
+        expiresAt
+      ]);
+    });
   }
 };
 
@@ -446,6 +528,8 @@ module.exports = {
   adminDB,
   holidaysDB,
   globalSettingsDB,
+  revokedTokensDB,
   initDatabase,
-  withTransaction
+  withTransaction,
+  findDuplicateSlots
 };
