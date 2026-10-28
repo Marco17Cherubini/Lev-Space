@@ -1,152 +1,243 @@
 /* Superfici pubbliche e area cliente (sopra app.css) */
 
-/* ==================== INGRESSO ==================== */
-.entry__main {
+/* ==================== INGRESSO: IL DISTRIBUTORE ==================== */
+/* Primo schermo: il pannello nero con logo, display del primo turno libero, il tasto
+   rosso e la fessura. Il logo nasce su fondo nero: qui è a casa sua. */
+.entry .appbar {
+  position: static;
+}
+.dispenser {
+  padding: var(--s2) var(--gutter) var(--s7);
+}
+.dispenser__inner {
   display: grid;
-  gap: var(--s6);
+  gap: var(--s5);
   width: 100%;
   max-width: var(--wide);
   margin-inline: auto;
-  padding: var(--s3) var(--gutter) var(--s7);
 }
-.entry__ticket {
-  max-width: 30rem;
-  width: 100%;
-  justify-self: center;
-}
-.entry__body {
+/* Logo e motto affiancati; con il testo ingrandito vanno uno sotto l'altro */
+.dispenser__brand {
   display: grid;
-  justify-items: center;
-  gap: var(--s3);
-  text-align: center;
-  padding-top: var(--s4);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  align-items: end;
+  gap: var(--s4);
 }
-.entry__title {
-  width: min(64vw, 15rem);
-}
-.entry__logo {
+.dispenser__logo img {
   width: 100%;
   height: auto;
 }
-/* Il logo ha il fondo bianco (chiaro) o nero (scuro): si fonde con la carta */
-.entry__logo--light {
-  mix-blend-mode: multiply;
-}
-.entry__logo--dark {
-  display: none;
-  mix-blend-mode: lighten;
-}
-:root[data-theme='dark'] .entry__logo--light {
-  display: none;
-}
-:root[data-theme='dark'] .entry__logo--dark {
-  display: block;
-}
-.entry__motto {
-  font-size: var(--t-lead);
-  font-weight: 750;
+.dispenser__motto {
+  padding-bottom: var(--s4);
+  font-stretch: var(--narrow);
+  font-weight: 900;
+  font-size: clamp(1.75rem, 1rem + 4vw, 3.5rem);
+  line-height: 0.95;
+  text-transform: uppercase;
   letter-spacing: -0.01em;
 }
-.entry__what {
-  max-width: 26ch;
-  color: var(--ink-2);
-}
-.entry__stub {
+.display {
   display: grid;
-  gap: var(--s1);
+  gap: var(--s3);
+  padding: var(--s4);
+  background: #000;
+  color: var(--on-panel);
 }
-.entry__stub .btn {
-  margin-top: var(--s4);
+.display__label {
+  font-size: var(--t-small);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--on-panel-2);
 }
-.entry__ways {
+.display__time {
+  font-size: clamp(5rem, 1rem + 22vw, 11rem);
+  line-height: 0;
+}
+.display__day {
+  font-stretch: var(--narrow);
+  font-weight: 800;
+  font-size: var(--t-lead);
+}
+.display__meta {
+  color: var(--on-panel-2);
+  font-weight: 600;
+  font-size: var(--t-small);
+}
+.display__meta:empty,
+.display__actions:empty {
+  display: none;
+}
+.display__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.display__actions .btn {
+  border-color: var(--on-panel-2);
+  color: var(--on-panel);
+}
+.dispenser__machine {
+  display: grid;
+  gap: var(--s4);
+}
+.dispenser__button {
+  min-height: 72px;
+  font-size: 1.625rem;
+}
+/* La fessura del biglietto, sotto il tasto */
+.dispenser__mouth {
+  height: 12px;
+  margin: calc(-1 * var(--s2)) var(--s6) 0;
+  background: #000;
+  box-shadow: inset 0 -4px 0 var(--panel-2);
+}
+.dispenser__what {
+  max-width: 34ch;
+  color: var(--on-panel-2);
+  font-weight: 500;
+}
+
+.ways {
   display: grid;
   gap: var(--s3);
   justify-items: center;
   width: 100%;
   max-width: 30rem;
-  justify-self: center;
+  margin: 0 auto;
+  padding: var(--s7) var(--gutter) var(--s5);
 }
-.hours {
+
+/* La settimana come file di tasti: la forma reale di ogni giornata */
+.weekplan {
   width: 100%;
-  max-width: 30rem;
-  justify-self: center;
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: var(--s6) var(--gutter) var(--s8);
+}
+.weekplan__head {
+  display: grid;
+  gap: var(--s2);
+  margin-bottom: var(--s5);
+}
+.weekplan__head h2 {
+  font-size: var(--t-head);
+}
+.weekplan__days {
+  display: grid;
+  gap: 3px;
+}
+.weekday {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  grid-template-areas:
+    'name keys'
+    'name range';
+  gap: var(--s1) var(--s3);
+  align-items: center;
+  padding: var(--s3) var(--s4);
+  background: var(--paper);
+}
+.weekday__name {
+  grid-area: name;
+  font-stretch: var(--narrow);
+  font-weight: 900;
+  font-size: 1.375rem;
+  text-transform: uppercase;
+}
+.weekday__keys {
+  grid-area: keys;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 18px;
+}
+.mini-keys {
+  display: flex;
+  gap: 3px;
+}
+.mini-keys i {
+  width: 18px;
+  height: 18px;
+  background: var(--ink);
+}
+.mini-gap {
+  width: 18px;
+}
+.weekday__range {
+  grid-area: range;
+  font-weight: 700;
+  font-size: var(--t-small);
+  color: var(--ink-2);
+}
+.weekday.is-closed {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--paper-2);
+}
+.weekday.is-closed .weekday__name {
+  color: var(--ink-2);
+}
+@media (min-width: 720px) {
+  .weekday {
+    grid-template-columns: 4rem minmax(0, 1fr) auto;
+    grid-template-areas: 'name keys range';
+  }
+  .mini-keys i {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.entry__footer {
+  padding: var(--s8) var(--gutter) calc(var(--s7) + env(safe-area-inset-bottom));
   display: grid;
   gap: var(--s3);
 }
-.hours__list {
-  display: grid;
-  background: var(--paper);
-  padding: var(--s2) var(--s4);
-}
-.hours__list > div {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--s4);
-  padding: var(--s3) 0;
-}
-.hours__list > div + div {
-  box-shadow: 0 -1px 0 var(--paper-2);
-}
-.hours__list dt {
-  text-transform: capitalize;
-  font-weight: 650;
-}
-.hours__list dd {
-  text-align: right;
-}
-.hours__list .is-closed {
-  color: var(--ink-2);
-}
-.entry__footer {
-  padding: var(--s7) var(--gutter) calc(var(--s7) + env(safe-area-inset-bottom));
-  background: var(--ink);
-  color: var(--on-ink);
-  text-align: center;
-  display: grid;
-  gap: var(--s2);
-}
-.entry__footer .muted {
-  color: inherit;
-  opacity: 0.75;
-}
 .entry__footer-name {
-  font-weight: 800;
-  font-size: clamp(2.5rem, 14vw, 7rem);
-  letter-spacing: -0.04em;
-  line-height: 0.9;
+  font-stretch: 62%;
+  font-weight: 900;
+  font-size: clamp(2.5rem, 22vw, 15rem);
+  overflow-wrap: anywhere;
+  line-height: 0.82;
+  letter-spacing: -0.02em;
   text-transform: uppercase;
 }
 
-/* Da tablet: cartellino a sinistra, accesso e orari a destra */
+/* Da tablet in su: logo e motto a sinistra, la macchina a destra */
 @media (min-width: 900px) {
-  .entry__main {
-    grid-template-columns: minmax(0, 30rem) minmax(0, 26rem);
-    grid-template-rows: auto 1fr;
-    justify-content: center;
-    align-items: start;
-    column-gap: var(--s8);
-    padding-top: var(--s7);
+  .dispenser {
+    padding-top: var(--s5);
+    padding-bottom: var(--s8);
   }
-  .entry__ticket {
-    grid-row: span 2;
+  .dispenser__inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--s8);
   }
-  .entry__ways,
-  .hours {
-    justify-self: stretch;
+  .dispenser__brand {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+  .dispenser__logo {
+    width: min(100%, 26rem);
+  }
+  .ways {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+    max-width: var(--wide);
     justify-items: stretch;
-  }
-  .entry__ways .btn--quiet {
-    justify-self: start;
+    align-items: center;
   }
 }
 
 /* ==================== ACCESSO ==================== */
 .auth {
-  margin-top: var(--s3);
+  display: grid;
+  gap: var(--s4);
 }
-.auth .ticket__stub {
+.auth__links {
   display: grid;
   gap: var(--s3);
+  font-weight: 650;
 }
 .field-pair {
   display: grid;
@@ -169,53 +260,56 @@
 }
 .picker__slots {
   display: grid;
-  gap: var(--s3);
+  gap: var(--s4);
   scroll-margin-top: calc(var(--appbar-h) + var(--s3));
 }
 .picker__slots:empty {
   display: none;
 }
+.picker__slots > h2 {
+  font-size: 1.75rem;
+}
 @media (min-width: 1024px) {
   .booking__layout {
-    grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
+    grid-template-columns: minmax(16rem, 21rem) minmax(0, 1fr);
     align-items: start;
     gap: var(--s7);
   }
   .picker {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
     align-items: start;
   }
 }
-.ticket--inset {
-  background: var(--ground);
-}
-.ticket--inset .ticket__stub::before,
-.ticket--inset .ticket__stub::after {
-  background: var(--paper);
-}
-.sheet .ticket__time {
-  font-size: clamp(3rem, 16vw, 4.5rem);
-}
-
-/* "Il solito?" */
-.usual {
-  margin-bottom: var(--s5);
-}
 .usual__title {
-  font-size: var(--t-head);
+  font-size: 2rem;
 }
-.usual__from {
-  margin-top: var(--s2);
+.success__title {
+  font-size: 2.5rem;
+  text-transform: uppercase;
 }
-.usual .ticket__stub::before,
-.usual .ticket__stub::after {
-  background: var(--ground);
+.success__title:focus {
+  outline: none;
 }
 
 /* ==================== HOME ==================== */
 .home__layout {
   display: grid;
   gap: var(--s6);
+}
+.display--card {
+  padding: var(--s5);
+}
+/* Spazio riservato a riga e azioni: il display non cresce quando arrivano i dati */
+.display--card .display__meta {
+  display: block;
+  min-height: 1.5em;
+}
+.display--card .display__actions {
+  display: flex;
+  min-height: 44px;
+}
+.display--card .display__time {
+  font-size: clamp(5rem, 1rem + 20vw, 9rem);
 }
 @media (min-width: 900px) {
   .home__layout {
@@ -225,59 +319,67 @@
   }
 }
 
-/* ==================== APPUNTAMENTI ==================== */
+/* ==================== I TUOI TURNI: LO SCONTRINO ==================== */
+/* L'elenco è uno scontrino lungo: righe separate dal tratteggio della carta */
+.receipt {
+  display: grid;
+  background: var(--paper);
+  padding: 0 var(--s4);
+}
+.receipt > li + li {
+  border-top: 2px dashed var(--line);
+}
 .month + .month {
   margin-top: var(--s6);
 }
 .month__title {
-  text-transform: capitalize;
   margin-bottom: var(--s3);
-}
-.appts {
-  display: grid;
-  gap: 2px;
+  font-size: 1.75rem;
 }
 .appt {
   display: grid;
-  grid-template-columns: 4rem minmax(0, 1fr);
-  gap: var(--s2) var(--s4);
+  grid-template-columns: 3.75rem minmax(0, 1fr);
+  gap: var(--s3) var(--s4);
   align-items: center;
-  padding: var(--s4);
-  background: var(--paper);
+  padding: var(--s4) 0;
 }
 .appt__date {
   display: grid;
   justify-items: center;
+  font-stretch: var(--narrow);
   font-size: var(--t-small);
-  font-weight: 650;
+  font-weight: 800;
+  text-transform: uppercase;
   color: var(--ink-2);
-  line-height: 1.1;
+  line-height: 1;
 }
 .appt__date span {
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 2.5rem;
+  font-weight: 900;
   color: var(--ink);
-  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
-.appt__when {
-  font-size: var(--t-lead);
-  text-transform: capitalize;
+.appt__body {
+  display: grid;
+  gap: var(--s2);
 }
-.appt__when strong {
+.appt__when {
+  font-stretch: var(--narrow);
   font-weight: 800;
-  margin-left: var(--s1);
+}
+.appt__time {
+  font-size: 2.25rem;
+  line-height: 0;
 }
 .appt__meta {
   display: flex;
   flex-wrap: wrap;
   gap: var(--s2);
-  margin-top: var(--s1);
 }
 .appt__actions {
   grid-column: 1 / -1;
   display: flex;
-  gap: var(--s2);
+  gap: 3px;
 }
 .appt__actions .btn {
   flex: 1;
@@ -294,8 +396,7 @@
   }
 }
 .appt--past {
-  background: transparent;
-  box-shadow: inset 0 -1px 0 var(--paper-2);
+  opacity: 0.7;
 }
 .past {
   margin-top: var(--s6);
@@ -304,11 +405,12 @@
   min-height: var(--tap);
   display: flex;
   align-items: center;
-  font-weight: 650;
+  font-stretch: var(--narrow);
+  font-weight: 800;
+  font-size: var(--t-lead);
   cursor: pointer;
 }
 .past__list {
-  display: grid;
   margin-top: var(--s3);
 }
 
@@ -324,21 +426,14 @@
     gap: var(--s7);
   }
 }
-.weeks {
-  display: grid;
-  gap: 2px;
-}
-.week {
-  background: var(--paper);
-}
 .week__button {
   -webkit-appearance: none;
   appearance: none;
   display: grid;
   gap: 2px;
   width: 100%;
-  min-height: 64px;
-  padding: var(--s3) var(--s4);
+  min-height: 72px;
+  padding: var(--s3) 0;
   border: 0;
   background: transparent;
   text-align: left;
@@ -349,29 +444,69 @@
   transform: scale(0.99);
 }
 .week__label {
+  font-stretch: var(--semi);
   font-size: var(--t-small);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--ink-2);
 }
 .week__value {
-  font-size: var(--t-lead);
-  font-weight: 750;
+  font-stretch: var(--narrow);
+  font-size: 1.625rem;
+  font-weight: 900;
 }
 .week__value--empty {
+  font-stretch: var(--semi);
   font-size: var(--t-body);
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: none;
   text-decoration: underline;
+  text-decoration-thickness: 2px;
   text-underline-offset: 0.2em;
 }
 .week--conflict {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
+  margin: 0 calc(-1 * var(--s4));
+  padding: 0 var(--s4);
+  background: var(--panel);
+  color: var(--on-panel);
 }
-.week .field-error {
-  padding: 0 var(--s4) var(--s3);
+.week--conflict .week__label {
+  color: var(--on-panel-2);
+}
+.week--conflict .field-error {
+  color: var(--led);
+  padding-bottom: var(--s3);
 }
 .series-done__list {
   display: grid;
   gap: var(--s2);
-  font-weight: 650;
+  font-stretch: var(--narrow);
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+
+/* ==================== MOVIMENTO D'INGRESSO ==================== */
+/* Le parti del distributore salgono una dopo l'altra, una volta; senza animazione
+   restano semplicemente visibili */
+@media (prefers-reduced-motion: no-preference) {
+  .dispenser__brand,
+  .display,
+  .dispenser__button,
+  .dispenser__what {
+    animation: rise 520ms var(--ease-out) both;
+  }
+  .display {
+    animation-delay: 70ms;
+  }
+  .dispenser__button {
+    animation-delay: 140ms;
+  }
+  .dispenser__what {
+    animation-delay: 210ms;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
 }

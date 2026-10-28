@@ -15,6 +15,29 @@ function usableStarts(slots, size) {
   });
 }
 
+// Fine di `n` appuntamenti consecutivi che iniziano a `time` ('HH:MM')
+function endOf(time, n = 1) {
+  const end = toMinutes(time) + n * APPOINTMENT_MINUTES;
+  return `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
+}
+
+// Orari divisi in turni contigui (la pausa pranzo separa mattina e pomeriggio)
+function shiftRuns(slots) {
+  const runs = [];
+  for (const slot of slots) {
+    const last = runs[runs.length - 1];
+    if (last && isFollowingSlot(last.slots[last.slots.length - 1].time, slot.time)) {
+      last.slots.push(slot);
+    } else {
+      runs.push({ slots: [slot] });
+    }
+  }
+  return runs.map(run => {
+    const start = toMinutes(run.slots[0].time);
+    return { ...run, name: start < 13 * 60 ? 'Mattina' : start < 18 * 60 ? 'Pomeriggio' : 'Sera' };
+  });
+}
+
 // Primo posto libero dalla data indicata in avanti (fino a `months` mesi)
 async function findFirstFreeSlot({ months = 2, size = 1 } = {}) {
   const start = new Date();
@@ -74,13 +97,22 @@ function createBookingPicker(root, { size = () => 1, onChange, allowDate = () =>
   });
   slotsEl.addEventListener('click', event => {
     const slot = event.target.closest('.slot');
-    if (!slot) return;
+    if (!slot || slot.disabled) return;
     selected = { ...selected, time: slot.dataset.time };
-    slotsEl.querySelectorAll('.slot').forEach(s => {
-      s.setAttribute('aria-pressed', String(s === slot));
-    });
+    lightKeys();
     onChange(selected);
   });
+
+  // Il tasto scelto si accende; per un gruppo si accendono anche i tasti successivi
+  function lightKeys() {
+    const keys = [...slotsEl.querySelectorAll('.key')];
+    const start = keys.findIndex(k => k.dataset.time === selected.time);
+    const n = size();
+    keys.forEach((key, i) => {
+      key.setAttribute('aria-pressed', String(i === start));
+      key.classList.toggle('is-lit', start !== -1 && i > start && i < start + n);
+    });
+  }
 
   function changeMonth(delta) {
     month = new Date(month.getFullYear(), month.getMonth() + delta, 1);
@@ -166,19 +198,31 @@ function createBookingPicker(root, { size = () => 1, onChange, allowDate = () =>
       slotsEl.innerHTML = `${heading}<div class="state"><p>${reason} Prova un altro giorno.</p></div>`;
       return;
     }
-    const until = time => {
-      const end = toMinutes(time) + n * APPOINTMENT_MINUTES;
-      return `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
+    // Tutti gli orari del giorno come file di tasti, una per turno (mattina, pomeriggio):
+    // quelli che non possono iniziare l'appuntamento restano spenti ma visibili, così la
+    // forma della giornata si legge a colpo d'occhio
+    const usable = new Set(times);
+    const keyHtml = slot => {
+      const can = usable.has(slot.time);
+      const state = !slot.available ? 'occupato' : can ? 'libero' : `servono ${n} posti di fila`;
+      return `<button type="button" class="key slot" data-time="${slot.time}" ${can ? '' : 'disabled'}
+          aria-pressed="false" aria-label="Ore ${slot.time}, ${state}">
+          <span class="key__time">${slot.time}</span>${slot.available ? '' : '<small>occupato</small>'}
+        </button>`;
     };
     slotsEl.innerHTML = `${heading}
-      <div class="slots" role="group" aria-label="Orari liberi">
-        ${times
+      <div class="shifts">
+        ${shiftRuns(slots)
           .map(
-            time => `<button type="button" class="slot" data-time="${time}"
-              aria-pressed="${time === selected.time}">${time}${n > 1 ? `<small>fino alle ${until(time)}</small>` : ''}</button>`
+            run => `<div class="shift-row" role="group" aria-label="${run.name}">
+              <p class="shift-row__name"><span>${run.name}</span><span class="muted num">${run.slots[0].time}–${endOf(run.slots[run.slots.length - 1].time, 1)}</span></p>
+              <div class="keys">${run.slots.map(keyHtml).join('')}</div>
+            </div>`
           )
           .join('')}
-      </div>`;
+      </div>
+      ${n > 1 ? `<p class="hint">Con ${n} persone si accendono ${n} tasti di fila: un appuntamento dopo l'altro.</p>` : ''}`;
+    lightKeys();
   }
 
   // Preselezione (es. "Il solito?" o il primo posto libero dalla pagina d'ingresso)
@@ -249,15 +293,11 @@ async function findUsualSlot(bookings) {
 function renderUsual(container, usual, name, href) {
   container.innerHTML = `
     <div class="ticket usual__ticket">
-      <div class="ticket__body">
-        <h2 id="usual-title" class="usual__title">Il solito, ${escapeHtml(name)}?</h2>
-        <p class="usual__from muted">Come ${escapeHtml(formatDayMonth(usual.from.giorno))}, alla stessa ora:</p>
-        <p class="ticket__day">${escapeHtml(formatDayMonth(usual.date))}</p>
-        <p class="ticket__time">${escapeHtml(usual.time)}</p>
-      </div>
-      <div class="ticket__stub">
-        <a class="btn btn--accent btn--block" href="${href}">Sì, prenota questo</a>
-      </div>
+      <p class="ticket__head"><span>Il solito</span><span>come ${escapeHtml(formatDateShort(usual.from.giorno))}</span></p>
+      <h2 id="usual-title" class="usual__title">Il solito, ${escapeHtml(name)}?</h2>
+      <p class="ticket__day">${escapeHtml(formatDayMonth(usual.date))}</p>
+      <div class="ticket__time">${SegmentDisplay.html(usual.time, { className: 'seg--ink' })}</div>
+      <div class="ticket__foot"><a class="btn btn--turn btn--block" href="${href}">Sì, prendi questo turno</a></div>
     </div>`;
   container.hidden = false;
 }

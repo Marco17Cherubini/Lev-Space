@@ -25,7 +25,11 @@ const AgendaView = (function () {
         group,
         holiday: day.holidays.includes(time),
         extra: !day.standardSlots.includes(time),
-        past: slotDate(day.date, time) <= now
+        past: slotDate(day.date, time) <= now,
+        // la spia "adesso": l'appuntamento in corso in questo momento
+        now:
+          slotDate(day.date, time) <= now &&
+          now < new Date(slotDate(day.date, time).getTime() + APPOINTMENT_MINUTES * 60000)
       };
     });
   }
@@ -70,7 +74,13 @@ const AgendaView = (function () {
   }
 
   function timeLabel(row) {
-    return `<span class="num">${row.time}</span>${row.extra ? '<small>Extra</small>' : ''}`;
+    return `${SegmentDisplay.html(row.time, { className: 'seg--ink', label: row.time })}${
+      row.now
+        ? '<small class="agenda__now">Adesso</small>'
+        : row.extra
+          ? '<small>Extra</small>'
+          : ''
+    }`;
   }
 
   // Vista giorno (telefono): una riga per orario
@@ -81,12 +91,12 @@ const AgendaView = (function () {
         ${opts.holidayMode ? '' : '<button type="button" class="btn btn--sm" data-new-day>Aggiungi comunque un appuntamento</button>'}</div>`;
     }
     const booked = rows.filter(r => r.booking).length;
-    return `<h2 class="agenda__day">${escapeHtml(formatDayMonth(dayData.date))}
+    return `<h2 class="agenda__day"><span class="agenda__date">${escapeHtml(formatDayMonth(dayData.date))}</span>
         <span class="muted">${booked === 0 ? 'nessun appuntamento' : booked === 1 ? '1 appuntamento' : `${booked} appuntamenti`}${dayData.open ? '' : ' · chiuso'}</span></h2>
       <ol class="agenda">
         ${rows
           .map(
-            row => `<li class="agenda__row${row.past ? ' is-past' : ''}">
+            row => `<li class="agenda__row${row.past && !row.now ? ' is-past' : ''}${row.now ? ' is-now' : ''}${row.booking && row.booking.tipo === 'ricorrente' ? ' is-series' : ''}">
               <span class="agenda__time">${timeLabel(row)}</span>
               ${cell(row, opts)}
             </li>`

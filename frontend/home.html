@@ -10,7 +10,7 @@
       name="description"
       content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
     />
-    <meta name="theme-color" content="#ece8df" />
+    <meta name="theme-color" content="#121214" />
     <title>Home · Lev Space</title>
     <link
       rel="preload"
@@ -31,7 +31,7 @@
       <nav class="appbar__nav" aria-label="Sezioni">
         <a href="/home"><span>Home</span></a>
         <a href="/dashboard" data-match="^/(dashboard|subscriptions)"><span>Prenota</span></a>
-        <a href="/bookings"><span>Appuntamenti</span></a>
+        <a href="/bookings"><span>I miei turni</span></a>
       </nav>
       <button
         type="button"
@@ -62,28 +62,22 @@
         <h1 data-greeting>Ciao</h1>
       </div>
       <div class="home__layout">
-        <section class="stack" aria-labelledby="next-title">
-          <h2 id="next-title">Il prossimo appuntamento</h2>
-          <div data-next aria-busy="true">
-            <div class="ticket next-ticket" aria-hidden="true">
-              <div class="ticket__body">
-                <p class="ticket__kind">&nbsp;</p>
-                <p class="ticket__day loading">Carico…</p>
-                <p class="ticket__time">--:--</p>
-              </div>
-              <div class="ticket__stub">
-                <span class="btn btn--sm" aria-hidden="true">&nbsp;</span>
-              </div>
-            </div>
+        <section class="next" aria-labelledby="next-title">
+          <div class="display display--card panel" data-next aria-busy="true">
+            <h2 id="next-title" class="display__label">Il tuo prossimo turno</h2>
+            <div class="display__time seg" data-next-time></div>
+            <p class="display__day" data-next-day>Carico…</p>
+            <p class="display__meta" data-next-meta></p>
+            <div class="display__actions" data-next-actions></div>
           </div>
         </section>
         <div class="stack-lg">
           <section class="stack" aria-labelledby="actions-title">
             <h2 id="actions-title" class="visually-hidden">Cosa vuoi fare</h2>
             <div class="actions">
-              <a class="btn btn--primary btn--block" href="/dashboard">Prenota un appuntamento</a>
-              <a class="btn btn--block" href="/subscriptions">Prenota più settimane</a>
-              <a class="btn btn--quiet" href="/bookings">Tutti i tuoi appuntamenti</a>
+              <a class="btn btn--turn btn--block" href="/dashboard">Prendi un turno</a>
+              <a class="btn btn--block" href="/subscriptions">Più settimane insieme</a>
+              <a class="btn btn--quiet" href="/bookings">Tutti i tuoi turni</a>
             </div>
           </section>
           <section class="usual" data-usual hidden aria-labelledby="usual-title"></section>
@@ -133,13 +127,14 @@
           aria-hidden="true"
         >
           <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg
-        ><span>Appuntamenti</span></a
+        ><span>I miei turni</span></a
       >
     </nav>
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/layout.js"></script>
     <script src="/js/components/sheet.js"></script>
+    <script src="/js/components/display.js"></script>
     <script src="/js/components/booking-picker.js"></script>
     <script src="/js/home.js"></script>
   </body>

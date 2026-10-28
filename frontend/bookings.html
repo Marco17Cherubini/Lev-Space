@@ -10,8 +10,8 @@
       name="description"
       content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
     />
-    <meta name="theme-color" content="#ece8df" />
-    <title>I tuoi appuntamenti · Lev Space</title>
+    <meta name="theme-color" content="#121214" />
+    <title>I tuoi turni · Lev Space</title>
     <link
       rel="preload"
       href="/fonts/libre-franklin-latin.woff2"
@@ -31,7 +31,7 @@
       <nav class="appbar__nav" aria-label="Sezioni">
         <a href="/home"><span>Home</span></a>
         <a href="/dashboard" data-match="^/(dashboard|subscriptions)"><span>Prenota</span></a>
-        <a href="/bookings"><span>Appuntamenti</span></a>
+        <a href="/bookings"><span>I miei turni</span></a>
       </nav>
       <button
         type="button"
@@ -59,12 +59,12 @@
 
     <main id="main" class="page">
       <div class="page-head">
-        <h1>I tuoi appuntamenti</h1>
+        <h1>I tuoi turni</h1>
       </div>
-      <div data-upcoming aria-live="polite"><p class="loading">Carico i tuoi appuntamenti…</p></div>
+      <div data-upcoming aria-live="polite"><p class="loading">Carico i tuoi turni…</p></div>
       <details class="past" data-past-wrap hidden>
-        <summary><span data-past-count>Appuntamenti passati</span></summary>
-        <ul class="past__list" data-past></ul>
+        <summary><span data-past-count>Turni passati</span></summary>
+        <ul class="receipt past__list" data-past></ul>
       </details>
     </main>
 
@@ -110,13 +110,14 @@
           aria-hidden="true"
         >
           <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg
-        ><span>Appuntamenti</span></a
+        ><span>I miei turni</span></a
       >
     </nav>
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/layout.js"></script>
     <script src="/js/components/sheet.js"></script>
+    <script src="/js/components/display.js"></script>
     <script src="/js/bookings.js"></script>
   </body>
 </html>

@@ -10,7 +10,7 @@
       name="description"
       content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
     />
-    <meta name="theme-color" content="#ece8df" />
+    <meta name="theme-color" content="#121214" />
     <title>Più settimane · Lev Space</title>
     <link
       rel="preload"
@@ -31,7 +31,7 @@
       <nav class="appbar__nav" aria-label="Sezioni">
         <a href="/home"><span>Home</span></a>
         <a href="/dashboard" data-match="^/(dashboard|subscriptions)"><span>Prenota</span></a>
-        <a href="/bookings"><span>Appuntamenti</span></a>
+        <a href="/bookings"><span>I miei turni</span></a>
       </nav>
       <button
         type="button"
@@ -61,8 +61,8 @@
       <div class="page-head">
         <h1>Più settimane</h1>
         <p>
-          Un appuntamento a settimana, confermati tutti insieme: se una settimana non è più libera,
-          nessuna viene prenotata e ti diciamo quale cambiare.
+          Un turno a settimana, confermati tutti insieme: se una settimana non è più libera non si
+          prenota nulla e ti diciamo quale cambiare.
         </p>
       </div>
       <div class="series__layout">
@@ -83,12 +83,12 @@
         </div>
         <section aria-labelledby="weeks-title">
           <h2 id="weeks-title" class="visually-hidden">Le settimane</h2>
-          <ol class="weeks" data-week-list></ol>
+          <ol class="weeks receipt" data-week-list></ol>
         </section>
       </div>
       <div class="actionbar">
         <p class="actionbar__summary" data-series-summary>
-          0 su 4 settimane scelte<span>Tocca una settimana per scegliere giorno e orario</span>
+          0 su 4 settimane scelte<span>Tocca una settimana per scegliere</span>
         </p>
         <button type="button" class="btn btn--primary" data-series-confirm disabled>
           Conferma
@@ -106,7 +106,7 @@
               height="24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2"
+              stroke-width="2.5"
               aria-hidden="true"
             >
               <path d="M6 6l12 12M18 6L6 18" />
@@ -117,20 +117,22 @@
           <div data-calendar></div>
           <div class="picker__slots" data-slots aria-live="polite"></div>
         </section>
-        <button type="button" class="btn btn--primary btn--block" data-week-save disabled>
-          Scegli questo orario
+        <button type="button" class="btn btn--turn btn--block" data-week-save disabled>
+          Scegli questo turno
         </button>
       </div>
     </dialog>
     <dialog class="sheet" id="series-done" aria-labelledby="series-done-title">
       <div class="sheet__inner">
-        <h2 id="series-done-title">Settimane prenotate</h2>
-        <div class="ticket ticket--inset">
-          <div class="ticket__body"><ol class="series-done__list" data-done-list></ol></div>
-          <div class="ticket__stub"><span class="stamp">Confermato</span></div>
+        <h2 id="series-done-title" class="success__title">Settimane prenotate</h2>
+        <div class="slot-print is-printing">
+          <div class="ticket">
+            <p class="ticket__head"><span>I tuoi turni</span><span>Lev Space</span></p>
+            <ol class="series-done__list" data-done-list></ol>
+            <p class="ticket__foot muted">Riceverai una email di conferma per ogni turno.</p>
+          </div>
         </div>
-        <p class="serif muted">Riceverai una email di conferma per ogni appuntamento.</p>
-        <a class="btn btn--primary btn--block" href="/bookings">Vedi i tuoi appuntamenti</a>
+        <a class="btn btn--primary btn--block" href="/bookings">Vedi i tuoi turni</a>
       </div>
     </dialog>
 
@@ -176,13 +178,14 @@
           aria-hidden="true"
         >
           <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg
-        ><span>Appuntamenti</span></a
+        ><span>I miei turni</span></a
       >
     </nav>
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/layout.js"></script>
     <script src="/js/components/sheet.js"></script>
+    <script src="/js/components/display.js"></script>
     <script src="/js/components/booking-picker.js"></script>
     <script src="/js/subscriptions.js"></script>
   </body>

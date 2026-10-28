@@ -23,10 +23,6 @@
   if (!isGuest && !user) return;
 
   const groupSize = () => Number(peopleRadios.find(r => r.checked).value);
-  const endTime = (time, n) => {
-    const end = toMinutes(time) + n * APPOINTMENT_MINUTES;
-    return `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
-  };
 
   // Nascosto finché non si sa se c'è "Il solito?" (vedi l'avvio in fondo)
   const pickerRoot = main.querySelector('[data-picker]');
@@ -41,12 +37,12 @@
     continueButton.disabled = !(date && time);
     const who = n === 1 ? '1 persona' : `${n} persone`;
     if (date && time) {
-      summary.innerHTML = `${escapeHtml(formatDateShort(date))} · ${time}<span>${who}, fino alle ${endTime(time, n)}</span>`;
+      summary.innerHTML = `${escapeHtml(formatDateShort(date))} · ${time}<span>${who}, fino alle ${endOf(time, n)}</span>`;
     } else if (date) {
-      summary.innerHTML = `${escapeHtml(formatDateShort(date))}<span>Ora scegli l'orario</span>`;
+      summary.innerHTML = `${escapeHtml(formatDateShort(date))}<span>Ora scegli il turno</span>`;
     } else {
       summary.innerHTML =
-        'Scegli giorno e orario<span>I giorni evidenziati hanno posti liberi</span>';
+        'Scegli giorno e turno<span>I giorni con la spia rossa hanno posti liberi</span>';
     }
   }
 
@@ -93,9 +89,9 @@
     success.hidden = true;
     showMessage(errorBox, '');
     sheet.querySelector('[data-confirm-kind]').textContent =
-      n === 1 ? 'Appuntamento' : `Appuntamento per ${n} persone, fino alle ${endTime(time, n)}`;
+      n === 1 ? '1 persona' : `${n} persone · fino alle ${endOf(time, n)}`;
     sheet.querySelector('[data-confirm-day]').textContent = formatDayMonth(date);
-    sheet.querySelector('[data-confirm-time]').textContent = time;
+    SegmentDisplay.set(sheet.querySelector('[data-confirm-time]'), time, `Ore ${time}`);
     Sheet.open(sheet);
   }
   continueButton.addEventListener('click', openConfirm);
@@ -161,13 +157,19 @@
     form.hidden = true;
     success.hidden = false;
     success.querySelector('[data-success-day]').textContent = formatDayMonth(date);
-    success.querySelector('[data-success-time]').textContent = time;
+    SegmentDisplay.set(success.querySelector('[data-success-time]'), time, `Ore ${time}`);
     success.querySelector('[data-success-meta]').textContent =
-      n === 1 ? '' : `${n} persone, fino alle ${endTime(time, n)}`;
-    // Il timbro riparte a ogni conferma
-    const stamp = success.querySelector('[data-stamp]');
-    stamp.textContent = moving ? 'Spostato' : 'Confermato';
-    stamp.replaceWith(stamp.cloneNode(true));
+      n === 1 ? '1 persona' : `${n} persone · fino alle ${endOf(time, n)}`;
+    success.querySelector('[data-stamp]').textContent = alreadyBooked
+      ? 'Era già tuo'
+      : moving
+        ? 'Turno spostato'
+        : 'Turno confermato';
+    // Il biglietto esce dalla fessura: l'animazione riparte a ogni conferma
+    const print = success.querySelector('[data-print]');
+    print.classList.remove('is-printing');
+    void print.offsetWidth;
+    print.classList.add('is-printing');
 
     const note = success.querySelector('[data-success-note]');
     const actions = success.querySelector('[data-success-actions]');
@@ -182,9 +184,9 @@
     actions.innerHTML = isGuest
       ? `<a class="btn btn--primary btn--block" href="/register?${new URLSearchParams({ email: form.elements.email.value.trim() })}">Crea un account</a>
          <a class="btn btn--block" href="/">Torna all'inizio</a>`
-      : `<a class="btn btn--primary btn--block" href="/bookings">I tuoi appuntamenti</a>
+      : `<a class="btn btn--primary btn--block" href="/bookings">I tuoi turni</a>
          <a class="btn btn--block" href="/home">Torna alla home</a>`;
-    actions.querySelector('a').focus();
+    success.querySelector('[data-stamp]').focus();
     sheet.addEventListener('close', () => picker.reset(), { once: true });
   }
 

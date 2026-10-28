@@ -34,13 +34,14 @@
     const actions = past
       ? ''
       : `<div class="appt__actions">
-          <a class="btn btn--sm" href="/dashboard?${move}" aria-label="Sposta l'appuntamento di ${escapeHtml(formatDayMonth(b.giorno))} alle ${escapeHtml(b.ora)}">Sposta</a>
-          <button type="button" class="btn btn--danger btn--sm" data-cancel data-giorno="${escapeHtml(b.giorno)}" data-ora="${escapeHtml(b.ora)}" data-persone="${b.persone}" aria-label="Cancella l'appuntamento di ${escapeHtml(formatDayMonth(b.giorno))} alle ${escapeHtml(b.ora)}">Cancella</button>
+          <a class="btn btn--sm" href="/dashboard?${move}" aria-label="Sposta il turno di ${escapeHtml(formatDayMonth(b.giorno))} alle ${escapeHtml(b.ora)}">Sposta</a>
+          <button type="button" class="btn btn--danger btn--sm" data-cancel data-giorno="${escapeHtml(b.giorno)}" data-ora="${escapeHtml(b.ora)}" data-persone="${b.persone}" aria-label="Cancella il turno di ${escapeHtml(formatDayMonth(b.giorno))} alle ${escapeHtml(b.ora)}">Cancella</button>
         </div>`;
     return `<li class="appt${past ? ' appt--past' : ''}">
         <p class="appt__date" aria-hidden="true"><span>${date.getDate()}</span>${MONTHS_IT[date.getMonth()].slice(0, 3)}</p>
         <div class="appt__body">
-          <p class="appt__when"><span class="visually-hidden">${escapeHtml(formatDate(b.giorno))}, ore </span><span aria-hidden="true">${DAYS_IT[date.getDay()]}</span> <strong class="num">${escapeHtml(b.ora)}</strong></p>
+          <p class="appt__when"><span class="visually-hidden">${escapeHtml(formatDate(b.giorno))}</span><span aria-hidden="true">${DAYS_IT[date.getDay()]}</span></p>
+          <p class="appt__time">${SegmentDisplay.html(b.ora, { className: 'seg--ink', label: `ore ${b.ora}` })}</p>
           ${tags ? `<p class="appt__meta">${tags}</p>` : ''}
         </div>
         ${actions}
@@ -49,8 +50,8 @@
 
   function render(upcoming, past) {
     if (upcoming.length === 0) {
-      upcomingEl.innerHTML = `<div class="state"><p>Non hai appuntamenti in programma.</p>
-        <a class="btn btn--primary" href="/dashboard">Prenota</a></div>`;
+      upcomingEl.innerHTML = `<div class="state"><p>Nessun turno in programma.</p>
+        <a class="btn btn--turn" href="/dashboard">Prendi un turno</a></div>`;
     } else {
       // Raggruppati per mese, come le pagine di un'agenda
       const months = new Map();
@@ -63,14 +64,13 @@
           const [y, m] = key.split('-').map(Number);
           return `<section class="month" aria-labelledby="month-${key}">
               <h2 class="month__title" id="month-${key}">${MONTHS_IT[m - 1]} <span class="muted">${y}</span></h2>
-              <ul class="appts">${list.map(b => item(b)).join('')}</ul>
+              <ul class="appts receipt">${list.map(b => item(b)).join('')}</ul>
             </section>`;
         })
         .join('');
     }
     pastWrap.hidden = past.length === 0;
-    pastWrap.querySelector('[data-past-count]').textContent =
-      `Appuntamenti passati (${past.length})`;
+    pastWrap.querySelector('[data-past-count]').textContent = `Turni passati (${past.length})`;
     pastWrap.querySelector('[data-past]').innerHTML = past
       .reverse()
       .map(b => item(b, true))
@@ -87,7 +87,7 @@
     const { giorno, ora, persone } = button.dataset;
     const group = Number(persone) > 1 ? `, per ${persone} persone: si liberano tutti i posti` : '';
     const ok = await Sheet.confirm({
-      title: 'Cancellare l’appuntamento?',
+      title: 'Cancellare il turno?',
       message: `${formatDate(giorno)} alle ${ora}${group}. Il posto torna disponibile per gli altri clienti.`,
       confirmLabel: 'Sì, cancella'
     });
@@ -98,7 +98,7 @@
         ...jsonBody('DELETE', { giorno, ora }),
         sessionRequired: true
       });
-      showToast('Appuntamento cancellato', 'success');
+      showToast('Turno cancellato: il posto torna libero', 'success');
       await load();
       heading.focus({ preventScroll: true });
     } catch (error) {

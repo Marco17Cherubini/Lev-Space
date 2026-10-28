@@ -88,7 +88,10 @@
         "createBookingPicker": "readonly",
         "findUsualSlot": "readonly",
         "renderUsual": "readonly",
-        "AgendaView": "readonly"
+        "AgendaView": "readonly",
+        "SegmentDisplay": "readonly",
+        "endOf": "readonly",
+        "shiftRuns": "readonly"
       }
     }
   ]

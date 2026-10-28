@@ -31,13 +31,17 @@
     const bestIndex = data.counts.indexOf(best);
     document.querySelector('[data-range]').textContent =
       `${formatDateShort(data.from)} – ${formatDateShort(data.to)}`;
-    document.querySelector('[data-total]').textContent = total;
-    document.querySelector('[data-avg]').textContent = (total / data.counts.length)
-      .toFixed(1)
-      .replace('.', ',');
-    document.querySelector('[data-best]').innerHTML = best
-      ? `${best} <span class="muted">${escapeHtml(formatDateShort(addDays(data.from, bestIndex)))}</span>`
-      : '–';
+    const avg = (total / data.counts.length).toFixed(1).replace('.', ',');
+    SegmentDisplay.set(document.querySelector('[data-total]'), String(total), `${total} tagli`);
+    SegmentDisplay.set(document.querySelector('[data-avg]'), avg, `${avg} al giorno`);
+    const bestEl = document.querySelector('[data-best]');
+    SegmentDisplay.set(bestEl, String(best), `${best}`);
+    if (best) {
+      bestEl.insertAdjacentHTML(
+        'beforeend',
+        `<small>${escapeHtml(formatDateShort(addDays(data.from, bestIndex)))}</small>`
+      );
+    }
     const ties = data.counts.filter(c => c === best).length;
     document.querySelector('[data-caption]').textContent = !total
       ? 'Nessun taglio registrato in questo periodo.'
@@ -49,11 +53,11 @@
   function renderChart() {
     const ink = css('--ink');
     const muted = css('--ink-2');
-    const accent = css('--accent');
+    const accent = css('--led');
     const grid = css('--paper-2');
     const best = Math.max(...data.counts);
     const colors = data.counts.map(c => (c === best && best > 0 ? accent : ink));
-    Chart.defaults.font.family = css('--font-ui');
+    Chart.defaults.font.family = css('--font');
     if (chart) chart.destroy();
     chart = new Chart(document.getElementById('bookings-chart'), {
       type: 'bar',

@@ -80,8 +80,10 @@
     const slots = preview(start, end);
     const box = shiftEl.querySelector('[data-preview]');
     box.classList.toggle('field-error', slots.length === 0);
-    box.textContent = slots.length
-      ? `${slots.length} ${slots.length === 1 ? 'appuntamento' : 'appuntamenti'}: ${slots.join(' · ')}`
+    // Anteprima come fila di tasti: un quadrato per appuntamento, come nella prenotazione
+    box.innerHTML = slots.length
+      ? `<span class="mini-keys" aria-hidden="true">${slots.map(() => '<i></i>').join('')}</span>
+         <span>${slots.length} ${slots.length === 1 ? 'appuntamento' : 'appuntamenti'}: ${slots.join(' · ')}</span>`
       : 'Turno troppo corto per un appuntamento da 45 minuti';
     return slots.length;
   }

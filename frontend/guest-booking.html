@@ -10,8 +10,8 @@
       name="description"
       content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
     />
-    <meta name="theme-color" content="#ece8df" />
-    <title>Prenota senza account · Lev Space</title>
+    <meta name="theme-color" content="#121214" />
+    <title>Prendi il turno · Lev Space</title>
     <link
       rel="preload"
       href="/fonts/libre-franklin-latin.woff2"
@@ -54,24 +54,22 @@
 
     <main id="main" class="page" data-flow="guest">
       <div class="page-head">
-        <h1>Prenota senza account</h1>
+        <h1>Prendi il turno</h1>
         <p>
-          Bastano nome, cognome ed email. Se poi crei un account con la stessa email ritrovi qui le
-          tue prenotazioni.
+          Senza account bastano nome, cognome ed email. Con un account sulla stessa email ritroverai
+          qui le tue prenotazioni.
         </p>
       </div>
       <div class="booking__layout">
-        <div class="stack">
+        <div class="stack booking__side">
           <fieldset class="field">
-            <legend class="label">Quante persone?</legend>
+            <legend class="label">Quanti siete?</legend>
             <div class="segmented" data-people>
               <label><input type="radio" name="persone" value="1" checked />Solo io</label>
               <label><input type="radio" name="persone" value="2" />2</label>
               <label><input type="radio" name="persone" value="3" />3</label>
             </div>
-            <p class="hint">
-              Con 2 o 3 persone vi servono orari uno dopo l'altro: vedrai solo quelli liberi.
-            </p>
+            <p class="hint">In 2 o 3 si accendono turni uno dopo l'altro.</p>
           </fieldset>
         </div>
         <section class="picker" data-picker aria-label="Giorno e orario">
@@ -81,7 +79,7 @@
       </div>
       <div class="actionbar" data-actionbar>
         <p class="actionbar__summary" data-summary>
-          Scegli giorno e orario<span>I giorni evidenziati hanno posti liberi</span>
+          Scegli giorno e turno<span>I giorni con la spia rossa hanno posti liberi</span>
         </p>
         <button type="button" class="btn btn--primary" data-continue disabled>Continua</button>
       </div>
@@ -89,7 +87,7 @@
     <dialog class="sheet" id="confirm-sheet" aria-labelledby="confirm-title">
       <form class="sheet__inner" id="confirm-form" novalidate>
         <div class="sheet__head">
-          <h2 id="confirm-title">Conferma l'appuntamento</h2>
+          <h2 id="confirm-title">Conferma il turno</h2>
           <button type="button" class="btn btn--icon" data-sheet-close aria-label="Chiudi">
             <svg
               viewBox="0 0 24 24"
@@ -97,19 +95,17 @@
               height="24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2"
+              stroke-width="2.5"
               aria-hidden="true"
             >
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
           </button>
         </div>
-        <div class="ticket ticket--inset">
-          <div class="ticket__body">
-            <p class="ticket__kind" data-confirm-kind>Appuntamento</p>
-            <p class="ticket__day" data-confirm-day></p>
-            <p class="ticket__time" data-confirm-time></p>
-          </div>
+        <div class="ticket">
+          <p class="ticket__head"><span>Lev Space</span><span data-confirm-kind>1 persona</span></p>
+          <p class="ticket__day" data-confirm-day></p>
+          <div class="ticket__time seg seg--ink" data-confirm-time></div>
         </div>
         <fieldset class="stack">
           <legend class="label">I tuoi dati</legend>
@@ -155,21 +151,21 @@
           </div>
         </fieldset>
         <p class="notice notice--error" data-confirm-error role="alert" hidden></p>
-        <button type="submit" class="btn btn--primary btn--block" data-confirm-submit>
-          Conferma prenotazione
+        <button type="submit" class="btn btn--turn btn--block" data-confirm-submit>
+          Conferma il turno
         </button>
       </form>
       <div class="sheet__inner" data-success hidden>
-        <div class="ticket ticket--inset">
-          <div class="ticket__body">
-            <p class="ticket__kind">Ti aspettiamo</p>
+        <h2 class="success__title" data-stamp tabindex="-1">Confermato</h2>
+        <div class="slot-print" data-print>
+          <div class="ticket">
+            <p class="ticket__head"><span>Il tuo turno</span><span>Lev Space</span></p>
             <p class="ticket__day" data-success-day></p>
-            <p class="ticket__time" data-success-time></p>
+            <div class="ticket__time seg seg--ink" data-success-time></div>
             <p class="ticket__meta" data-success-meta></p>
+            <p class="ticket__foot muted" data-success-note></p>
           </div>
-          <div class="ticket__stub"><span class="stamp" data-stamp>Confermato</span></div>
         </div>
-        <p class="serif muted" data-success-note></p>
         <div class="actions" data-success-actions></div>
       </div>
     </dialog>
@@ -177,6 +173,7 @@
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/components/sheet.js"></script>
+    <script src="/js/components/display.js"></script>
     <script src="/js/components/booking-picker.js"></script>
     <script src="/js/booking-flow.js"></script>
   </body>

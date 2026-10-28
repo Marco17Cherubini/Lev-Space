@@ -294,6 +294,7 @@ test('B27: gli orari pubblici non contengono gli extra VIP', async () => {
   assert.equal(res.status, 200);
   assert.deepEqual(res.data.daysOpen, [1, 2, 3, 4, 5, 6]);
   assert.equal(res.data.days[2].morning.start, '08:30');
+  assert.deepEqual(res.data.days[2].morning.slots, ['08:30', '09:15', '10:00', '10:45', '11:30']);
   assert.ok(!JSON.stringify(res.data).includes('vip'));
 });
 

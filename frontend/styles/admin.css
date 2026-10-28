@@ -1,7 +1,8 @@
-/* Pannello del barbiere (sopra app.css): l'agenda a righe, clienti, orari, report.
-   Modalità Operate: densità controllata, stati leggibili senza colore. */
+/* Il pannello dell'operatore (sopra app.css): agenda, clienti, orari, report.
+   Modalità Operate: densità controllata. Gli stati si leggono dalla forma —
+   pieno (prenotato), tratteggiato (libero), a righe (ferie), doppia riga (serie) —
+   il rosso LED solo per "adesso", "extra" e ciò che è acceso. */
 
-/* Campi a coppie anche nelle pagine admin */
 .field-pair {
   display: grid;
   gap: var(--s4);
@@ -24,14 +25,17 @@
   margin-bottom: var(--s4);
 }
 .agenda-head h1 {
-  min-height: 2.2em;
-  font-size: var(--t-lead);
-  text-transform: capitalize;
+  min-height: 2em;
+  font-size: 1.75rem;
+  line-height: 1;
 }
 .agenda-head__nav {
   display: flex;
   align-items: center;
-  gap: var(--s1);
+  gap: 3px;
+}
+.agenda-head__nav .btn--icon {
+  background: var(--paper-2);
 }
 .agenda-head__view {
   grid-column: 1 / -1;
@@ -40,21 +44,23 @@
   .agenda-head {
     grid-template-columns: minmax(0, 1fr) auto auto;
   }
+  .agenda-head h1 {
+    min-height: 0;
+  }
   .agenda-head__view {
     grid-column: auto;
     min-width: 16rem;
   }
 }
 
-/* Altezza riservata: la striscia arriva con i dati e non deve spostare l'agenda */
+/* Selettore dei giorni: sette tasti, il conteggio degli appuntamenti come cifra */
 .weekstrip {
-  min-height: 64px;
+  min-height: 72px;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 2px;
+  gap: 3px;
   margin-bottom: var(--s4);
 }
-/* Su desktop la vista predefinita è la settimana: niente spazio riservato alla striscia */
 @media (min-width: 1024px) {
   .weekstrip:empty {
     display: none;
@@ -63,13 +69,14 @@
 .strip-day {
   -webkit-appearance: none;
   appearance: none;
+  position: relative;
   display: grid;
   justify-items: center;
-  gap: 0;
-  min-height: 64px;
+  align-content: center;
+  min-height: 72px;
   padding: var(--s2) 0;
   border: 0;
-  background: var(--paper);
+  background: var(--paper-2);
   color: var(--ink);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -79,40 +86,49 @@
   transform: scale(0.95);
 }
 .strip-day__dow {
+  font-stretch: var(--narrow);
   font-size: 0.8125rem;
-  font-weight: 650;
+  font-weight: 800;
+  text-transform: uppercase;
   color: var(--ink-2);
 }
 .strip-day__num {
-  font-size: var(--t-lead);
-  font-weight: 800;
-  line-height: 1.1;
+  font-stretch: var(--narrow);
+  font-size: 1.625rem;
+  font-weight: 900;
+  line-height: 1.05;
 }
 .strip-day__count {
-  min-height: 1.2em;
+  min-height: 1.1em;
   font-size: 0.8125rem;
-  font-weight: 700;
+  font-weight: 800;
 }
 .strip-day.is-closed {
   background: transparent;
+  box-shadow: inset 0 0 0 2px var(--paper-2);
   color: var(--ink-2);
 }
-.strip-day.is-today .strip-day__num {
-  color: var(--accent);
+.strip-day.is-today::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  background: var(--led);
 }
 .strip-day[aria-pressed='true'] {
-  background: var(--ink);
-  color: var(--on-ink);
+  background: var(--panel);
+  color: var(--on-panel);
 }
-.strip-day[aria-pressed='true'] .strip-day__dow,
-.strip-day[aria-pressed='true'].is-today .strip-day__num {
-  color: inherit;
+.strip-day[aria-pressed='true'] .strip-day__dow {
+  color: var(--on-panel-2);
 }
 
 .agenda-tools {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--s2);
+  gap: 3px;
   margin-bottom: var(--s3);
 }
 .agenda-tools .btn {
@@ -124,55 +140,78 @@
   }
 }
 .agenda-tools [aria-pressed='true'] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--panel);
+  border-color: var(--panel);
+  color: var(--on-panel);
+}
+.agenda-tools [aria-pressed='true']::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--led);
 }
 .agenda-hint {
   font-size: var(--t-small);
   margin-bottom: var(--s4);
 }
-
 .agenda__day {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--s1) var(--s3);
   margin-bottom: var(--s3);
-  text-transform: capitalize;
+  font-size: 1.75rem;
+}
+.agenda__date {
+  display: inline-block;
 }
 .agenda__day .muted {
+  font-stretch: var(--semi);
   font-size: var(--t-small);
-  font-weight: 600;
-  text-transform: none;
+  font-weight: 700;
 }
+
+/* Vista giorno: una riga per turno, l'orario a segmenti a sinistra */
 .agenda {
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 .agenda__row {
   display: grid;
-  grid-template-columns: 5rem minmax(0, 1fr);
-  min-height: 60px;
+  grid-template-columns: 6.25rem minmax(0, 1fr);
+  min-height: 64px;
   background: var(--paper);
 }
 .agenda__time {
   display: grid;
   align-content: center;
-  padding-left: var(--s3);
-  font-size: 1.1875rem;
+  justify-items: start;
+  gap: 4px;
+  padding: var(--s2) var(--s3);
+  font-size: 1.5rem;
+}
+/* In un elenco denso i segmenti spenti diventano rumore: qui si mostrano solo gli accesi */
+.agenda__time .seg .off {
+  opacity: 0;
+}
+.agenda__time small {
+  font-stretch: var(--narrow);
+  font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
 }
 .agenda__time small,
 .weekgrid__extra {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .agenda__row.is-past {
-  opacity: 0.6;
+  opacity: 0.55;
+}
+/* Adesso: la riga del turno in corso, come la spia che corre sul pannello */
+.agenda__row.is-now {
+  box-shadow: inset 0 0 0 3px var(--led);
 }
 
 /* Cella: la stessa nelle due viste */
@@ -184,7 +223,7 @@
   align-items: center;
   gap: var(--s1) var(--s2);
   width: 100%;
-  min-height: 60px;
+  min-height: 64px;
   height: 100%;
   padding: var(--s2) var(--s3);
   border: 0;
@@ -199,51 +238,75 @@
 button.cell:active {
   transform: scale(0.98);
 }
+/* Prenotato: blocco pieno */
 .cell--booked {
-  background: var(--ink);
-  color: var(--on-ink);
+  background: var(--panel);
+  color: var(--on-panel);
 }
 .cell--booked strong {
-  font-weight: 750;
+  font-stretch: var(--narrow);
+  font-size: 1.25rem;
+  font-weight: 800;
   overflow-wrap: anywhere;
 }
 .cell--booked .tag {
-  background: var(--on-ink);
-  color: var(--ink);
+  background: var(--on-panel);
+  color: var(--panel);
 }
+/* Serie: doppia riga in testa al blocco */
+.is-series .cell--booked,
+.cell--booked.is-series {
+  box-shadow:
+    inset 0 3px 0 var(--on-panel-2),
+    inset 0 7px 0 var(--panel),
+    inset 0 10px 0 var(--on-panel-2);
+}
+/* Libero: contorno tratteggiato, "Aggiungi" esplicito */
 .cell--free {
-  color: var(--ink-2);
   justify-content: space-between;
+  color: var(--ink-2);
+  font-weight: 650;
+  outline: 2px dashed var(--line);
+  outline-offset: -8px;
 }
 .cell__add {
   color: var(--ink);
-  font-weight: 650;
+  font-weight: 800;
   font-size: var(--t-small);
   text-decoration: underline;
+  text-decoration-thickness: 2px;
   text-underline-offset: 0.2em;
 }
+/* Ferie: a righe */
 .cell--holiday {
-  background: var(--paper-2);
+  background: var(--paper-2) var(--hatch);
   color: var(--ink);
-  font-weight: 700;
+  font-stretch: var(--narrow);
+  font-weight: 900;
+  font-size: 1.125rem;
+  text-transform: uppercase;
   cursor: default;
+}
+.cell--holiday span {
+  padding: 0 var(--s2);
+  background: var(--paper-2);
 }
 .cell--locked {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 .cell--check {
   cursor: pointer;
-  font-weight: 650;
+  font-weight: 750;
 }
 .cell--check input {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   margin: 0;
-  accent-color: var(--accent);
+  accent-color: var(--led);
 }
 .cell--check:has(input:checked) {
-  box-shadow: inset 0 0 0 3px var(--accent);
+  box-shadow: inset 0 0 0 3px var(--led);
 }
 @media (hover: hover) and (pointer: fine) {
   .cell--free:hover {
@@ -251,7 +314,7 @@ button.cell:active {
   }
 }
 
-/* Vista settimana */
+/* Vista settimana: il pannello intero, una colonna per giorno */
 .week-scroll {
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -262,62 +325,70 @@ button.cell:active {
   width: 100%;
   min-width: 52rem;
   border-collapse: separate;
-  border-spacing: 2px;
+  border-spacing: 3px;
   table-layout: fixed;
 }
 .weekgrid th {
   padding: var(--s2);
+  font-stretch: var(--narrow);
   font-size: var(--t-small);
-  font-weight: 700;
+  font-weight: 800;
   text-align: left;
+  text-transform: uppercase;
   color: var(--ink-2);
 }
-.weekgrid thead th {
-  background: var(--ground);
-}
 .weekgrid thead th.is-today {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .weekgrid__corner {
-  width: 4rem;
+  width: 4.5rem;
 }
 .weekgrid tbody th {
   vertical-align: middle;
-  font-size: var(--t-body);
+  font-size: 1.125rem;
+  font-weight: 900;
   color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 .weekgrid td {
+  position: relative;
+  height: 58px;
   padding: 0;
-  height: 56px;
   background: var(--paper);
   vertical-align: top;
-  position: relative;
 }
 .weekgrid td .cell {
-  min-height: 56px;
+  min-height: 58px;
   font-size: var(--t-small);
+}
+.weekgrid td .cell--booked strong {
+  font-size: 1rem;
 }
 .weekgrid .weekgrid__extra {
   position: absolute;
   right: var(--s1);
-  top: 2px;
+  top: 3px;
   z-index: 1;
+  font-stretch: var(--narrow);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  text-transform: uppercase;
   pointer-events: none;
 }
 .weekgrid td.weekgrid__none {
   background: transparent;
 }
 .weekgrid td.is-past {
-  opacity: 0.6;
+  opacity: 0.55;
 }
 .weekgrid td.is-drop {
-  box-shadow: inset 0 0 0 3px var(--accent);
+  box-shadow: inset 0 0 0 3px var(--led);
 }
 .cell.is-dragging {
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
-/* Combobox cliente */
+/* Ricerca cliente (combobox) */
 .combo {
   position: relative;
 }
@@ -338,6 +409,9 @@ button.cell:active {
   padding: var(--s3) var(--s4);
   cursor: pointer;
 }
+.combo__list li + li {
+  border-top: 2px dashed var(--line);
+}
 .combo__list li[aria-selected='true'],
 .combo__list li:hover {
   background: var(--paper-2);
@@ -345,15 +419,8 @@ button.cell:active {
 .combo__list .muted {
   font-size: var(--t-small);
 }
-
 .move {
   padding-top: var(--s3);
-}
-.ticket--inset {
-  background: var(--ground);
-}
-.sheet .ticket__time {
-  font-size: clamp(3rem, 16vw, 4.5rem);
 }
 
 /* ==================== CLIENTI ==================== */
@@ -379,20 +446,25 @@ button.cell:active {
 }
 .clients {
   display: grid;
-  gap: 2px;
+  background: var(--paper);
+  padding: 0 var(--s4);
+}
+.clients > li + li {
+  border-top: 2px dashed var(--line);
 }
 .client {
   display: grid;
   gap: var(--s2);
-  padding: var(--s3) var(--s4);
-  background: var(--paper);
+  padding: var(--s3) 0;
 }
 .client__name {
-  font-weight: 750;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s2);
+  font-stretch: var(--narrow);
+  font-size: 1.375rem;
+  font-weight: 800;
   overflow-wrap: anywhere;
 }
 .client__contact {
@@ -406,6 +478,8 @@ button.cell:active {
 }
 .client.is-banned .client__name {
   color: var(--ink-2);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
 }
 @media (min-width: 720px) {
   .client {
@@ -417,7 +491,7 @@ button.cell:active {
 /* ==================== ORARI ==================== */
 .days {
   display: grid;
-  gap: var(--s3);
+  gap: 3px;
 }
 @media (min-width: 1024px) {
   .days {
@@ -431,6 +505,7 @@ button.cell:active {
 }
 .dayhours__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--s3);
@@ -439,7 +514,7 @@ button.cell:active {
   flex-direction: row-reverse;
 }
 .dayhours__head h2 {
-  text-transform: capitalize;
+  font-size: 1.75rem;
 }
 .dayhours.is-closed {
   background: transparent;
@@ -457,7 +532,7 @@ button.cell:active {
   display: grid;
   gap: var(--s2);
   padding-top: var(--s3);
-  box-shadow: 0 -2px 0 var(--paper-2);
+  border-top: 2px dashed var(--line);
 }
 .shift .switch {
   justify-content: space-between;
@@ -465,11 +540,24 @@ button.cell:active {
 }
 .shift__times {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
   gap: var(--s3);
 }
 .shift__preview {
+  display: grid;
+  gap: var(--s2);
   font-size: var(--t-small);
+  font-weight: 600;
+}
+.mini-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.mini-keys i {
+  width: 18px;
+  height: 18px;
+  background: var(--ink);
 }
 
 /* ==================== REPORT ==================== */
@@ -488,43 +576,54 @@ button.cell:active {
 .report-nav {
   display: flex;
   align-items: center;
-  gap: var(--s2);
+  gap: 3px;
+}
+.report-nav .btn--icon {
+  background: var(--paper-2);
 }
 .report-nav__label {
   flex: 1;
   text-align: center;
-  font-weight: 700;
+  font-stretch: var(--narrow);
+  font-size: 1.125rem;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
+/* I tre numeri del periodo su un display: cifre a segmenti */
 .report-facts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--s4);
-  margin-bottom: var(--s5);
+  gap: 3px;
+  margin-bottom: 3px;
 }
 .report-facts div {
   display: grid;
-  gap: var(--s1);
+  gap: var(--s2);
   align-content: start;
+  padding: var(--s3);
+  background: var(--panel);
+  color: var(--on-panel);
 }
 .report-facts dt {
-  font-size: var(--t-small);
-  font-weight: 600;
-  color: var(--ink-2);
+  font-stretch: var(--narrow);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--on-panel-2);
 }
 .report-facts dd {
-  font-size: clamp(2rem, 8vw, 3.5rem);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
+  font-size: clamp(2.25rem, 9vw, 3.5rem);
+  color: var(--led);
+  line-height: 0;
+  min-height: 1em;
 }
-.report-facts dd .muted {
+.report-facts dd small {
   display: block;
+  margin-top: var(--s2);
   font-size: var(--t-small);
-  font-weight: 600;
-  letter-spacing: 0;
-  margin-top: var(--s1);
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--on-panel-2);
 }
 .report-chart {
   background: var(--paper);
@@ -550,7 +649,7 @@ button.cell:active {
   min-height: var(--tap);
   display: flex;
   align-items: center;
-  font-weight: 650;
+  font-weight: 750;
   cursor: pointer;
 }
 .report-table table {
@@ -562,5 +661,5 @@ button.cell:active {
 .report-table td {
   padding: var(--s2) var(--s4);
   text-align: left;
-  border-bottom: 1px solid var(--paper-2);
+  border-bottom: 2px dashed var(--line);
 }

@@ -10,7 +10,7 @@
       name="description"
       content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
     />
-    <meta name="theme-color" content="#ece8df" />
+    <meta name="theme-color" content="#121214" />
     <title>Lev Space · Barberia su appuntamento</title>
     <link
       rel="preload"
@@ -51,59 +51,72 @@
       </button>
     </header>
 
-    <main id="main" class="entry__main">
-      <section class="ticket entry__ticket" aria-labelledby="entry-title">
-        <div class="ticket__body entry__body">
-          <h1 id="entry-title" class="entry__title">
-            <img
-              class="entry__logo entry__logo--light"
-              src="/images/off_w_Lev_webp.webp"
-              width="1792"
-              height="1976"
-              alt="Lev Space"
-            />
-            <img
-              class="entry__logo entry__logo--dark"
-              src="/images/off_b_Lev_webp.webp"
-              width="1792"
-              height="1976"
-              alt="Lev Space"
-              loading="lazy"
-            />
-          </h1>
-          <p class="entry__motto">Il tuo spazio. Il tuo momento.</p>
-          <p class="entry__what serif">
-            Barberia su appuntamento. Scegli giorno e ora, la conferma arriva per email.
-          </p>
-        </div>
-        <div class="ticket__stub entry__stub" data-first aria-live="polite">
-          <p class="ticket__kind">Primo posto libero</p>
-          <p class="ticket__day" data-first-day>Cerco il primo orario libero…</p>
-          <p class="ticket__time" data-first-time aria-hidden="true">--:--</p>
-          <a class="btn btn--accent btn--block" href="/guest-booking" data-first-link
-            >Prenota un orario</a
-          >
+    <main id="main">
+      <section class="dispenser panel" aria-labelledby="entry-title">
+        <div class="dispenser__inner">
+          <div class="dispenser__brand">
+            <h1 id="entry-title" class="dispenser__logo">
+              <img
+                src="/images/off_b_Lev_webp.webp"
+                width="1792"
+                height="1976"
+                alt="Lev Space"
+                fetchpriority="high"
+              />
+            </h1>
+            <p class="dispenser__motto">Il tuo spazio.<br />Il tuo momento.</p>
+          </div>
+          <div class="dispenser__machine">
+            <div class="display" data-first aria-live="polite">
+              <h2 class="display__label">Primo turno libero</h2>
+              <div
+                class="display__time seg"
+                data-first-time
+                role="img"
+                aria-label="Orario in arrivo"
+              ></div>
+              <p class="display__day" data-first-day>Cerco il primo orario libero…</p>
+            </div>
+            <a
+              class="btn btn--turn btn--block dispenser__button"
+              href="/guest-booking"
+              data-first-link
+              >Prendi il turno</a
+            >
+            <div class="dispenser__mouth" aria-hidden="true"></div>
+            <p class="dispenser__what">
+              Barberia su appuntamento. Niente coda, niente chiamate: scegli il turno, la conferma
+              arriva per email.
+            </p>
+          </div>
         </div>
       </section>
 
-      <nav class="entry__ways" aria-label="Accesso">
+      <section class="ways" aria-labelledby="ways-title">
+        <h2 id="ways-title" class="visually-hidden">Come vuoi prenotare</h2>
         <a class="btn btn--primary btn--block" href="/login" data-login-link>Accedi</a>
         <a class="btn btn--block" href="/register">Crea un account</a>
         <a class="btn btn--quiet" href="/guest-booking">Prenota senza account</a>
-      </nav>
+      </section>
 
-      <section class="hours" aria-labelledby="hours-title">
-        <h2 id="hours-title">Orari di apertura</h2>
-        <dl class="hours__list" data-hours><p class="loading">Carico gli orari…</p></dl>
+      <section class="weekplan" aria-labelledby="hours-title">
+        <div class="weekplan__head">
+          <h2 id="hours-title">La settimana, turno per turno</h2>
+          <p class="muted">Ogni tasto è un appuntamento da 45 minuti.</p>
+        </div>
+        <ol class="weekplan__days" data-hours>
+          <li class="loading">Carico gli orari…</li>
+        </ol>
       </section>
     </main>
-    <footer class="entry__footer">
+    <footer class="entry__footer panel">
       <p class="entry__footer-name">Lev Space</p>
-      <p class="muted">Prenota, sposta o cancella da qui: niente messaggi, niente attese.</p>
+      <p class="muted">Niente coda. Niente chiamate. Il tuo turno, quando vuoi.</p>
     </footer>
 
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
+    <script src="/js/components/display.js"></script>
     <script src="/js/components/booking-picker.js"></script>
     <script src="/js/entry.js"></script>
   </body>

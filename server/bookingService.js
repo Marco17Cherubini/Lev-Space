@@ -413,7 +413,7 @@ function getAdminSchedule(from, to) {
 // Orari pubblici (pagina d'ingresso): solo i turni standard, senza gli extra VIP
 function getPublicHours() {
   const { daysOpen, days } = getBusinessHours();
-  const shift = s => (s ? { start: s.start, end: s.end } : null);
+  const shift = s => (s ? { start: s.start, end: s.end, slots: s.slots } : null);
   const publicDays = {};
   for (const day of daysOpen) {
     const hours = days[day];

@@ -10,7 +10,7 @@
       name="description"
       content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
     />
-    <meta name="theme-color" content="#ece8df" />
+    <meta name="theme-color" content="#121214" />
     <title>Accedi · Lev Space</title>
     <link
       rel="preload"
@@ -24,7 +24,7 @@
     <script src="/js/theme-init.js"></script>
   </head>
 
-  <body class="no-tabbar">
+  <body class="no-tabbar auth-page">
     <a class="skip-link" href="#main">Vai al contenuto</a>
     <header class="appbar">
       <a class="wordmark" href="/">Lev Space</a>
@@ -52,58 +52,56 @@
     </header>
 
     <main id="main" class="page page--narrow">
+      <div class="page-head">
+        <h1>Accedi</h1>
+        <p>Per prendere, spostare o cancellare i tuoi turni.</p>
+      </div>
       <div class="ticket auth">
-        <div class="ticket__body stack">
-          <h1>Accedi</h1>
-          <p class="serif muted">Per prenotare, spostare o cancellare i tuoi appuntamenti.</p>
-          <p class="notice" id="form-info" role="status" hidden></p>
-          <form id="login-form" class="stack" novalidate>
-            <div class="field">
-              <label for="email">Email</label>
+        <p class="notice" id="form-info" role="status" hidden></p>
+        <form id="login-form" class="stack" novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input
+              class="input"
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="username"
+              inputmode="email"
+              autocapitalize="off"
+              spellcheck="false"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="password-field">
               <input
                 class="input"
-                id="email"
-                name="email"
-                type="email"
-                autocomplete="username"
-                inputmode="email"
-                autocapitalize="off"
-                spellcheck="false"
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
                 required
               />
+              <button
+                type="button"
+                class="btn btn--quiet"
+                data-reveal="password"
+                aria-pressed="false"
+                aria-label="Mostra password"
+              >
+                Mostra
+              </button>
             </div>
-            <div class="field">
-              <label for="password">Password</label>
-              <div class="password-field">
-                <input
-                  class="input"
-                  id="password"
-                  name="password"
-                  type="password"
-                  autocomplete="current-password"
-                  required
-                />
-                <button
-                  type="button"
-                  class="btn btn--quiet"
-                  data-reveal="password"
-                  aria-pressed="false"
-                  aria-label="Mostra password"
-                >
-                  Mostra
-                </button>
-              </div>
-            </div>
-            <p class="notice notice--error" id="form-error" role="alert" hidden></p>
-            <button class="btn btn--primary btn--block" type="submit">Accedi</button>
-          </form>
-        </div>
-        <div class="ticket__stub stack">
+          </div>
+          <p class="notice notice--error" id="form-error" role="alert" hidden></p>
+          <button class="btn btn--primary btn--block" type="submit">Accedi</button>
+        </form>
+        <div class="ticket__foot auth__links">
           <a href="/reset-password">Password dimenticata?</a>
-          <p>
-            Prima volta qui? <a href="/register">Crea un account</a> o
-            <a href="/guest-booking">prenota senza account</a>.
-          </p>
+          <a href="/register">Crea un account</a>
+          <a href="/guest-booking">Prenota senza account</a>
         </div>
       </div>
     </main>
