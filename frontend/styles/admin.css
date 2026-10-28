@@ -24,6 +24,7 @@
   margin-bottom: var(--s4);
 }
 .agenda-head h1 {
+  min-height: 2.2em;
   font-size: var(--t-lead);
   text-transform: capitalize;
 }
@@ -45,11 +46,19 @@
   }
 }
 
+/* Altezza riservata: la striscia arriva con i dati e non deve spostare l'agenda */
 .weekstrip {
+  min-height: 64px;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
   margin-bottom: var(--s4);
+}
+/* Su desktop la vista predefinita è la settimana: niente spazio riservato alla striscia */
+@media (min-width: 1024px) {
+  .weekstrip:empty {
+    display: none;
+  }
 }
 .strip-day {
   -webkit-appearance: none;

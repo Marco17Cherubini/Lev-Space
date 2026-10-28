@@ -28,7 +28,10 @@
     return `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
   };
 
-  const picker = createBookingPicker(main.querySelector('[data-picker]'), {
+  // Nascosto finché non si sa se c'è "Il solito?" (vedi l'avvio in fondo)
+  const pickerRoot = main.querySelector('[data-picker]');
+  pickerRoot.hidden = true;
+  const picker = createBookingPicker(pickerRoot, {
     size: groupSize,
     onChange: updateSummary
   });
@@ -185,31 +188,37 @@
     sheet.addEventListener('close', () => picker.reset(), { once: true });
   }
 
-  // ---- Avvio: "Il solito?" per chi prenota da solo, poi eventuale preselezione
-  await picker.render();
-  if (user && !moving) {
-    try {
-      const { bookings } = await apiRequest('/bookings', { sessionRequired: true });
-      const usual = await findUsualSlot(bookings);
-      const box = main.querySelector('[data-usual]');
-      if (usual) {
-        renderUsual(
-          box,
-          usual,
-          user.nome,
-          `/dashboard?${new URLSearchParams({ data: usual.date, ora: usual.time })}`
-        );
-        box.querySelector('a').addEventListener('click', async event => {
-          event.preventDefault();
-          peopleRadios[0].checked = true;
-          await picker.preselect(usual.date, usual.time);
-          openConfirm();
-        });
-      }
-    } catch (error) {
-      // "Il solito?" è un aiuto: senza, la prenotazione resta disponibile
-    }
+  // ---- Avvio. "Il solito?" sta tra la scelta delle persone e il calendario, e lo si
+  // mostra prima di disegnare il calendario: così non sposta nulla di già visibile
+  // (layout shift). Si attende al massimo USUAL_WAIT_MS; se arriva dopo non compare.
+  const USUAL_WAIT_MS = 1500;
+  const usualPromise =
+    user && !moving
+      ? apiRequest('/bookings', { sessionRequired: true })
+          .then(({ bookings }) => findUsualSlot(bookings))
+          .catch(() => null) // "Il solito?" è un aiuto: senza, la prenotazione resta disponibile
+      : Promise.resolve(null);
+  const usual = await Promise.race([
+    usualPromise,
+    new Promise(resolve => setTimeout(() => resolve(null), USUAL_WAIT_MS))
+  ]);
+  if (usual) {
+    const box = main.querySelector('[data-usual]');
+    renderUsual(
+      box,
+      usual,
+      user.nome,
+      `/dashboard?${new URLSearchParams({ data: usual.date, ora: usual.time })}`
+    );
+    box.querySelector('a').addEventListener('click', async event => {
+      event.preventDefault();
+      peopleRadios[0].checked = true;
+      await picker.preselect(usual.date, usual.time);
+      openConfirm();
+    });
   }
+  pickerRoot.hidden = false;
+  await picker.render();
   if (params.get('data') && params.get('ora')) {
     const n = Number(params.get('persone')) || 1;
     peopleRadios.forEach(r => {

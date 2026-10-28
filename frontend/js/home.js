@@ -44,6 +44,8 @@
       </article>`;
   }
 
+  next.removeAttribute('aria-busy');
+
   const usual = await findUsualSlot(bookings);
   if (usual) {
     renderUsual(

@@ -121,6 +121,7 @@
 @media (min-width: 900px) {
   .entry__main {
     grid-template-columns: minmax(0, 30rem) minmax(0, 26rem);
+    grid-template-rows: auto 1fr;
     justify-content: center;
     align-items: start;
     column-gap: var(--s8);

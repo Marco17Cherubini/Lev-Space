@@ -64,10 +64,20 @@
       <div class="home__layout">
         <section class="stack" aria-labelledby="next-title">
           <h2 id="next-title">Il prossimo appuntamento</h2>
-          <div data-next><p class="loading">Carico i tuoi appuntamenti…</p></div>
+          <div data-next aria-busy="true">
+            <div class="ticket next-ticket" aria-hidden="true">
+              <div class="ticket__body">
+                <p class="ticket__kind">&nbsp;</p>
+                <p class="ticket__day loading">Carico…</p>
+                <p class="ticket__time">--:--</p>
+              </div>
+              <div class="ticket__stub">
+                <span class="btn btn--sm" aria-hidden="true">&nbsp;</span>
+              </div>
+            </div>
+          </div>
         </section>
         <div class="stack-lg">
-          <section class="usual" data-usual hidden aria-labelledby="usual-title"></section>
           <section class="stack" aria-labelledby="actions-title">
             <h2 id="actions-title" class="visually-hidden">Cosa vuoi fare</h2>
             <div class="actions">
@@ -76,6 +86,7 @@
               <a class="btn btn--quiet" href="/bookings">Tutti i tuoi appuntamenti</a>
             </div>
           </section>
+          <section class="usual" data-usual hidden aria-labelledby="usual-title"></section>
         </div>
       </div>
     </main>
