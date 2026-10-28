@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-28T00:00:00Z",
+  "title": "Design System: Lev Space",
+  "extensions": {
+    "colorMeta": {
+      "led": { "role": "primary", "displayName": "Rosso LED" },
+      "accent-ink": { "role": "primary", "displayName": "Inchiostro rosso" },
+      "panel": { "role": "neutral", "displayName": "Pannello" },
+      "paper": { "role": "neutral", "displayName": "Carta termica" },
+      "ink": { "role": "neutral", "displayName": "Grafite" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Segnaletica", "purpose": "Titoli e motto, larghezza 72%." },
+      "label": {
+        "displayName": "Comandi",
+        "purpose": "Pulsanti, label, segmentati, larghezza 86%."
+      },
+      "body": { "displayName": "Testo", "purpose": "Testo corrente, larghezza 100%." }
+    },
+    "shadows": [
+      {
+        "name": "float",
+        "value": "0 18px 40px rgb(18 18 20 / 0.22), 0 2px 6px rgb(18 18 20 / 0.12)",
+        "purpose": "Solo sheet, toast e lista della ricerca cliente."
+      }
+    ],
+    "motion": [
+      {
+        "name": "press",
+        "value": "120ms cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Scala alla pressione di tasti e pulsanti."
+      },
+      {
+        "name": "drawer",
+        "value": "280ms cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Ingresso dello sheet."
+      },
+      {
+        "name": "print",
+        "value": "900ms steps(9, end)",
+        "purpose": "Il biglietto esce dalla fessura alla conferma."
+      },
+      { "name": "boot", "value": "180ms", "purpose": "Accensione 88:88 del display, una volta." },
+      {
+        "name": "rise",
+        "value": "520ms, cascata 70ms",
+        "purpose": "Salita d'ingresso, solo pagina d'ingresso."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "600px" },
+      { "name": "md", "value": "900px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Tasto del turno",
+      "kind": "button",
+      "refersTo": "button-turn",
+      "description": "Il grande tasto rosso: solo per l'azione principale.",
+      "html": "<button class=\"ds-btn-turn\">Prendi il turno</button>",
+      "css": ".ds-btn-turn { min-height: 64px; padding: 0 24px; border: 0; border-radius: 0; background: var(--led, #ff4a1f); color: var(--on-led, #121214); font-family: Archivo, 'Arial Narrow', sans-serif; font-stretch: 72%; font-weight: 900; font-size: 1.375rem; text-transform: uppercase; cursor: pointer; transition: transform 120ms cubic-bezier(0.23,1,0.32,1); } .ds-btn-turn:hover { filter: brightness(1.08); } .ds-btn-turn:active { transform: scale(0.97); } .ds-btn-turn:focus-visible { outline: 3px solid #ff4a1f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Pulsante principale",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Azione secondaria importante, inchiostro pieno.",
+      "html": "<button class=\"ds-btn-primary\">Accedi</button>",
+      "css": ".ds-btn-primary { min-height: 48px; padding: 0 24px; border: 2px solid var(--ink, #161618); border-radius: 0; background: var(--ink, #161618); color: var(--paper, #fafaf8); font-family: Archivo, 'Arial Narrow', sans-serif; font-stretch: 86%; font-weight: 750; font-size: 1.0625rem; cursor: pointer; transition: transform 120ms; } .ds-btn-primary:hover { background: #4a4a50; border-color: #4a4a50; } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: 3px solid #ff4a1f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Fila di tasti-slot",
+      "kind": "custom",
+      "refersTo": "key",
+      "description": "Tasti della giornata: a riposo, acceso con spia LED, non disponibile barrato.",
+      "html": "<div class=\"ds-keys\"><button class=\"ds-key\">09:00</button><button class=\"ds-key ds-key--lit\">09:45</button><button class=\"ds-key ds-key--lit\">10:30</button><button class=\"ds-key\" disabled><s>11:15</s></button></div>",
+      "css": ".ds-keys { display: grid; grid-template-columns: repeat(4, 72px); gap: 3px; } .ds-key { position: relative; min-height: 64px; border: 0; border-radius: 0; background: #e2e2de; color: #161618; font-family: Archivo, sans-serif; font-stretch: 72%; font-weight: 800; font-size: 1.25rem; cursor: pointer; } .ds-key::after { content: ''; position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; background: #4a4a50; opacity: .25; } .ds-key--lit { background: #121214; color: #ededea; } .ds-key--lit::after { background: #ff4a1f; opacity: 1; } .ds-key:disabled { background: transparent; color: #4a4a50; box-shadow: inset 0 0 0 2px #c9c9c4; cursor: not-allowed; } .ds-key:disabled::after { display: none; } .ds-key:active:not(:disabled) { transform: scale(0.95); } .ds-key:focus-visible { outline: 3px solid #ff4a1f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Tag con spia",
+      "kind": "chip",
+      "refersTo": "tag-led",
+      "description": "Etichetta di stato su pannello con spia LED.",
+      "html": "<span class=\"ds-tag\">VIP</span>",
+      "css": ".ds-tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; background: #121214; color: #ededea; font-family: Archivo, sans-serif; font-stretch: 72%; font-size: .875rem; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; } .ds-tag::before { content: ''; width: 7px; height: 7px; background: #ff4a1f; }"
+    },
+    {
+      "name": "Biglietto",
+      "kind": "card",
+      "refersTo": "ticket",
+      "description": "Carta termica con bordo strappato a denti.",
+      "html": "<div class=\"ds-ticket\"><p class=\"ds-ticket__head\"><span>Il tuo turno</span><span>Lev Space</span></p><p class=\"ds-ticket__day\">Sabato 31 ottobre</p><p class=\"ds-ticket__time\">14:45</p></div>",
+      "css": ".ds-ticket { padding: 24px 24px 34px; background: #fafaf8; color: #161618; font-family: Archivo, sans-serif; -webkit-mask: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10'%3E%3Cpath d='M0 0h16v2L8 10 0 2z'/%3E%3C/svg%3E\") bottom / 16px 10px repeat-x, linear-gradient(#000 0 0) top / 100% calc(100% - 9px) no-repeat; mask: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10'%3E%3Cpath d='M0 0h16v2L8 10 0 2z'/%3E%3C/svg%3E\") bottom / 16px 10px repeat-x, linear-gradient(#000 0 0) top / 100% calc(100% - 9px) no-repeat; } .ds-ticket__head { display: flex; justify-content: space-between; padding-bottom: 12px; margin: 0 0 16px; border-bottom: 2px dashed #c9c9c4; font-stretch: 72%; font-weight: 800; text-transform: uppercase; font-size: .875rem; } .ds-ticket__day { margin: 0; font-stretch: 72%; font-weight: 800; font-size: 1.375rem; } .ds-ticket__time { margin: 12px 0 0; font-size: 4rem; font-weight: 900; font-stretch: 72%; font-variant-numeric: tabular-nums; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Il tuo turno",
+    "overview": "Lev Space esiste per sostituire la coda in bottega e le chiamate al telefono. Il suo mondo è quindi l'eliminacode: corpo nero, display a 7 segmenti, un grande tasto rosso, una fessura da cui esce un biglietto di carta termica. La metafora regge la struttura, non la decorazione: niente bagliori, niente finto metallo, segmenti piatti.",
+    "keyCharacteristics": [
+      "Pannello nero + carta termica + un solo rosso LED.",
+      "Una famiglia (Archivo variabile) in tre larghezze.",
+      "Angoli vivi, tasti separati da fessure di 3px, piatto a riposo.",
+      "Lo stato si legge da forma e testo, mai dal solo colore."
+    ],
+    "rules": [
+      {
+        "name": "The Panel Is an Object Rule",
+        "body": "Il display resta nero in entrambi i temi: è un oggetto, non una superficie che segue il tema.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Light Rule",
+        "body": "Il rosso LED compare solo per azione principale, selezione, adesso ed extra.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Widths Rule",
+        "body": "72% per segnaletica e titoli, 86% per i comandi, 100% per il testo.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do usare il pannello nero per ciò che è \"la macchina\" (barre, display, tasti accesi, blocchi prenotati) e la carta per ciò che è stampato.",
+      "Do mostrare orari e numeri chiave con le cifre a 7 segmenti, segmenti spenti visibili.",
+      "Do separare i tasti con fessure da 3px e tenere angoli vivi.",
+      "Do dare a ogni stato una forma e un testo (pieno, tratteggiato, a righe, doppia riga, barrato, spia).",
+      "Do rimuovere pressione, stampa, accensione e salita sotto prefers-reduced-motion."
+    ],
+    "donts": [
+      "Don't aggiungere glow, bagliori o ombre colorate ai LED e ai segmenti.",
+      "Don't usare gradienti; linear-gradient compare solo come tecnica di maschera del biglietto.",
+      "Don't affidare uno stato al solo colore.",
+      "Don't usare il rosso LED fuori da azione principale, selezione, adesso ed extra.",
+      "Don't arrotondare angoli o aggiungere ombre a riposo.",
+      "Don't usare foto che non siano del negozio, né una seconda famiglia di caratteri."
+    ]
+  }
+}

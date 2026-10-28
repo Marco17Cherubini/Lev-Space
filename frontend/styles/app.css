@@ -28,6 +28,8 @@
   /* Il display è un oggetto: resta nero in entrambi i temi */
   --panel: #121214;
   --panel-2: #1f1f23;
+  /* Il vetro del display, più scuro del corpo del distributore */
+  --display: #000;
   --on-panel: #ededea;
   --on-panel-2: #9a9aa0;
   --led: #ff4a1f;
@@ -756,6 +758,29 @@ textarea {
 .segmented label:has(input:disabled) {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+/* Coppie di campi (nome e cognome, giorno e orario) */
+.field-pair {
+  display: grid;
+  gap: var(--s4);
+}
+@media (min-width: 480px) {
+  .field-pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* File di tasti in miniatura: un quadrato per appuntamento (settimana, anteprima orari) */
+.mini-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.mini-keys i {
+  width: 18px;
+  height: 18px;
+  background: var(--ink);
 }
 
 /* ==================== BIGLIETTO ==================== */

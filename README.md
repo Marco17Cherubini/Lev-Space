@@ -8,6 +8,10 @@
 
 > The user interface is in Italian, as it is used daily by an Italian barbershop and its clients.
 
+| Entrance                                                                                                                 | Pick your turn                                                                                                       | Your ticket                                                                                       | The barber's agenda                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| ![Black dispenser panel with the logo and the first free slot on a 7-segment display](docs/images/after/01-ingresso.png) | ![The day as rows of keys, morning and afternoon, with the chosen slot lit](docs/images/after/04-prenota-orario.png) | ![Thermal ticket printed out of a slot after the confirmation](docs/images/after/09-conferma.png) | ![Day agenda with segment-style times, booked blocks and dashed free slots](docs/images/after/06-agenda.png) |
+
 ---
 
 ## The story
@@ -25,14 +29,8 @@ A typical day was **about 8 hours of haircuts plus at least 3 more hours of orga
 We designed, built and iteratively improved a web app that takes the whole booking conversation off his phone:
 
 - **clients book themselves**, 24/7, on a calendar that only shows the slots that are really free;
-- **the barber manages everything from one admin panel**: weekly calendar, regular clients, opening hours, holidays and statistics;
+- **the barber manages everything from one admin panel**: agenda, regular clients, opening hours, holidays and statistics;
 - **the rules of the shop are encoded in the app** — opening hours per day, group appointments, recurring clients, VIP treatment and blocks for disrespectful users — so they no longer need to be enforced by hand.
-
-For a client, booking takes three steps: pick a free day and time, confirm, and receive the confirmation email.
-
-| 1. Pick day and time                                                                                       | 2. Confirm                                                                         | 3. Confirmation email                                                                           |
-| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| ![Client calendar with the free days of the month and the available times](docs/images/client-booking.png) | ![Booking confirmation dialog with date and time](docs/images/booking-confirm.png) | ![Confirmation email with date and time of the appointment](docs/images/confirmation-email.png) |
 
 ### Results
 
@@ -48,6 +46,28 @@ The app is in daily use and has grown with the shop:
 
 ![Client management: 155 clients, 12 VIP (names blurred)](docs/images/admin-clients.png)
 
+_These three screenshots come from the real shop data and show the previous interface._
+
+---
+
+## The 2026 redesign: «Il tuo turno»
+
+Lev Space replaces the queue and the phone calls, so its interface is built from the object of that ritual: the **take-a-number dispenser** (_eliminacode_). Times are shown on **7-segment displays** with the unlit segments faintly visible, the day is a **row of keys** split into morning and afternoon, and a confirmed booking is a **thermal ticket** that comes out of a slot. One typeface (Archivo, condensed for signage), black panel, thermal paper and a single LED red. The logo, a pixel-art UFO drawn on black, finally sits on the black it was made for.
+
+| Before                                                                                                   | After                                                                                             |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| ![Previous entrance: logo and three grey buttons](docs/images/before/01-ingresso.png)                    | ![New entrance: dispenser with the first free slot](docs/images/after/01-ingresso.png)            |
+| ![Previous booking: a modal over the calendar on every visit](docs/images/before/04-prenota-orario.png)  | ![New booking: days with an LED dot and the day as keys](docs/images/after/04-prenota-orario.png) |
+| ![Previous admin: seven compressed columns on a phone](docs/images/before/06-agenda.png)                 | ![New admin: day agenda with week strip](docs/images/after/06-agenda.png)                         |
+| ![Previous clients page with a pending-changes bar covering the list](docs/images/before/07-clienti.png) | ![New clients page with explicit VIP and suspension switches](docs/images/after/07-clienti.png)   |
+
+What changed for the people who use it:
+
+- **Clients** book in one page (how many, day, turn, confirm) instead of a modal plus a separate summary page; a group of 2–3 lights 2–3 consecutive keys, so "consecutive slots" explains itself; the first free turn is bookable straight from the entrance; long-period bookings are confirmed all at once or not at all.
+- **The barber** gets a day agenda with a week strip on the phone (and the full week with drag & drop on desktop), an explicit **"Sposta appuntamento"** action everywhere, holidays by selection, states readable by shape (solid, dashed, hatched, double rule) rather than colour, and a live "adesso" marker.
+
+Design direction, tokens and components: [DESIGN.md](DESIGN.md) · product context: [PRODUCT.md](PRODUCT.md) · plan, backend fixes and verification: [docs/PLAN.md](docs/PLAN.md), [docs/STATO.md](docs/STATO.md).
+
 ---
 
 ## What makes it different
@@ -56,33 +76,31 @@ Lev Space is not a generic booking widget: every feature comes from how this spe
 
 ### "Il solito?" — rebook your usual appointment in one tap
 
-When a returning client opens the calendar, Lev Space looks at their last appointment, checks whether **the same day and time one week later** is still free, and asks: _"Il solito Luca?"_ ("The usual, Luca?"). One tap fills in date and time, and a final confirmation books it. It reproduces the most common sentence the barber used to hear on the phone.
+When a returning client opens the app, Lev Space takes their **last appointment** and proposes **the same weekday and time** in the first of the next three weeks where that slot is free and the client has nothing booked yet: _"Il solito, Luca?"_ ("The usual, Luca?"). One tap opens the confirmation with day and time already chosen.
 
 ### Recurring appointments
 
-Many clients come at a fixed rhythm. From the admin calendar the barber can turn an appointment into a **series every 1, 2 or 3 weeks for up to 12 months**. Dates that are already taken or fall on a holiday are skipped (never overwritten) and the summary says how many were created. Later he can cancel **a single occurrence or the whole series**.
-
-![New appointment dialog with weekly, 2-week and 3-week recurrence and the number of months](docs/images/recurring.png)
+Many clients come at a fixed rhythm. From the admin agenda the barber can turn an appointment into a **series every 1, 2 or 3 weeks for up to 12 months**. Dates that are already taken or fall on a holiday are skipped (never overwritten) and the summary says how many were created. Later he can cancel **a single occurrence or the whole series**.
 
 ### Opening hours the barber can change himself
 
-Opening days, morning and afternoon shifts and their slots are edited from the **Gestione Orari** page — no code, no deploy. The client calendar updates immediately, and the input is validated so a mistake can never close the shop by accident.
+Opening days, morning and afternoon shifts and the VIP extra hours are edited from the **Orari** page — no code, no deploy. Each shift is previewed as its row of 45-minute keys; the server derives the slots from start and end, so two appointments can never overlap.
 
-![Opening hours page: per-day switch, morning and afternoon shifts, VIP extra hours](docs/images/opening-hours.png)
+![Opening hours: per-day switches and shift times previewed as keys](docs/images/after/14-orari.png)
 
 ### VIP clients and extra hours
 
-Regular and loyal clients can be marked as **VIP**. Outside the standard hours the barber can open **extra VIP hours** (early morning and evening, set in the same opening-hours page). They appear only in the admin calendar — like the 08:00 appointment in the calendar below — and clients cannot book them online: the barber uses them to fit in his VIPs personally.
+Regular and loyal clients can be marked as **VIP**. Outside the standard hours the barber can open **extra VIP hours** (early morning and evening). They appear only in the admin agenda, marked "Extra"; clients cannot book them online.
 
 ### BAN for disrespectful users
 
-Clients who repeatedly skip appointments can be **banned** with one click from the client list. A banned user can no longer log in, any open session stops working, and they cannot book as a guest with the same email either. VIP and BAN are both managed from the client list shown in [Results](#results).
+Clients who repeatedly skip appointments can be **suspended** from the client list (with a confirmation). A banned user can no longer log in, any open session stops working, and they cannot book as a guest with the same email either.
 
 ### Group appointments
 
 A father with two kids, or three friends: clients can book for **up to 3 people** and get **consecutive slots** — never split across the lunch break.
 
-![Dialog asking how many people will come: 1, 2 or 3](docs/images/group-booking.png)
+![Two people selected: two consecutive keys lit, the third unavailable one struck through](docs/images/after/10-gruppo.png)
 
 ### Guest booking without an account
 
@@ -90,17 +108,17 @@ First-time clients can book with just **name, surname and email**. If they regis
 
 ### Long-period bookings
 
-A client can reserve **one appointment per week for 4, 8 or 12 weeks** in a single flow, choosing day and time week by week.
+A client can reserve **one appointment per week for 4, 8 or 12 weeks**, choosing week by week or repeating the first choice. All weeks are confirmed together: if one is no longer free, nothing is booked and the app shows which week to change.
 
-![Long-period booking plans: monthly (4 weeks), bimonthly (8 weeks) and quarterly (12 weeks)](docs/images/long-period.png)
+![Four weeks, two filled by repeating the first choice](docs/images/after/11-piu-settimane.png)
 
-### A calendar built for the chair
+### An agenda built for the chair
 
-The admin weekly calendar supports **drag & drop** to move appointments (with **long-press on mobile**, between two cuts), **drag-select holidays** across slots, client **autocomplete** when adding a booking, and a **weekly/monthly report** with history navigation.
+On the phone the barber sees **one day at a time** with a week strip; on desktop the **whole week**, with **drag & drop**. Every move is also available as an explicit **"Sposta appuntamento"** action (no gesture required), holidays are set by selecting slots, clients are filled in by searching their name, and a **weekly/monthly report** has history navigation and a data table.
 
-![Admin weekly calendar with bookings, a recurring appointment, holidays and an extra 08:00 slot (names blurred)](docs/images/admin-calendar.png)
+![Booking detail with the explicit move form](docs/images/after/12-sposta.png)
 
-Also included: email confirmations and password reset (via Resend), and a light/dark theme with an animated switch.
+Also included: email confirmations and password reset (via Resend), and light ("thermal paper") and dark ("panel") themes designed separately.
 
 ---
 
@@ -108,36 +126,40 @@ Also included: email confirmations and password reset (via Resend), and a light/
 
 ### Tech stack
 
-| Layer    | Choice                                               | Why                                                                                                             |
-| -------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Server   | Node.js + Express 4                                  | Small, well-known, easy to deploy on a single instance                                                          |
-| Database | SQLite via [sql.js](https://sql.js.org) (WASM)       | Zero native build, one file on a Railway volume; writes are atomic and multi-row operations run in transactions |
-| Auth     | JWT in an `httpOnly`, `SameSite=Lax` cookie + bcrypt | No token in JavaScript reach; sessions die on ban or password change                                            |
-| Frontend | HTML, CSS and vanilla JavaScript                     | No build step; design tokens and modular CSS keep it maintainable                                               |
-| Email    | Resend                                               | Booking confirmations and password reset                                                                        |
-| Charts   | Chart.js (served locally)                            | Admin reports                                                                                                   |
-| Tests    | `node:test` (built into Node)                        | No test framework to install                                                                                    |
+| Layer    | Choice                                               | Why                                                                                                                                |
+| -------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Server   | Node.js + Express 4                                  | Small, well-known, easy to deploy on a single instance                                                                             |
+| Database | SQLite via [sql.js](https://sql.js.org) (WASM)       | Zero native build, one file on a Railway volume; atomic writes, and memory, file and HTTP response stay consistent if a save fails |
+| Auth     | JWT in an `httpOnly`, `SameSite=Lax` cookie + bcrypt | No token in JavaScript reach; sessions die on logout, ban or password change                                                       |
+| Frontend | HTML, CSS and vanilla JavaScript                     | No build step; one self-hosted variable font; the 7-segment display is drawn in SVG                                                |
+| Email    | Resend                                               | Booking confirmations and password reset                                                                                           |
+| Charts   | Chart.js (served locally, report page only)          | Admin reports                                                                                                                      |
+| Tests    | `node:test` (built into Node)                        | No test framework to install                                                                                                       |
 
 ### Architecture
 
 ```
-frontend/ (static pages, vanilla JS)         server/
-  js/utils.js      apiRequest, helpers         server.js        startup: config checks, DB, listen
-  js/layout.js     menu, logout, auth guard    app.js           middleware, security headers, routes
-  js/<page>.js     one script per page         routes/          auth · bookings · admin · pages (HTTP only)
-  styles/          tokens → base → components  bookingService   slots, bookings, groups, recurring series
-                   → layout → pages            authService      accounts, sessions, VIP/BAN, password reset
-                                               holidayService · reportService · businessHours · emailService
-          fetch JSON  ───────────────────▶     database.js      sql.js wrapper, atomic save, transactions
+frontend/ (static pages, vanilla JS)          server/
+  js/utils.js       apiRequest, dates, toast    server.js        startup: config checks, DB, listen
+  js/layout.js      navigation, logout, auth    app.js           middleware, CSRF guard, routes
+  js/components/    display (7 segments),       routes/          auth · bookings · admin · pages (HTTP only)
+                    booking picker, sheet       bookingService   slots, bookings, groups, series, agenda
+  js/<page>.js      one script per page         authService      accounts, sessions, revocation, VIP/BAN
+  styles/           app · pages · admin         holidayService · reportService · businessHours · emailService
+          fetch JSON  ───────────────────▶      database.js      sql.js wrapper, atomic save, transactions
 ```
 
-Routes only translate HTTP; the rules of the shop live in the services, which throw typed `HttpError`s (400/401/403/404/409) handled in one place.
+Routes only translate HTTP; the rules of the shop live in the services, which throw typed `HttpError`s handled in one place. The admin agenda receives its slots, bookings and holidays from `GET /api/admin/schedule`, so the browser never re-implements the opening-hours rules.
 
 ### Quality and security
 
-- **75 automated tests** run against the real server and a temporary database: slot calculation, bookings, groups, recurring series, holidays, auth, sessions, bans, rate limiting, persistence and database migrations.
-- **Content Security Policy** with no inline scripts, HTML escaping of every user-provided value, JSON-only API (no CSRF via forms), rate limiting on login and guest bookings, single-use password-reset links.
-- **Accessibility** (WCAG 2.2): semantic landmarks, keyboard-operable calendars, accessible dialogs with focus management, AA colour contrast in both themes, reduced-motion support.
+- **102 automated tests** run against the real server and a temporary database: slots, bookings, groups, series, holidays, auth, sessions, bans, rate limiting, persistence failures, migrations and startup checks.
+- **Idempotent bookings**: a double tap or a retry after a lost response returns the existing booking instead of an error; long-period bookings are all-or-nothing.
+- **CSRF in depth**: state-changing requests must come from the same origin (`Origin` / `Sec-Fetch-Site`) and carry JSON, on top of `SameSite=Lax`.
+- **Sessions**: tokens carry a `jti` and are revoked on logout; bans and password changes end open sessions; reset links are single-use and expire after an hour.
+- **Persistence**: if a save fails, the in-memory database rolls back to what is on disk and the client gets an error; startup refuses to run with duplicate bookings on the same slot (`npm run db:check` lists them) or with a failed migration.
+- **Content Security Policy** with no inline scripts, HTML escaping of every user-provided value, rate limiting on login and guest bookings.
+- **Accessibility** (WCAG 2.2 AA): keyboard-operable calendar and keys, native `<dialog>` sheets with focus management and Back-button support, touch targets of at least 44 px, AA contrast in both themes, no horizontal scroll at 200 % text, reduced-motion support.
 - ESLint + Prettier, and a GitHub Actions workflow that runs lint, formatting check and tests on every push.
 
 ---
@@ -175,6 +197,7 @@ Demo logins: the admin from your `.env`, or any demo client such as `luca.bianch
 | `npm test`                              | Run the test suite                                   |
 | `npm run lint` / `npm run format:check` | ESLint and Prettier checks                           |
 | `npm run seed`                          | Fill an **empty** database with demo data            |
+| `npm run db:check`                      | List bookings sharing the same slot (read-only)      |
 | `npm run backup`                        | Copy the database to `BACKUP_DIR` (keeps the last 4) |
 | `npm run start:prod`                    | Start in production with PM2                         |
 
@@ -186,7 +209,7 @@ Demo logins: the admin from your `.env`, or any demo client such as `luca.bianch
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`               | first start | —                          | Admin account created when none exists                         |
 | `PORT`                                        | no          | `3000`                     | HTTP port                                                      |
 | `NODE_ENV`                                    | no          | `development`              | `production` enables secure cookies and proxy trust            |
-| `BASE_URL`                                    | no          | `http://localhost:3000`    | Public URL used in password-reset emails                       |
+| `BASE_URL`                                    | no          | `http://localhost:3000`    | Public URL used in password-reset emails and the origin check  |
 | `DATABASE_PATH`                               | no          | `database/database.sqlite` | SQLite file (e.g. `/data/database.sqlite` on a Railway volume) |
 | `RESEND_API_KEY`, `EMAIL_FROM`                | no          | —                          | Email sending; without a key emails are skipped                |
 | `TZ`                                          | no          | `Europe/Rome`              | Time zone of slots and bookings                                |
@@ -195,7 +218,7 @@ Demo logins: the admin from your `.env`, or any demo client such as `luca.bianch
 
 ### Deployment
 
-Lev Space runs on [Railway](https://railway.app) as a single instance: mount a volume, point `DATABASE_PATH` to it, set `NODE_ENV=production` and the variables above. Because sql.js keeps the database in memory and saves it to one file, the app must run as **one process** (no cluster mode).
+Lev Space runs on [Railway](https://railway.app) as a single instance: mount a volume, point `DATABASE_PATH` to it, set `NODE_ENV=production`, `BASE_URL` and the variables above. Because sql.js keeps the database in memory and saves it to one file, the app must run as **one process** (no cluster mode). Run `npm run db:check` against the production database before deploying a version that enforces the one-booking-per-slot check at startup.
 
 ---
 
@@ -204,25 +227,26 @@ Lev Space runs on [Railway](https://railway.app) as a single instance: mount a v
 Before pushing, run `npm run lint`, `npm run format:check` and `npm test` — the same checks run in CI on Node 20 and 22.
 
 - **Server**: routes in `server/routes/` only translate HTTP; the rules of the shop live in the services, which throw `HttpError(status, message)`. Multi-row writes go through `withTransaction()`.
-- **Frontend**: one script per page in `frontend/js/`, shared helpers in `utils.js` (`apiRequest`, `escapeHtml`, `showToast`) and `layout.js` (menu, logout, `requireAuth`). No inline scripts or `onclick`: the Content Security Policy blocks them, and every user-provided value goes through `escapeHtml()`.
-- **CSS**: `tokens → base → components → layout → pages`, imported by `styles.css`. Colours come from semantic tokens so both themes keep AA contrast.
+- **Frontend**: one script per page in `frontend/js/`, shared helpers in `utils.js` and `layout.js`, components in `js/components/` (segment display, booking picker, sheet). No inline scripts or `onclick`: the Content Security Policy blocks them, and every user-provided value goes through `escapeHtml()`.
+- **CSS**: `styles/app.css` (tokens and components) plus `pages.css` or `admin.css`. Colours come from semantic tokens so both themes keep AA contrast; see [DESIGN.md](DESIGN.md).
 - User-facing text and code comments are in Italian; commits follow Conventional Commits.
 
 ## Known limitations
 
-- **Single instance**: sql.js keeps the database in memory and saves it to one file, so the app must run as one process. Moving to a server-based database would be the next step for horizontal scaling.
+- **Single instance**: sql.js keeps the database in memory and saves it to one file, so the app must run as one process.
 - **Guest emails are not verified**: guest bookings are rate-limited and cannot use the email of a registered account, but the address itself is not confirmed.
-- **Long-period bookings** are created one week at a time: if a later week fails, the client sees the error but the weeks already confirmed stay booked.
-- **Sessions issued before the password-change check** remain valid until they expire (7 days).
+- **Tokens issued before this version** cannot be revoked on logout and simply expire within 7 days.
+- **Not yet tested on real devices**: verified in Chromium with mobile emulation; Safari/WebKit and real iPhone/Android checks are listed in [docs/STATO.md](docs/STATO.md).
 
 ## Project structure
 
 ```
-config/        default opening hours and settings
-docs/images/   screenshots used in this README
-frontend/      HTML pages, js/, styles/ (tokens, base, components, layout, pages)
-server/        app, routes, services, database, seed and backup scripts
-test/          node:test suites and helpers
+config/          default opening hours and settings
+docs/            plan, verification log, screenshots (before / after)
+frontend/        HTML pages, fonts/, js/ (components/), styles/
+server/          app, routes, services, database, seed, backup and db-check scripts
+test/            node:test suites and helpers
+DESIGN.md        visual system · PRODUCT.md  product context
 ```
 
 ## Author

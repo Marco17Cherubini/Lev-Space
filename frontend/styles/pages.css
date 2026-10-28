@@ -40,7 +40,7 @@
   display: grid;
   gap: var(--s3);
   padding: var(--s4);
-  background: #000;
+  background: var(--display);
   color: var(--on-panel);
 }
 .display__label {
@@ -89,7 +89,7 @@
 .dispenser__mouth {
   height: 12px;
   margin: calc(-1 * var(--s2)) var(--s6) 0;
-  background: #000;
+  background: var(--display);
   box-shadow: inset 0 -4px 0 var(--panel-2);
 }
 .dispenser__what {
@@ -151,15 +151,6 @@
   align-items: center;
   gap: 3px;
   min-height: 18px;
-}
-.mini-keys {
-  display: flex;
-  gap: 3px;
-}
-.mini-keys i {
-  width: 18px;
-  height: 18px;
-  background: var(--ink);
 }
 .mini-gap {
   width: 18px;
@@ -238,15 +229,6 @@
   display: grid;
   gap: var(--s3);
   font-weight: 650;
-}
-.field-pair {
-  display: grid;
-  gap: var(--s4);
-}
-@media (min-width: 480px) {
-  .field-pair {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 /* ==================== PRENOTAZIONE ==================== */

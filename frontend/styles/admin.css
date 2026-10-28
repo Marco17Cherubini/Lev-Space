@@ -3,16 +3,6 @@
    pieno (prenotato), tratteggiato (libero), a righe (ferie), doppia riga (serie) —
    il rosso LED solo per "adesso", "extra" e ciò che è acceso. */
 
-.field-pair {
-  display: grid;
-  gap: var(--s4);
-}
-@media (min-width: 480px) {
-  .field-pair {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
 /* ==================== AGENDA ==================== */
 .page--agenda {
   max-width: 90rem;
@@ -548,16 +538,6 @@ button.cell:active {
   gap: var(--s2);
   font-size: var(--t-small);
   font-weight: 600;
-}
-.mini-keys {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-}
-.mini-keys i {
-  width: 18px;
-  height: 18px;
-  background: var(--ink);
 }
 
 /* ==================== REPORT ==================== */
