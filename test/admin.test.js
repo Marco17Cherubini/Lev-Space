@@ -305,6 +305,8 @@ test('report: conteggi per giorno e navigazione nei periodi precedenti', async (
   assert.equal(week.labels.length, 7);
   assert.equal(week.counts[5], 2); // ieri: penultimo giorno della finestra
   assert.match(week.labels[6], /^(Dom|Lun|Mar|Mer|Gio|Ven|Sab) \d+$/);
+  assert.equal(week.to, daysAgo(0));
+  assert.equal(week.from, daysAgo(6));
 
   const previousWeek = await stats('period=weekly&offset=-1');
   assert.equal(previousWeek.counts[4], 1); // 9 giorni fa

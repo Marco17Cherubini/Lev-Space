@@ -1,0 +1,557 @@
+/* Pannello del barbiere (sopra app.css): l'agenda a righe, clienti, orari, report.
+   Modalità Operate: densità controllata, stati leggibili senza colore. */
+
+/* Campi a coppie anche nelle pagine admin */
+.field-pair {
+  display: grid;
+  gap: var(--s4);
+}
+@media (min-width: 480px) {
+  .field-pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ==================== AGENDA ==================== */
+.page--agenda {
+  max-width: 90rem;
+}
+.agenda-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: center;
+  margin-bottom: var(--s4);
+}
+.agenda-head h1 {
+  font-size: var(--t-lead);
+  text-transform: capitalize;
+}
+.agenda-head__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.agenda-head__view {
+  grid-column: 1 / -1;
+}
+@media (min-width: 720px) {
+  .agenda-head {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+  .agenda-head__view {
+    grid-column: auto;
+    min-width: 16rem;
+  }
+}
+
+.weekstrip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  margin-bottom: var(--s4);
+}
+.strip-day {
+  -webkit-appearance: none;
+  appearance: none;
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  min-height: 64px;
+  padding: var(--s2) 0;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--press) var(--ease-out);
+}
+.strip-day:active {
+  transform: scale(0.95);
+}
+.strip-day__dow {
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+.strip-day__num {
+  font-size: var(--t-lead);
+  font-weight: 800;
+  line-height: 1.1;
+}
+.strip-day__count {
+  min-height: 1.2em;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.strip-day.is-closed {
+  background: transparent;
+  color: var(--ink-2);
+}
+.strip-day.is-today .strip-day__num {
+  color: var(--accent);
+}
+.strip-day[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.strip-day[aria-pressed='true'] .strip-day__dow,
+.strip-day[aria-pressed='true'].is-today .strip-day__num {
+  color: inherit;
+}
+
+.agenda-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+}
+.agenda-tools .btn {
+  flex: 1 1 auto;
+}
+@media (min-width: 600px) {
+  .agenda-tools .btn {
+    flex: none;
+  }
+}
+.agenda-tools [aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.agenda-hint {
+  font-size: var(--t-small);
+  margin-bottom: var(--s4);
+}
+
+.agenda__day {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s1) var(--s3);
+  margin-bottom: var(--s3);
+  text-transform: capitalize;
+}
+.agenda__day .muted {
+  font-size: var(--t-small);
+  font-weight: 600;
+  text-transform: none;
+}
+.agenda {
+  display: grid;
+  gap: 2px;
+}
+.agenda__row {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  min-height: 60px;
+  background: var(--paper);
+}
+.agenda__time {
+  display: grid;
+  align-content: center;
+  padding-left: var(--s3);
+  font-size: 1.1875rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.agenda__time small,
+.weekgrid__extra {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--accent);
+}
+.agenda__row.is-past {
+  opacity: 0.6;
+}
+
+/* Cella: la stessa nelle due viste */
+.cell {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+  width: 100%;
+  min-height: 60px;
+  height: 100%;
+  padding: var(--s2) var(--s3);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: var(--t-body);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--press) var(--ease-out);
+}
+button.cell:active {
+  transform: scale(0.98);
+}
+.cell--booked {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.cell--booked strong {
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+.cell--booked .tag {
+  background: var(--on-ink);
+  color: var(--ink);
+}
+.cell--free {
+  color: var(--ink-2);
+  justify-content: space-between;
+}
+.cell__add {
+  color: var(--ink);
+  font-weight: 650;
+  font-size: var(--t-small);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.cell--holiday {
+  background: var(--paper-2);
+  color: var(--ink);
+  font-weight: 700;
+  cursor: default;
+}
+.cell--locked {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.cell--check {
+  cursor: pointer;
+  font-weight: 650;
+}
+.cell--check input {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.cell--check:has(input:checked) {
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cell--free:hover {
+    background: var(--paper-2);
+  }
+}
+
+/* Vista settimana */
+.week-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
+}
+.weekgrid {
+  width: 100%;
+  min-width: 52rem;
+  border-collapse: separate;
+  border-spacing: 2px;
+  table-layout: fixed;
+}
+.weekgrid th {
+  padding: var(--s2);
+  font-size: var(--t-small);
+  font-weight: 700;
+  text-align: left;
+  color: var(--ink-2);
+}
+.weekgrid thead th {
+  background: var(--ground);
+}
+.weekgrid thead th.is-today {
+  color: var(--accent);
+}
+.weekgrid__corner {
+  width: 4rem;
+}
+.weekgrid tbody th {
+  vertical-align: middle;
+  font-size: var(--t-body);
+  color: var(--ink);
+}
+.weekgrid td {
+  padding: 0;
+  height: 56px;
+  background: var(--paper);
+  vertical-align: top;
+  position: relative;
+}
+.weekgrid td .cell {
+  min-height: 56px;
+  font-size: var(--t-small);
+}
+.weekgrid .weekgrid__extra {
+  position: absolute;
+  right: var(--s1);
+  top: 2px;
+  z-index: 1;
+  pointer-events: none;
+}
+.weekgrid td.weekgrid__none {
+  background: transparent;
+}
+.weekgrid td.is-past {
+  opacity: 0.6;
+}
+.weekgrid td.is-drop {
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+.cell.is-dragging {
+  opacity: 0.5;
+}
+
+/* Combobox cliente */
+.combo {
+  position: relative;
+}
+.combo__list {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  top: calc(100% - 1.5rem);
+  max-height: 16rem;
+  overflow: auto;
+  background: var(--paper);
+  box-shadow: var(--float-shadow);
+}
+.combo__list li {
+  display: grid;
+  gap: 2px;
+  padding: var(--s3) var(--s4);
+  cursor: pointer;
+}
+.combo__list li[aria-selected='true'],
+.combo__list li:hover {
+  background: var(--paper-2);
+}
+.combo__list .muted {
+  font-size: var(--t-small);
+}
+
+.move {
+  padding-top: var(--s3);
+}
+.ticket--inset {
+  background: var(--ground);
+}
+.sheet .ticket__time {
+  font-size: clamp(3rem, 16vw, 4.5rem);
+}
+
+/* ==================== CLIENTI ==================== */
+.clients-tools {
+  display: grid;
+  gap: var(--s4);
+  margin-bottom: var(--s3);
+}
+@media (min-width: 720px) {
+  .clients-tools {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    align-items: end;
+  }
+}
+.segmented--scroll label {
+  padding-inline: var(--s1);
+  font-size: var(--t-small);
+}
+.clients-result {
+  min-height: 1.5em;
+  font-size: var(--t-small);
+  margin-bottom: var(--s2);
+}
+.clients {
+  display: grid;
+  gap: 2px;
+}
+.client {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  background: var(--paper);
+}
+.client__name {
+  font-weight: 750;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  overflow-wrap: anywhere;
+}
+.client__contact {
+  font-size: var(--t-small);
+  overflow-wrap: anywhere;
+}
+.client__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s5);
+}
+.client.is-banned .client__name {
+  color: var(--ink-2);
+}
+@media (min-width: 720px) {
+  .client {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+/* ==================== ORARI ==================== */
+.days {
+  display: grid;
+  gap: var(--s3);
+}
+@media (min-width: 1024px) {
+  .days {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+.dayhours {
+  background: var(--paper);
+  padding: var(--s3) var(--s4) var(--s4);
+}
+.dayhours__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+.dayhours__head .switch {
+  flex-direction: row-reverse;
+}
+.dayhours__head h2 {
+  text-transform: capitalize;
+}
+.dayhours.is-closed {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--paper-2);
+}
+.dayhours.is-closed h2 {
+  color: var(--ink-2);
+}
+.dayhours__shifts {
+  display: grid;
+  gap: var(--s4);
+  margin-top: var(--s3);
+}
+.shift {
+  display: grid;
+  gap: var(--s2);
+  padding-top: var(--s3);
+  box-shadow: 0 -2px 0 var(--paper-2);
+}
+.shift .switch {
+  justify-content: space-between;
+  flex-direction: row-reverse;
+}
+.shift__times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s3);
+}
+.shift__preview {
+  font-size: var(--t-small);
+}
+
+/* ==================== REPORT ==================== */
+.report-tools {
+  display: grid;
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+}
+@media (min-width: 720px) {
+  .report-tools {
+    grid-template-columns: minmax(0, 18rem) auto;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+.report-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.report-nav__label {
+  flex: 1;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.report-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s4);
+  margin-bottom: var(--s5);
+}
+.report-facts div {
+  display: grid;
+  gap: var(--s1);
+  align-content: start;
+}
+.report-facts dt {
+  font-size: var(--t-small);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.report-facts dd {
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.report-facts dd .muted {
+  display: block;
+  font-size: var(--t-small);
+  font-weight: 600;
+  letter-spacing: 0;
+  margin-top: var(--s1);
+}
+.report-chart {
+  background: var(--paper);
+  padding: var(--s4) var(--s3) var(--s3);
+}
+.report-chart__canvas {
+  position: relative;
+  height: 16rem;
+}
+@media (min-width: 900px) {
+  .report-chart__canvas {
+    height: 22rem;
+  }
+}
+.report-chart figcaption {
+  margin-top: var(--s2);
+  font-size: var(--t-small);
+}
+.report-table {
+  margin-top: var(--s5);
+}
+.report-table summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  font-weight: 650;
+  cursor: pointer;
+}
+.report-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--paper);
+}
+.report-table th,
+.report-table td {
+  padding: var(--s2) var(--s4);
+  text-align: left;
+  border-bottom: 1px solid var(--paper-2);
+}

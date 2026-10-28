@@ -1,0 +1,376 @@
+/* Superfici pubbliche e area cliente (sopra app.css) */
+
+/* ==================== INGRESSO ==================== */
+.entry__main {
+  display: grid;
+  gap: var(--s6);
+  width: 100%;
+  max-width: var(--wide);
+  margin-inline: auto;
+  padding: var(--s3) var(--gutter) var(--s7);
+}
+.entry__ticket {
+  max-width: 30rem;
+  width: 100%;
+  justify-self: center;
+}
+.entry__body {
+  display: grid;
+  justify-items: center;
+  gap: var(--s3);
+  text-align: center;
+  padding-top: var(--s4);
+}
+.entry__title {
+  width: min(64vw, 15rem);
+}
+.entry__logo {
+  width: 100%;
+  height: auto;
+}
+/* Il logo ha il fondo bianco (chiaro) o nero (scuro): si fonde con la carta */
+.entry__logo--light {
+  mix-blend-mode: multiply;
+}
+.entry__logo--dark {
+  display: none;
+  mix-blend-mode: lighten;
+}
+:root[data-theme='dark'] .entry__logo--light {
+  display: none;
+}
+:root[data-theme='dark'] .entry__logo--dark {
+  display: block;
+}
+.entry__motto {
+  font-size: var(--t-lead);
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+.entry__what {
+  max-width: 26ch;
+  color: var(--ink-2);
+}
+.entry__stub {
+  display: grid;
+  gap: var(--s1);
+}
+.entry__stub .btn {
+  margin-top: var(--s4);
+}
+.entry__ways {
+  display: grid;
+  gap: var(--s3);
+  justify-items: center;
+  width: 100%;
+  max-width: 30rem;
+  justify-self: center;
+}
+.hours {
+  width: 100%;
+  max-width: 30rem;
+  justify-self: center;
+  display: grid;
+  gap: var(--s3);
+}
+.hours__list {
+  display: grid;
+  background: var(--paper);
+  padding: var(--s2) var(--s4);
+}
+.hours__list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s3) 0;
+}
+.hours__list > div + div {
+  box-shadow: 0 -1px 0 var(--paper-2);
+}
+.hours__list dt {
+  text-transform: capitalize;
+  font-weight: 650;
+}
+.hours__list dd {
+  text-align: right;
+}
+.hours__list .is-closed {
+  color: var(--ink-2);
+}
+.entry__footer {
+  padding: var(--s7) var(--gutter) calc(var(--s7) + env(safe-area-inset-bottom));
+  background: var(--ink);
+  color: var(--on-ink);
+  text-align: center;
+  display: grid;
+  gap: var(--s2);
+}
+.entry__footer .muted {
+  color: inherit;
+  opacity: 0.75;
+}
+.entry__footer-name {
+  font-weight: 800;
+  font-size: clamp(2.5rem, 14vw, 7rem);
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+/* Da tablet: cartellino a sinistra, accesso e orari a destra */
+@media (min-width: 900px) {
+  .entry__main {
+    grid-template-columns: minmax(0, 30rem) minmax(0, 26rem);
+    justify-content: center;
+    align-items: start;
+    column-gap: var(--s8);
+    padding-top: var(--s7);
+  }
+  .entry__ticket {
+    grid-row: span 2;
+  }
+  .entry__ways,
+  .hours {
+    justify-self: stretch;
+    justify-items: stretch;
+  }
+  .entry__ways .btn--quiet {
+    justify-self: start;
+  }
+}
+
+/* ==================== ACCESSO ==================== */
+.auth {
+  margin-top: var(--s3);
+}
+.auth .ticket__stub {
+  display: grid;
+  gap: var(--s3);
+}
+.field-pair {
+  display: grid;
+  gap: var(--s4);
+}
+@media (min-width: 480px) {
+  .field-pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ==================== PRENOTAZIONE ==================== */
+.booking__layout {
+  display: grid;
+  gap: var(--s5);
+}
+.picker {
+  display: grid;
+  gap: var(--s5);
+}
+.picker__slots {
+  display: grid;
+  gap: var(--s3);
+  scroll-margin-top: calc(var(--appbar-h) + var(--s3));
+}
+.picker__slots:empty {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .booking__layout {
+    grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--s7);
+  }
+  .picker {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.ticket--inset {
+  background: var(--ground);
+}
+.ticket--inset .ticket__stub::before,
+.ticket--inset .ticket__stub::after {
+  background: var(--paper);
+}
+.sheet .ticket__time {
+  font-size: clamp(3rem, 16vw, 4.5rem);
+}
+
+/* "Il solito?" */
+.usual {
+  margin-bottom: var(--s5);
+}
+.usual__title {
+  font-size: var(--t-head);
+}
+.usual__from {
+  margin-top: var(--s2);
+}
+.usual .ticket__stub::before,
+.usual .ticket__stub::after {
+  background: var(--ground);
+}
+
+/* ==================== HOME ==================== */
+.home__layout {
+  display: grid;
+  gap: var(--s6);
+}
+@media (min-width: 900px) {
+  .home__layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--s7);
+  }
+}
+
+/* ==================== APPUNTAMENTI ==================== */
+.month + .month {
+  margin-top: var(--s6);
+}
+.month__title {
+  text-transform: capitalize;
+  margin-bottom: var(--s3);
+}
+.appts {
+  display: grid;
+  gap: 2px;
+}
+.appt {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  gap: var(--s2) var(--s4);
+  align-items: center;
+  padding: var(--s4);
+  background: var(--paper);
+}
+.appt__date {
+  display: grid;
+  justify-items: center;
+  font-size: var(--t-small);
+  font-weight: 650;
+  color: var(--ink-2);
+  line-height: 1.1;
+}
+.appt__date span {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.appt__when {
+  font-size: var(--t-lead);
+  text-transform: capitalize;
+}
+.appt__when strong {
+  font-weight: 800;
+  margin-left: var(--s1);
+}
+.appt__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s1);
+}
+.appt__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--s2);
+}
+.appt__actions .btn {
+  flex: 1;
+}
+@media (min-width: 600px) {
+  .appt {
+    grid-template-columns: 4rem minmax(0, 1fr) auto;
+  }
+  .appt__actions {
+    grid-column: auto;
+  }
+  .appt__actions .btn {
+    flex: none;
+  }
+}
+.appt--past {
+  background: transparent;
+  box-shadow: inset 0 -1px 0 var(--paper-2);
+}
+.past {
+  margin-top: var(--s6);
+}
+.past summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  font-weight: 650;
+  cursor: pointer;
+}
+.past__list {
+  display: grid;
+  margin-top: var(--s3);
+}
+
+/* ==================== PIÙ SETTIMANE ==================== */
+.series__layout {
+  display: grid;
+  gap: var(--s5);
+}
+@media (min-width: 900px) {
+  .series__layout {
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--s7);
+  }
+}
+.weeks {
+  display: grid;
+  gap: 2px;
+}
+.week {
+  background: var(--paper);
+}
+.week__button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 64px;
+  padding: var(--s3) var(--s4);
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--press) var(--ease-out);
+}
+.week__button:active {
+  transform: scale(0.99);
+}
+.week__label {
+  font-size: var(--t-small);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.week__value {
+  font-size: var(--t-lead);
+  font-weight: 750;
+}
+.week__value--empty {
+  font-size: var(--t-body);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.week--conflict {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.week .field-error {
+  padding: 0 var(--s4) var(--s3);
+}
+.series-done__list {
+  display: grid;
+  gap: var(--s2);
+  font-weight: 650;
+}

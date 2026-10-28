@@ -2,155 +2,182 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prenotazione Rapida - Lev Space</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta
+      name="description"
+      content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
+    />
+    <meta name="theme-color" content="#ece8df" />
+    <title>Prenota senza account · Lev Space</title>
+    <link
+      rel="preload"
+      href="/fonts/libre-franklin-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/styles/app.css" />
+    <link rel="stylesheet" href="/styles/pages.css" />
     <script src="/js/theme-init.js"></script>
   </head>
 
-  <body>
-    <header class="header">
-      <div class="header-title">Lev Space</div>
-      <div class="header-actions">
-        <a href="/guest-home" class="btn header-btn">Indietro</a>
-      </div>
+  <body class="no-tabbar booking">
+    <a class="skip-link" href="#main">Vai al contenuto</a>
+    <header class="appbar">
+      <a class="wordmark" href="/">Lev Space</a>
+      <button
+        type="button"
+        class="btn btn--icon"
+        data-theme-toggle
+        aria-pressed="false"
+        aria-label="Tema scuro"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 4a8 8 0 010 16z" fill="currentColor" />
+        </svg>
+      </button>
+      <a class="btn btn--quiet btn--sm" href="/login">Accedi</a>
     </header>
 
-    <main class="guest-container">
-      <div class="guest-header">
-        <h1>Prenotazione Rapida</h1>
-        <p>Prenota in pochi secondi, senza creare un account</p>
+    <main id="main" class="page" data-flow="guest">
+      <div class="page-head">
+        <h1>Prenota senza account</h1>
+        <p>
+          Bastano nome, cognome ed email. Se poi crei un account con la stessa email ritrovi qui le
+          tue prenotazioni.
+        </p>
       </div>
-
-      <!-- Step Indicator -->
-      <div class="step-indicator">
-        <div class="step active" id="step-ind-0">
-          <span class="step-number">1</span>
-          <span class="step-label">Persone</span>
-        </div>
-        <div class="step" id="step-ind-1">
-          <span class="step-number">2</span>
-          <span class="step-label">Data e Ora</span>
-        </div>
-        <div class="step" id="step-ind-2">
-          <span class="step-number">3</span>
-          <span class="step-label">Dati</span>
-        </div>
-      </div>
-
-      <!-- Step 0: Numero Persone -->
-      <div class="guest-section active" id="step-0">
-        <h2 class="section-title">Quanti si presenteranno all'appuntamento?</h2>
-        <div class="group-selection-buttons">
-          <button class="btn btn-full group-btn" data-group="1">1 persona</button>
-          <button class="btn btn-full group-btn" data-group="2">2 persone</button>
-          <button class="btn btn-full group-btn" data-group="3">3 persone</button>
-        </div>
-      </div>
-
-      <!-- Step 1: Data e Ora -->
-      <div class="guest-section" id="step-1">
-        <h2 class="section-title">Scegli data e ora</h2>
-
-        <div class="calendar">
-          <div class="calendar-header">
-            <button class="btn calendar-nav-btn" id="prev-month">&lt;</button>
-            <span class="calendar-month" id="current-month"></span>
-            <button class="btn calendar-nav-btn" id="next-month">&gt;</button>
-          </div>
-          <div class="calendar-grid" id="calendar-grid">
-            <div class="calendar-day-header">Lun</div>
-            <div class="calendar-day-header">Mar</div>
-            <div class="calendar-day-header">Mer</div>
-            <div class="calendar-day-header">Gio</div>
-            <div class="calendar-day-header">Ven</div>
-            <div class="calendar-day-header">Sab</div>
-            <div class="calendar-day-header">Dom</div>
-          </div>
-        </div>
-
-        <div class="time-slots hidden" id="time-slots-container">
-          <h3 class="time-slots-title" id="selected-date-title">Orari disponibili</h3>
-          <div class="time-slots-grid" id="time-slots-grid"></div>
-        </div>
-
-        <div class="btn-group" style="margin-top: 1rem">
-          <button type="button" class="btn btn-outline" data-go-to-step="0">Indietro</button>
-        </div>
-      </div>
-
-      <!-- Step 2: Dati Personali -->
-      <div class="guest-section" id="step-2">
-        <h2 class="section-title">I tuoi dati</h2>
-
-        <div class="selection-summary">
-          <p><strong>Data:</strong> <span id="summary-date"></span></p>
-          <p><strong>Ora:</strong> <span id="summary-time"></span></p>
-        </div>
-
-        <form id="guest-info-form" class="form">
-          <div class="guest-form-row">
-            <div class="form-group">
-              <label class="form-label" for="nome">Nome</label>
-              <input
-                type="text"
-                id="nome"
-                name="nome"
-                class="form-input"
-                required
-                placeholder="Il tuo nome"
-              />
+      <div class="booking__layout">
+        <div class="stack">
+          <fieldset class="field">
+            <legend class="label">Quante persone?</legend>
+            <div class="segmented" data-people>
+              <label><input type="radio" name="persone" value="1" checked />Solo io</label>
+              <label><input type="radio" name="persone" value="2" />2</label>
+              <label><input type="radio" name="persone" value="3" />3</label>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="cognome">Cognome</label>
-              <input
-                type="text"
-                id="cognome"
-                name="cognome"
-                class="form-input"
-                required
-                placeholder="Il tuo cognome"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              class="form-input"
-              required
-              placeholder="La tua email"
-            />
-          </div>
-          <div id="form-error" role="alert" class="form-error hidden"></div>
-          <div class="btn-group" style="gap: var(--space-3)">
-            <button type="button" class="btn btn-outline" data-go-to-step="1">Indietro</button>
-            <button type="submit" class="btn btn-large">Conferma Prenotazione</button>
-          </div>
-        </form>
-      </div>
-
-      <!-- Step 4: Conferma -->
-      <div class="guest-section" id="step-confirmation">
-        <div class="confirmation-box">
-          <h2>Prenotazione Confermata! ✓</h2>
-          <p>Ti abbiamo inviato una email con tutti i dettagli.</p>
-
-          <div class="confirmation-details">
-            <p><strong>Nome:</strong> <span id="conf-nome"></span></p>
-            <p><strong>Data:</strong> <span id="conf-data"></span></p>
-            <p><strong>Ora:</strong> <span id="conf-ora"></span></p>
-          </div>
-
-          <a href="/" class="btn btn-large">Torna alla Home</a>
+            <p class="hint">
+              Con 2 o 3 persone vi servono orari uno dopo l'altro: vedrai solo quelli liberi.
+            </p>
+          </fieldset>
         </div>
+        <section class="picker" data-picker aria-label="Giorno e orario">
+          <div data-calendar></div>
+          <div class="picker__slots" data-slots aria-live="polite"></div>
+        </section>
+      </div>
+      <div class="actionbar" data-actionbar>
+        <p class="actionbar__summary" data-summary>
+          Scegli giorno e orario<span>I giorni evidenziati hanno posti liberi</span>
+        </p>
+        <button type="button" class="btn btn--primary" data-continue disabled>Continua</button>
       </div>
     </main>
+    <dialog class="sheet" id="confirm-sheet" aria-labelledby="confirm-title">
+      <form class="sheet__inner" id="confirm-form" novalidate>
+        <div class="sheet__head">
+          <h2 id="confirm-title">Conferma l'appuntamento</h2>
+          <button type="button" class="btn btn--icon" data-sheet-close aria-label="Chiudi">
+            <svg
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+        <div class="ticket ticket--inset">
+          <div class="ticket__body">
+            <p class="ticket__kind" data-confirm-kind>Appuntamento</p>
+            <p class="ticket__day" data-confirm-day></p>
+            <p class="ticket__time" data-confirm-time></p>
+          </div>
+        </div>
+        <fieldset class="stack">
+          <legend class="label">I tuoi dati</legend>
+          <div class="field-pair">
+            <div class="field">
+              <label for="guest-nome">Nome</label>
+              <input
+                class="input"
+                id="guest-nome"
+                name="nome"
+                autocomplete="given-name"
+                autocapitalize="words"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="guest-cognome">Cognome</label>
+              <input
+                class="input"
+                id="guest-cognome"
+                name="cognome"
+                autocomplete="family-name"
+                autocapitalize="words"
+                required
+              />
+            </div>
+          </div>
+          <div class="field">
+            <label for="guest-email">Email</label>
+            <input
+              class="input"
+              id="guest-email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              inputmode="email"
+              autocapitalize="off"
+              spellcheck="false"
+              required
+              aria-describedby="guest-email-hint"
+            />
+            <p class="hint" id="guest-email-hint">Qui arriva la conferma.</p>
+          </div>
+        </fieldset>
+        <p class="notice notice--error" data-confirm-error role="alert" hidden></p>
+        <button type="submit" class="btn btn--primary btn--block" data-confirm-submit>
+          Conferma prenotazione
+        </button>
+      </form>
+      <div class="sheet__inner" data-success hidden>
+        <div class="ticket ticket--inset">
+          <div class="ticket__body">
+            <p class="ticket__kind">Ti aspettiamo</p>
+            <p class="ticket__day" data-success-day></p>
+            <p class="ticket__time" data-success-time></p>
+            <p class="ticket__meta" data-success-meta></p>
+          </div>
+          <div class="ticket__stub"><span class="stamp" data-stamp>Confermato</span></div>
+        </div>
+        <p class="serif muted" data-success-note></p>
+        <div class="actions" data-success-actions></div>
+      </div>
+    </dialog>
 
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
-    <script src="/js/guest-booking.js"></script>
+    <script src="/js/components/sheet.js"></script>
+    <script src="/js/components/booking-picker.js"></script>
+    <script src="/js/booking-flow.js"></script>
   </body>
 </html>

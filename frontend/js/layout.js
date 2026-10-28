@@ -1,66 +1,43 @@
-// Parti comuni delle pagine con sessione: menu laterale, logout e controllo d'accesso.
-// Richiede utils.js; va caricato prima dello script della pagina.
+// Parti comuni delle pagine con sessione: voce di navigazione attiva, logout e
+// controllo d'accesso. Richiede utils.js; va caricato prima dello script della pagina.
 
 async function logout() {
   try {
     await apiRequest('/auth/logout', { method: 'POST' });
   } catch (error) {
-    console.error('Errore logout:', error);
+    // Anche se il server non risponde il cookie verrà ignorato: si torna all'ingresso
   }
-  window.location.href = '/';
+  location.href = '/';
 }
 
 // Utente della sessione, oppure null dopo aver reindirizzato: al login se non c'è una
-// sessione valida, alla home cliente se la pagina è riservata all'admin
+// sessione valida, all'area giusta se la pagina è dell'altro ruolo
 async function requireAuth({ admin = false } = {}) {
   const user = await getCurrentUser();
   if (!user) {
     redirectToLogin();
     return null;
   }
-  if (admin && !user.isAdmin) {
-    window.location.href = '/home';
+  if (admin !== user.isAdmin) {
+    location.href = user.isAdmin ? '/admin' : '/home';
     return null;
   }
   return user;
 }
 
-function initSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  if (!sidebar) return;
-
-  const overlay = document.getElementById('sidebar-overlay');
-  const hamburger = document.getElementById('hamburger-btn');
-
-  // Da chiuso il menu è fuori schermo: inert lo toglie anche dal Tab e dagli screen reader
-  const setOpen = isOpen => {
-    sidebar.classList.toggle('active', isOpen);
-    overlay.classList.toggle('active', isOpen);
-    sidebar.inert = !isOpen;
-    hamburger.setAttribute('aria-expanded', String(isOpen));
-  };
-  const open = () => {
-    setOpen(true);
-    document.getElementById('close-sidebar').focus();
-  };
-  const close = () => {
-    if (!sidebar.classList.contains('active')) return;
-    setOpen(false);
-    hamburger.focus();
-  };
-
-  setOpen(false);
-  hamburger.addEventListener('click', open);
-  document.getElementById('close-sidebar').addEventListener('click', close);
-  overlay.addEventListener('click', close);
-  sidebar.addEventListener('keydown', event => {
-    if (event.key === 'Escape') close();
+(function initShell() {
+  // La voce della pagina attuale (navigazione in basso e in alto)
+  const path = location.pathname.replace(/\/$/, '') || '/';
+  document.querySelectorAll('.tabbar a, .appbar__nav a').forEach(link => {
+    const target = new URL(link.href).pathname;
+    const matches = link.dataset.match ? new RegExp(link.dataset.match).test(path) : false;
+    if (target === path || matches) link.setAttribute('aria-current', 'page');
   });
 
-  const logoutButton = document.getElementById('sidebar-logout');
-  if (logoutButton) {
-    logoutButton.addEventListener('click', logout);
-  }
-}
-
-initSidebar();
+  document.querySelectorAll('[data-logout]').forEach(button => {
+    button.addEventListener('click', () => {
+      setBusy(button, true, 'Uscita…');
+      logout();
+    });
+  });
+})();

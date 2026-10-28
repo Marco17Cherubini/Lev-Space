@@ -268,6 +268,7 @@ test('B26: il calendario admin riceve slot, prenotazioni e ferie dal server', as
   assert.equal(mon.date, monday);
   assert.ok(mon.slots.includes('14:00') && !mon.slots.includes('09:15'));
   assert.ok(tue.slots.includes('08:00'), 'slot extra visibili all’admin');
+  assert.ok(!tue.standardSlots.includes('08:00') && tue.standardSlots.includes('08:30'));
   assert.equal(sun.open, false);
   assert.ok(tue.holidays.includes('08:30'));
   assert.equal(tue.bookings.find(b => b.ora === '09:15').cognome, 'Agenda');

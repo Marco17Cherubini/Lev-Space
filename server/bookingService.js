@@ -401,6 +401,8 @@ function getAdminSchedule(from, to) {
       date,
       open: daysOpen.includes(parseDate(date).getDay()),
       slots: getSlotsForDay(date, true),
+      // quelli prenotabili dai clienti: gli altri sono gli extra dell'admin
+      standardSlots: getSlotsForDay(date, false),
       bookings: bookings.filter(b => b.giorno === date),
       holidays: holidays.filter(h => h.giorno === date).map(h => h.ora)
     };

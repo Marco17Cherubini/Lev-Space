@@ -1,151 +1,119 @@
-// Report: grafico delle prenotazioni per giorno con navigazione tra i periodi
-/* global Chart -- caricato da /vendor/chart.umd.min.js */
-// Global state
-let chart = null;
-let currentChartData = null;
-let currentPeriodOffset = 0;
+// Report: tagli per giorno negli ultimi 7 o 30 giorni, con navigazione nei periodi
+// precedenti. Il grafico prende i colori dal tema; i dati sono anche in tabella.
+/* global Chart -- caricato da /vendor/chart.umd.min.js solo in questa pagina */
+(async function () {
+  if (!(await requireAuth({ admin: true }))) return;
 
-function updatePeriodNavigation() {
-  document.getElementById('next-period').disabled = currentPeriodOffset >= 0;
-}
+  let chart = null;
+  let data = null;
+  let offset = 0;
+  const period = () => document.querySelector('[data-period] input:checked').value;
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-async function loadStats(period = 'weekly', offset = currentPeriodOffset) {
-  try {
-    currentChartData = await apiRequest(
-      `/admin/reports/bookings-stats?period=${period}&offset=${offset}`
-    );
-    renderChart(currentChartData);
-    updateStats(currentChartData);
-  } catch (error) {
-    console.error('Errore:', error);
-  }
-}
-
-function getChartColors() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-
-  if (isDark) {
-    return {
-      grid: '#60a5fa', // Light Blue Grid
-      text: '#ffffff', // White Text
-      barBg: '#60a5fa', // Light Blue Bars (matching requested style)
-      barBorder: '#3b82f6'
-    };
+  async function load() {
+    document.querySelector('[data-step="1"]').disabled = offset >= 0;
+    try {
+      data = await apiRequest(`/admin/reports/bookings-stats?period=${period()}&offset=${offset}`, {
+        sessionRequired: true
+      });
+    } catch (error) {
+      showToast(error.message);
+      return;
+    }
+    renderFacts();
+    renderChart();
+    renderTable();
   }
 
-  return {
-    grid: '#e5e7eb',
-    text: '#666666',
-    barBg: '#fef3c7',
-    barBorder: '#f59e0b'
-  };
-}
-
-function renderChart(data) {
-  if (!data) return;
-
-  const ctx = document.getElementById('bookings-chart').getContext('2d');
-  const colors = getChartColors();
-
-  if (chart) {
-    chart.destroy();
+  function renderFacts() {
+    const total = data.counts.reduce((a, b) => a + b, 0);
+    const best = Math.max(...data.counts, 0);
+    const bestIndex = data.counts.indexOf(best);
+    document.querySelector('[data-range]').textContent =
+      `${formatDateShort(data.from)} – ${formatDateShort(data.to)}`;
+    document.querySelector('[data-total]').textContent = total;
+    document.querySelector('[data-avg]').textContent = (total / data.counts.length)
+      .toFixed(1)
+      .replace('.', ',');
+    document.querySelector('[data-best]').innerHTML = best
+      ? `${best} <span class="muted">${escapeHtml(formatDateShort(addDays(data.from, bestIndex)))}</span>`
+      : '–';
+    const ties = data.counts.filter(c => c === best).length;
+    document.querySelector('[data-caption]').textContent = !total
+      ? 'Nessun taglio registrato in questo periodo.'
+      : ties > 1
+        ? 'In evidenza i giorni con più tagli.'
+        : 'In evidenza il giorno con più tagli.';
   }
 
-  chart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: data.labels,
-      datasets: [
-        {
-          label: 'Tagli Effettuati',
-          data: data.counts,
-          backgroundColor: colors.barBg,
-          borderColor: colors.barBorder,
-          borderWidth: 2
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false
-        }
+  function renderChart() {
+    const ink = css('--ink');
+    const muted = css('--ink-2');
+    const accent = css('--accent');
+    const grid = css('--paper-2');
+    const best = Math.max(...data.counts);
+    const colors = data.counts.map(c => (c === best && best > 0 ? accent : ink));
+    Chart.defaults.font.family = css('--font-ui');
+    if (chart) chart.destroy();
+    chart = new Chart(document.getElementById('bookings-chart'), {
+      type: 'bar',
+      data: {
+        labels: data.labels,
+        datasets: [
+          {
+            label: 'Tagli',
+            data: data.counts,
+            backgroundColor: colors,
+            borderRadius: 0,
+            maxBarThickness: 40
+          }
+        ]
       },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            stepSize: 1,
-            color: colors.text
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? false
+          : { duration: 250 },
+        plugins: { legend: { display: false }, tooltip: { displayColors: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0, color: muted },
+            grid: { color: grid },
+            border: { display: false }
           },
-          grid: {
-            color: colors.grid,
-            borderColor: colors.grid
-          }
-        },
-        x: {
-          ticks: {
-            color: colors.text
-          },
-          grid: {
-            color: colors.grid,
-            borderColor: colors.grid
+          x: {
+            ticks: { color: muted, maxRotation: 0, autoSkip: true },
+            grid: { display: false },
+            border: { color: grid }
           }
         }
       }
-    }
-  });
-}
-
-function updateStats(data) {
-  const total = data.counts.reduce((a, b) => a + b, 0);
-  const avg = data.counts.length > 0 ? (total / data.counts.length).toFixed(1) : 0;
-  const max = Math.max(...data.counts, 0);
-
-  document.getElementById('total-bookings').textContent = total;
-  document.getElementById('avg-bookings').textContent = avg;
-  document.getElementById('max-bookings').textContent = max;
-}
-
-// Period navigation
-document.getElementById('previous-period').addEventListener('click', () => {
-  currentPeriodOffset -= 1;
-  updatePeriodNavigation();
-  loadStats(document.getElementById('period-filter').value);
-});
-
-document.getElementById('next-period').addEventListener('click', () => {
-  if (currentPeriodOffset < 0) {
-    currentPeriodOffset += 1;
-    updatePeriodNavigation();
-    loadStats(document.getElementById('period-filter').value);
+    });
   }
-});
 
-document.getElementById('period-filter').addEventListener('change', e => {
-  currentPeriodOffset = 0;
-  updatePeriodNavigation();
-  loadStats(e.target.value);
-});
+  function renderTable() {
+    document.querySelector('[data-table]').innerHTML = data.labels
+      .map(
+        (label, i) => `<tr><td>${escapeHtml(label)}</td><td class="num">${data.counts[i]}</td></tr>`
+      )
+      .join('');
+  }
 
-// Listen for theme changes to redraw chart
-const observer = new MutationObserver(mutations => {
-  mutations.forEach(mutation => {
-    if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-      if (currentChartData) {
-        renderChart(currentChartData);
-      }
-    }
+  document.querySelectorAll('[data-step]').forEach(button => {
+    button.addEventListener('click', () => {
+      offset = Math.min(0, offset + Number(button.dataset.step));
+      load();
+    });
   });
-});
+  document.querySelectorAll('[data-period] input').forEach(input => {
+    input.addEventListener('change', () => {
+      offset = 0;
+      load();
+    });
+  });
+  document.addEventListener('themechange', () => data && renderChart());
 
-observer.observe(document.documentElement, {
-  attributes: true,
-  attributeFilter: ['data-theme']
-});
-
-// Init
-updatePeriodNavigation();
-requireAuth({ admin: true }).then(user => user && loadStats('weekly'));
+  load();
+})();

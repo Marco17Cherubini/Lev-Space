@@ -2,150 +2,193 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard - Lev Space</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta
+      name="description"
+      content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
+    />
+    <meta name="theme-color" content="#ece8df" />
+    <title>Prenota · Lev Space</title>
+    <link
+      rel="preload"
+      href="/fonts/libre-franklin-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/styles/app.css" />
+    <link rel="stylesheet" href="/styles/pages.css" />
     <script src="/js/theme-init.js"></script>
   </head>
 
-  <body>
-    <!-- Sidebar Overlay -->
-    <div id="sidebar-overlay" class="sidebar-overlay"></div>
-
-    <!-- Sidebar Menu -->
-    <aside id="sidebar" class="sidebar" aria-label="Menu">
-      <div class="sidebar-header">
-        <span>Menu</span>
-        <button type="button" id="close-sidebar" class="sidebar-close" aria-label="Chiudi menu">
-          &times;
-        </button>
-      </div>
-      <nav class="sidebar-nav">
-        <a href="/bookings" class="sidebar-item">Gestione Prenotazioni</a>
-        <a href="/subscriptions" class="sidebar-item">Prenotazioni di lungo periodo</a>
-        <button id="sidebar-logout" class="sidebar-item sidebar-logout">Logout</button>
+  <body class="booking">
+    <a class="skip-link" href="#main">Vai al contenuto</a>
+    <header class="appbar">
+      <a class="wordmark" href="/home">Lev Space</a>
+      <nav class="appbar__nav" aria-label="Sezioni">
+        <a href="/home"><span>Home</span></a>
+        <a href="/dashboard" data-match="^/(dashboard|subscriptions)"><span>Prenota</span></a>
+        <a href="/bookings"><span>Appuntamenti</span></a>
       </nav>
-    </aside>
-
-    <header class="header">
-      <div class="header-left">
-        <button
-          type="button"
-          id="hamburger-btn"
-          class="hamburger-btn"
-          aria-label="Apri menu"
-          aria-controls="sidebar"
-          aria-expanded="false"
+      <button
+        type="button"
+        class="btn btn--icon"
+        data-theme-toggle
+        aria-pressed="false"
+        aria-label="Tema scuro"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
         >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        <a href="/home" class="header-title header-link">Lev Space</a>
-      </div>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 4a8 8 0 010 16z" fill="currentColor" />
+        </svg>
+      </button>
+      <button type="button" class="btn btn--quiet btn--sm" data-logout>Esci</button>
     </header>
 
-    <main class="container">
-      <div id="welcome-section" class="mb-3">
-        <h1 id="welcome-message" class="h2">Bentornato</h1>
+    <main id="main" class="page" data-flow="client">
+      <div class="page-head">
+        <h1 data-flow-title>Prenota</h1>
+        <p data-flow-intro>Scegli quante persone, il giorno e l'orario.</p>
       </div>
-
-      <!-- Sezione calendario -->
-      <div id="calendar-section">
-        <h3 class="text-center mb-2">Prenota un appuntamento</h3>
-
-        <div class="calendar">
-          <div class="calendar-header">
-            <button
-              type="button"
-              id="prev-month"
-              class="btn calendar-nav-btn"
-              aria-label="Mese precedente"
-            >
-              ←
-            </button>
-            <div id="current-month" class="calendar-month"></div>
-            <button
-              type="button"
-              id="next-month"
-              class="btn calendar-nav-btn"
-              aria-label="Mese successivo"
-            >
-              →
-            </button>
-          </div>
-
-          <div id="calendar-grid" class="calendar-grid">
-            <div class="calendar-day-header">Lun</div>
-            <div class="calendar-day-header">Mar</div>
-            <div class="calendar-day-header">Mer</div>
-            <div class="calendar-day-header">Gio</div>
-            <div class="calendar-day-header">Ven</div>
-            <div class="calendar-day-header">Sab</div>
-            <div class="calendar-day-header">Dom</div>
-            <!-- I giorni verranno aggiunti qui via JavaScript -->
-          </div>
-
-          <!-- Time slots -->
-          <div id="time-slots-section" class="time-slots hidden">
-            <div class="time-slots-title">Seleziona un orario</div>
-            <div id="time-slots-grid" class="time-slots-grid"></div>
-            <button id="confirm-datetime-btn" class="btn btn-full" disabled>
-              Conferma Giorno e Orario
-            </button>
-          </div>
+      <p class="notice" data-moving hidden></p>
+      <section class="usual" data-usual hidden aria-labelledby="usual-title"></section>
+      <div class="booking__layout">
+        <div class="stack">
+          <fieldset class="field">
+            <legend class="label">Quante persone?</legend>
+            <div class="segmented" data-people>
+              <label><input type="radio" name="persone" value="1" checked />Solo io</label>
+              <label><input type="radio" name="persone" value="2" />2</label>
+              <label><input type="radio" name="persone" value="3" />3</label>
+            </div>
+            <p class="hint">
+              Con 2 o 3 persone vi servono orari uno dopo l'altro: vedrai solo quelli liberi.
+            </p>
+          </fieldset>
+          <p class="muted">
+            <a href="/subscriptions">Vuoi fissare un appuntamento a settimana per più settimane?</a>
+          </p>
         </div>
+        <section class="picker" data-picker aria-label="Giorno e orario">
+          <div data-calendar></div>
+          <div class="picker__slots" data-slots aria-live="polite"></div>
+        </section>
+      </div>
+      <div class="actionbar" data-actionbar>
+        <p class="actionbar__summary" data-summary>
+          Scegli giorno e orario<span>I giorni evidenziati hanno posti liberi</span>
+        </p>
+        <button type="button" class="btn btn--primary" data-continue disabled>Continua</button>
       </div>
     </main>
-
-    <!-- Modal Selezione Gruppo (Quanti si presenteranno?) -->
-    <div id="group-modal" class="modal">
-      <div class="modal-overlay"></div>
-      <div class="modal-content">
-        <h3 class="modal-title">Quanti si presenteranno all'appuntamento?</h3>
-        <div class="modal-buttons" style="flex-direction: column; gap: 16px">
-          <button class="btn btn-full group-btn" data-group="1">1 persona</button>
-          <button class="btn btn-full group-btn" data-group="2">2 persone</button>
-          <button class="btn btn-full group-btn" data-group="3">3 persone</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Appuntamento Ricorrente (Il Solito) -->
-    <div id="recurring-modal" class="modal hidden">
-      <div class="modal-overlay"></div>
-      <div class="modal-content">
-        <h3 class="modal-title" id="recurring-title">Il solito?</h3>
-
-        <div
-          class="modal-details"
-          style="text-align: center; background: none; border: none; padding: 0"
-        >
-          <div style="font-size: 1.1rem; margin-bottom: 20px; line-height: 1.6">
-            <div id="recurring-prev-date" style="color: var(--color-text-secondary)"></div>
-            <div style="font-weight: bold; margin: 5px 0">↓</div>
-            <div id="recurring-next-date" style="font-weight: 600; font-size: 1.2rem"></div>
-          </div>
-
-          <div
-            id="recurring-service-name"
-            style="font-weight: 500; color: var(--color-accent-text); margin-bottom: 10px"
-          ></div>
-        </div>
-
-        <div class="modal-buttons">
-          <button type="button" id="recurring-btn-no" class="btn modal-btn-cancel">No</button>
-          <button type="button" id="recurring-btn-book" class="btn modal-btn-confirm">
-            Prenota
+    <dialog class="sheet" id="confirm-sheet" aria-labelledby="confirm-title">
+      <form class="sheet__inner" id="confirm-form" novalidate>
+        <div class="sheet__head">
+          <h2 id="confirm-title">Conferma l'appuntamento</h2>
+          <button type="button" class="btn btn--icon" data-sheet-close aria-label="Chiudi">
+            <svg
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
           </button>
         </div>
+        <div class="ticket ticket--inset">
+          <div class="ticket__body">
+            <p class="ticket__kind" data-confirm-kind>Appuntamento</p>
+            <p class="ticket__day" data-confirm-day></p>
+            <p class="ticket__time" data-confirm-time></p>
+          </div>
+        </div>
+        <dl class="facts" data-confirm-user></dl>
+        <p class="notice notice--error" data-confirm-error role="alert" hidden></p>
+        <button type="submit" class="btn btn--primary btn--block" data-confirm-submit>
+          Conferma prenotazione
+        </button>
+      </form>
+      <div class="sheet__inner" data-success hidden>
+        <div class="ticket ticket--inset">
+          <div class="ticket__body">
+            <p class="ticket__kind">Ti aspettiamo</p>
+            <p class="ticket__day" data-success-day></p>
+            <p class="ticket__time" data-success-time></p>
+            <p class="ticket__meta" data-success-meta></p>
+          </div>
+          <div class="ticket__stub"><span class="stamp" data-stamp>Confermato</span></div>
+        </div>
+        <p class="serif muted" data-success-note></p>
+        <div class="actions" data-success-actions></div>
       </div>
-    </div>
+    </dialog>
 
+    <nav class="tabbar" aria-label="Sezioni">
+      <a href="/home"
+        ><svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" /></svg
+        ><span>Home</span></a
+      >
+      <a href="/dashboard" data-match="^/(dashboard|subscriptions)"
+        ><svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <path d="M4 5h16v15H4z" />
+          <path d="M4 10h16M9 3v4M15 3v4" /></svg
+        ><span>Prenota</span></a
+      >
+      <a href="/bookings"
+        ><svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg
+        ><span>Appuntamenti</span></a
+      >
+    </nav>
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/layout.js"></script>
-    <script src="/js/components/dialog.js"></script>
-    <script src="/js/dashboard.js"></script>
+    <script src="/js/components/sheet.js"></script>
+    <script src="/js/components/booking-picker.js"></script>
+    <script src="/js/booking-flow.js"></script>
   </body>
 </html>

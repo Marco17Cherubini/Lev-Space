@@ -1,245 +1,128 @@
-// Gestione Clienti: stato VIP e BAN con modifiche confermate in blocco
-let allUsers = [];
-let originalStatus = {}; // { email: { vip: bool, banned: bool } }
-let pendingChanges = {}; // { email: { vip?: bool, banned?: bool } }
+// Clienti: ricerca, filtri e stato VIP / sospensione (BAN). Ogni interruttore invia
+// il valore esplicito (PUT { vip: true }): un doppio tocco o un retry non invertono lo
+// stato. La sospensione chiede conferma, la riattivazione no.
+(async function () {
+  if (!(await requireAuth({ admin: true }))) return;
 
-// Carica utenti
-async function loadUsers() {
-  try {
-    const data = await apiRequest('/admin/users');
-    allUsers = data.users || [];
+  const list = document.querySelector('[data-clients]');
+  const search = document.getElementById('client-search');
+  const result = document.querySelector('[data-result]');
+  let users = [];
 
-    // Salva stato originale
-    allUsers.forEach(user => {
-      originalStatus[user.email] = {
-        vip: user.vip === '1' || user.vip === 1 || user.vip === true,
-        banned: user.banned === '1' || user.banned === 1 || user.banned === true
-      };
+  const isOn = value => value === true || value === '1' || value === 1;
+  const filterValue = () => document.querySelector('[data-filter] input:checked').value;
+
+  async function load() {
+    try {
+      users = (await apiRequest('/admin/users', { sessionRequired: true })).users.map(u => ({
+        ...u,
+        vip: isOn(u.vip),
+        banned: isOn(u.banned),
+        guest: isOn(u.isGuest)
+      }));
+      users.sort((a, b) => `${a.cognome} ${a.nome}`.localeCompare(`${b.cognome} ${b.nome}`, 'it'));
+      render();
+    } catch (error) {
+      list.innerHTML = `<li class="state"><p>${escapeHtml(error.message)}</p></li>`;
+    }
+  }
+
+  function counts() {
+    const vip = users.filter(u => u.vip).length;
+    const banned = users.filter(u => u.banned).length;
+    const guests = users.filter(u => u.guest).length;
+    const n = (count, one, many) => `${count} ${count === 1 ? one : many}`;
+    document.querySelector('[data-counts]').textContent = [
+      n(users.length, 'cliente', 'clienti'),
+      `${vip} VIP`,
+      n(banned, 'sospeso', 'sospesi'),
+      n(guests, 'ospite senza account', 'ospiti senza account')
+    ].join(' · ');
+  }
+
+  function render() {
+    counts();
+    const q = search.value.trim().toLowerCase();
+    const filter = filterValue();
+    const shown = users.filter(u => {
+      const text = `${u.nome} ${u.cognome} ${u.cognome} ${u.nome} ${u.email}`.toLowerCase();
+      if (q && !text.includes(q)) return false;
+      if (filter === 'vip') return u.vip;
+      if (filter === 'banned') return u.banned;
+      if (filter === 'guest') return u.guest;
+      return true;
     });
-
-    pendingChanges = {};
-    renderUsers(allUsers);
-    updateConfirmBar();
-  } catch (error) {
-    console.error('Errore:', error);
-    document.getElementById('users-list').innerHTML =
-      '<div class="no-users">Errore nel caricamento degli utenti</div>';
-  }
-}
-
-// Ottieni stato corrente (originale + pending)
-function getCurrentStatus(email) {
-  const original = originalStatus[email] || { vip: false, banned: false };
-  const pending = pendingChanges[email] || {};
-  return {
-    vip: Object.hasOwn(pending, 'vip') ? pending.vip : original.vip,
-    banned: Object.hasOwn(pending, 'banned') ? pending.banned : original.banned
-  };
-}
-
-// Renderizza lista utenti
-function renderUsers(users) {
-  const container = document.getElementById('users-list');
-  const countEl = document.getElementById('users-count');
-
-  // Conta VIP e bannati
-  let vipCount = 0,
-    bannedCount = 0;
-  users.forEach(u => {
-    const status = getCurrentStatus(u.email);
-    if (status.vip) vipCount++;
-    if (status.banned) bannedCount++;
-  });
-
-  countEl.textContent = `${users.length} clienti (${vipCount} VIP, ${bannedCount} bannati)`;
-
-  if (users.length === 0) {
-    container.innerHTML = '<div class="no-users">Nessun cliente trovato</div>';
-    return;
-  }
-
-  container.innerHTML = users
-    .map(user => {
-      const original = originalStatus[user.email] || { vip: false, banned: false };
-      const current = getCurrentStatus(user.email);
-      const pending = pendingChanges[user.email] || {};
-
-      // Determina classi e badge pendenti
-      let pendingClass = '';
-      let pendingBadges = '';
-
-      if (Object.hasOwn(pending, 'vip')) {
-        if (pending.vip && !original.vip) {
-          pendingClass += ' pending-vip-add';
-          pendingBadges += '<span class="pending-badge vip-add">+ VIP</span>';
-        } else if (!pending.vip && original.vip) {
-          pendingClass += ' pending-vip-remove';
-          pendingBadges += '<span class="pending-badge vip-remove">- VIP</span>';
-        }
-      }
-
-      if (Object.hasOwn(pending, 'banned')) {
-        if (pending.banned && !original.banned) {
-          pendingClass += ' pending-ban-add';
-          pendingBadges += '<span class="pending-badge ban-add">+ BAN</span>';
-        } else if (!pending.banned && original.banned) {
-          pendingClass += ' pending-ban-remove';
-          pendingBadges += '<span class="pending-badge ban-remove">- BAN</span>';
-        }
-      }
-
-      // Badge attuali
-      let currentBadges = '';
-      if (current.vip) currentBadges += '<span class="badge badge-vip">VIP</span>';
-      if (current.banned) currentBadges += '<span class="badge badge-banned">BAN</span>';
-
-      return `
-              <div class="user-item${pendingClass}" data-email="${escapeHtml(user.email)}">
-                  <div class="user-info">
-                      <span class="user-name">${escapeHtml(user.cognome)} ${escapeHtml(user.nome)}</span>
-                      <div class="user-badges">${currentBadges}</div>
-                      ${pendingBadges}
-                  </div>
-                  <div class="user-actions">
-                      <div class="action-group">
-                          <span class="action-label vip">VIP</span>
-                          <input type="checkbox" class="action-checkbox vip" 
-                                 data-email="${escapeHtml(user.email)}" data-type="vip"
-                                 aria-label="VIP: ${escapeHtml(user.cognome)} ${escapeHtml(user.nome)}"
-                                 ${current.vip ? 'checked' : ''}>
-                      </div>
-                      <div class="action-group">
-                          <span class="action-label ban">BAN</span>
-                          <input type="checkbox" class="action-checkbox ban" 
-                                 data-email="${escapeHtml(user.email)}" data-type="banned"
-                                 aria-label="BAN: ${escapeHtml(user.cognome)} ${escapeHtml(user.nome)}"
-                                 ${current.banned ? 'checked' : ''}>
-                      </div>
-                  </div>
-              </div>
-          `;
-    })
-    .join('');
-
-  // Event listeners per checkbox
-  document.querySelectorAll('.action-checkbox').forEach(checkbox => {
-    checkbox.addEventListener('change', handleCheckboxChange);
-  });
-}
-
-// Gestisce cambio checkbox
-function handleCheckboxChange(e) {
-  const email = e.target.dataset.email;
-  const type = e.target.dataset.type; // 'vip' o 'banned'
-  const newValue = e.target.checked;
-  const originalValue = originalStatus[email]?.[type] || false;
-
-  if (!pendingChanges[email]) {
-    pendingChanges[email] = {};
-  }
-
-  // Se il nuovo valore è uguale all'originale, rimuovi dalle modifiche pendenti
-  if (newValue === originalValue) {
-    delete pendingChanges[email][type];
-    // Se non ci sono più modifiche per questo utente, rimuovi l'oggetto
-    if (Object.keys(pendingChanges[email]).length === 0) {
-      delete pendingChanges[email];
+    result.textContent = q || filter !== 'all' ? `${shown.length} risultati` : '';
+    if (shown.length === 0) {
+      list.innerHTML = '<li class="state"><p>Nessun cliente corrisponde alla ricerca.</p></li>';
+      return;
     }
-  } else {
-    pendingChanges[email][type] = newValue;
+    list.innerHTML = shown
+      .map(u => {
+        const id = encodeURIComponent(u.email);
+        const tags = [
+          u.guest ? '<span class="tag">Ospite</span>' : '',
+          u.banned ? '<span class="tag tag--accent">Sospeso</span>' : ''
+        ].join('');
+        return `<li class="client${u.banned ? ' is-banned' : ''}">
+            <div class="client__who">
+              <p class="client__name">${escapeHtml(`${u.cognome} ${u.nome}`)} ${tags}</p>
+              <p class="client__contact muted">${escapeHtml(u.email)}${u.telefono ? ` · <a href="tel:${escapeHtml(u.telefono.replace(/\s/g, ''))}">${escapeHtml(u.telefono)}</a>` : ''}</p>
+            </div>
+            <div class="client__flags">
+              <label class="switch"><input type="checkbox" role="switch" data-flag="vip" data-email="${id}" ${u.vip ? 'checked' : ''} />VIP</label>
+              <label class="switch switch--danger"><input type="checkbox" role="switch" data-flag="banned" data-email="${id}" ${u.banned ? 'checked' : ''} />Sospeso</label>
+            </div>
+          </li>`;
+      })
+      .join('');
   }
 
-  // Re-render
-  const query = document.getElementById('search-input').value.toLowerCase().trim();
-  const filtered = query
-    ? allUsers.filter(
-        user =>
-          user.nome.toLowerCase().includes(query) || user.cognome.toLowerCase().includes(query)
-      )
-    : allUsers;
-  renderUsers(filtered);
-  updateConfirmBar();
-}
+  list.addEventListener('change', async event => {
+    const input = event.target.closest('[data-flag]');
+    if (!input) return;
+    const email = decodeURIComponent(input.dataset.email);
+    const flag = input.dataset.flag;
+    const value = input.checked;
+    const user = users.find(u => u.email === email);
+    const name = `${user.nome} ${user.cognome}`;
 
-// Aggiorna barra conferma
-function updateConfirmBar() {
-  const bar = document.getElementById('confirm-bar');
-  const countEl = document.getElementById('changes-count');
-
-  let changeCount = 0;
-  Object.values(pendingChanges).forEach(changes => {
-    changeCount += Object.keys(changes).length;
-  });
-
-  if (changeCount > 0) {
-    bar.classList.add('visible');
-    countEl.textContent = changeCount === 1 ? '1 modifica' : `${changeCount} modifiche`;
-  } else {
-    bar.classList.remove('visible');
-  }
-}
-
-// Conferma tutte le modifiche
-async function confirmChanges() {
-  const confirmBtn = document.getElementById('confirm-changes-btn');
-  confirmBtn.disabled = true;
-  confirmBtn.textContent = 'Salvataggio...';
-
-  try {
-    // Esegui tutte le modifiche
-    for (const [email, changes] of Object.entries(pendingChanges)) {
-      if (Object.hasOwn(changes, 'vip')) {
-        await apiRequest(`/admin/users/${encodeURIComponent(email)}/vip`, { method: 'PUT' });
-      }
-      if (Object.hasOwn(changes, 'banned')) {
-        await apiRequest(`/admin/users/${encodeURIComponent(email)}/banned`, { method: 'PUT' });
+    if (flag === 'banned' && value) {
+      const ok = await Sheet.confirm({
+        title: `Sospendere ${name}?`,
+        message:
+          'Non potrà più accedere né prenotare, nemmeno come ospite con questa email. Le sessioni aperte si chiudono subito. Gli appuntamenti già fissati restano in agenda.',
+        confirmLabel: 'Sì, sospendi'
+      });
+      if (!ok) {
+        input.checked = false;
+        return;
       }
     }
 
-    // Ricarica utenti per avere stato aggiornato
-    await loadUsers();
-  } catch (error) {
-    console.error('Errore:', error);
-    showToast('Errore nel salvataggio delle modifiche: ' + error.message);
-  } finally {
-    confirmBtn.disabled = false;
-    confirmBtn.textContent = 'Conferma';
-  }
-}
+    input.disabled = true;
+    try {
+      const response = await apiRequest(`/admin/users/${encodeURIComponent(email)}/${flag}`, {
+        ...jsonBody('PUT', { [flag]: value }),
+        sessionRequired: true
+      });
+      user[flag] = response[flag];
+      const labels = {
+        vip: value ? `${name} è VIP` : `${name} non è più VIP`,
+        banned: value ? `${name} è sospeso` : `${name} può di nuovo prenotare`
+      };
+      showToast(labels[flag], 'success');
+      render();
+    } catch (error) {
+      input.checked = !value;
+      input.disabled = false;
+      showToast(error.message);
+    }
+  });
 
-// Annulla modifiche
-function cancelChanges() {
-  pendingChanges = {};
-  const query = document.getElementById('search-input').value.toLowerCase().trim();
-  const filtered = query
-    ? allUsers.filter(
-        user =>
-          user.nome.toLowerCase().includes(query) || user.cognome.toLowerCase().includes(query)
-      )
-    : allUsers;
-  renderUsers(filtered);
-  updateConfirmBar();
-}
-
-// Ricerca
-document.getElementById('search-input').addEventListener('input', e => {
-  const query = e.target.value.toLowerCase().trim();
-
-  if (!query) {
-    renderUsers(allUsers);
-    return;
-  }
-
-  const filtered = allUsers.filter(
-    user => user.nome.toLowerCase().includes(query) || user.cognome.toLowerCase().includes(query)
-  );
-
-  renderUsers(filtered);
-});
-
-// Event listeners bottoni conferma
-document.getElementById('confirm-changes-btn').addEventListener('click', confirmChanges);
-document.getElementById('cancel-changes-btn').addEventListener('click', cancelChanges);
-
-// Init
-requireAuth({ admin: true }).then(user => user && loadUsers());
+  search.addEventListener('input', render);
+  document
+    .querySelectorAll('[data-filter] input')
+    .forEach(r => r.addEventListener('change', render));
+  load();
+})();

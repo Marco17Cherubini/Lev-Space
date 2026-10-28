@@ -1,1192 +1,619 @@
-let currentWeekStart = null;
-let allBookings = [];
-let allUsers = [];
-let allHolidays = [];
-let selectedSlot = { date: null, time: null };
-let selectedBooking = null;
-let holidayMode = false;
-let selectedHolidaySlots = []; // Slot selezionati per aggiunta/rimozione ferie
+// Agenda del barbiere: vista giorno (telefono) e settimana, inserimento, dettaglio,
+// spostamento (azione esplicita e trascinamento su desktop), cancellazione e ferie.
+// Slot, prenotazioni e ferie arrivano tutti da GET /api/admin/schedule.
+(async function () {
+  if (!(await requireAuth({ admin: true }))) return;
 
-// Modal instances (initialized in init())
-let bookingModal = null;
-let detailModal = null;
-let deleteConfirmModal = null;
+  const VIEW_KEY = 'lev-space-agenda-view';
+  const $ = selector => document.querySelector(selector);
+  const agendaEl = $('[data-agenda]');
+  const stripEl = $('[data-strip]');
+  const holidayBar = $('[data-holiday-bar]');
+  const holidayButton = $('[data-holiday-mode]');
+  const bookingSheet = document.getElementById('booking-sheet');
+  const newSheet = document.getElementById('new-sheet');
+  const newForm = document.getElementById('new-form');
+  const moveForm = bookingSheet.querySelector('[data-move-form]');
 
-// Variabili per drag-select ferie
-let isDragging = false;
-let dragMode = null; // 'add' o 'remove' - determina se stiamo aggiungendo o rimuovendo ferie
+  const state = {
+    monday: mondayOf(todayISO()),
+    day: todayISO(),
+    view: readView(),
+    days: [],
+    holidayMode: false,
+    selected: new Set(),
+    current: null, // prenotazione aperta nel dettaglio
+    users: []
+  };
 
-// Variabili per drag-and-drop prenotazioni
-let isDraggingBooking = false;
-let draggedBooking = null;
-let dragGhostElement = null;
-let longPressTimer = null;
-let touchStartX = 0;
-let touchStartY = 0;
-
-let businessHours = null;
-let allTimeSlots = [];
-
-// Funzione per ottenere gli slot per un giorno (inclusi extra per admin)
-function getTimeSlotsForDate(date, includeExtra = true) {
-  const dayOfWeek = new Date(date).getDay();
-  const hours = businessHours.days[dayOfWeek];
-
-  if (!hours) return [];
-
-  let slots = [
-    ...(hours.morning ? hours.morning.slots : []),
-    ...(hours.afternoon ? hours.afternoon.slots : [])
-  ];
-
-  if (includeExtra && hours.vip) {
-    const extraSlots = hours.vip.slots || [];
-    if (dayOfWeek !== 0 && !slots.includes('08:00') && !extraSlots.includes('08:00')) {
-      slots = ['08:00', ...slots];
+  function readView() {
+    try {
+      const saved = localStorage.getItem(VIEW_KEY);
+      if (saved === 'day' || saved === 'week') return saved;
+    } catch (error) {
+      // preferenza non disponibile: si decide dalla larghezza
     }
-    slots = [...slots, ...extraSlots];
-  } else if (includeExtra && !hours.vip) {
-    const preOpeningSlot = ['08:00'];
-    const extraSlotsWeekday = [
-      '18:00',
-      '18:45',
-      '19:30',
-      '20:15',
-      '21:00',
-      '21:45',
-      '22:30',
-      '23:15'
-    ];
-    const extraSlotsSaturday = [
-      '15:30',
-      '16:15',
-      '17:00',
-      '17:45',
-      '18:30',
-      '19:15',
-      '20:00',
-      '20:45',
-      '21:30',
-      '22:15',
-      '23:00'
-    ];
-    const extraSlots = dayOfWeek === 6 ? extraSlotsSaturday : extraSlotsWeekday;
-    slots = [...preOpeningSlot, ...slots, ...extraSlots];
+    return window.matchMedia('(min-width: 1024px)').matches ? 'week' : 'day';
   }
 
-  slots = [...new Set(slots)].sort();
-  return slots;
-}
+  const findDay = date => state.days.find(d => d.date === date);
+  const parseKey = value => value.split('|');
 
-// Inizializza logicamente allTimeSlots
-function initAllTimeSlots() {
-  const tempSet = new Set();
-  businessHours.daysOpen.forEach(day => {
-    const d = new Date();
-    const currentDay = d.getDay();
-    const distance = day - currentDay;
-    d.setDate(d.getDate() + distance);
-    const slots = getTimeSlotsForDate(d, true);
-    slots.forEach(s => tempSet.add(s));
-  });
-  allTimeSlots = Array.from(tempSet).sort();
-}
-// Giorni lavorativi (Lun-Sab = indici 0-5 nel nostro array)
-const workDays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+  // ==================== CARICAMENTO E DISEGNO ====================
 
-// Inizializzazione
-async function init() {
-  try {
-    if (!(await requireAuth({ admin: true }))) return;
-
-    // Imposta settimana corrente (inizia da lunedì)
-    currentWeekStart = getMonday(new Date());
-
-    const settingsRes = await apiRequest('/admin/settings/hours');
-    if (settingsRes && settingsRes.success) {
-      businessHours = settingsRes.businessHours;
-      initAllTimeSlots();
-    } else {
-      console.error('Impossibile caricare businessHours');
-    }
-
-    // Carica utenti per autocompletamento
-    await loadUsers();
-
-    // Carica ferie
-    await loadHolidays();
-
-    // Carica prenotazioni e renderizza
-    await loadBookings();
-    renderCalendar();
-
-    // Setup event listeners per modal
-    setupModalListeners();
-    setupAutocomplete();
-    setupHolidayMode();
-  } catch (error) {
-    console.error('Errore inizializzazione:', error);
-    window.location.href = '/login';
-  }
-}
-
-// Ottieni lunedì della settimana
-function getMonday(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-// Carica tutti gli utenti registrati
-async function loadUsers() {
-  try {
-    const response = await apiRequest('/admin/users');
-    if (response.success) {
-      allUsers = response.users;
-    }
-  } catch (error) {
-    console.error('Errore caricamento utenti:', error);
-    allUsers = [];
-  }
-}
-
-// Carica tutte le ferie
-async function loadHolidays() {
-  try {
-    const response = await apiRequest('/holidays');
-    if (response.success) {
-      allHolidays = response.holidays;
-    }
-  } catch (error) {
-    console.error('Errore caricamento ferie:', error);
-    allHolidays = [];
-  }
-}
-
-// Carica tutte le prenotazioni
-async function loadBookings() {
-  try {
-    const response = await apiRequest('/admin/bookings');
-    if (response.success) {
-      allBookings = response.bookings;
-    }
-  } catch (error) {
-    console.error('Errore caricamento prenotazioni:', error);
-    allBookings = [];
-  }
-}
-
-// Formatta data come YYYY-MM-DD (nome diverso da formatDate di utils.js, che produce testo)
-function toISODate(date) {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-// Formatta data per visualizzazione
-function formatDateDisplay(date) {
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  return `${dd}/${mm}`;
-}
-
-// Formatta data stringa per visualizzazione
-function formatDateStringDisplay(dateStr) {
-  const parts = dateStr.split('-');
-  return `${parts[2]}/${parts[1]}/${parts[0]}`;
-}
-
-// Render calendario settimanale
-function renderCalendar() {
-  const grid = document.getElementById('admin-calendar-grid');
-
-  // Rimuovi righe precedenti (mantieni solo header)
-  const existingRows = grid.querySelectorAll('.admin-time-header, .admin-cell');
-  existingRows.forEach(row => row.remove());
-
-  // Calcola le date della settimana (Lun-Sab)
-  const weekDates = [];
-  for (let i = 0; i <= 5; i++) {
-    // 0=Lun, 1=Mar, 2=Mer, 3=Gio, 4=Ven, 5=Sab
-    const date = new Date(currentWeekStart);
-    date.setDate(date.getDate() + i);
-    weekDates.push(date);
-  }
-
-  // Aggiorna header con date
-  weekDates.forEach((date, index) => {
-    const header = document.getElementById(`day-header-${index}`);
-    header.textContent = `${workDays[index]} ${formatDateDisplay(date)}`;
-  });
-
-  // Titolo settimana rimosso per maggiore spazio verticale calendario
-  // Genera righe per ogni orario (usa allTimeSlots per la griglia)
-  allTimeSlots.forEach(time => {
-    // Cella orario
-    const timeCell = document.createElement('div');
-    timeCell.className = 'admin-time-header';
-    timeCell.textContent = time;
-    grid.appendChild(timeCell);
-
-    // Celle per ogni giorno
-    weekDates.forEach(date => {
-      const cell = document.createElement('div');
-      cell.className = 'admin-cell';
-
-      const dateStr = toISODate(date);
-      const daySlots = getTimeSlotsForDate(date, true); // Include extra
-      const normalSlots = getTimeSlotsForDate(date, false);
-      const isValidSlot = daySlots.includes(time);
-      const isExtraSlot = isValidSlot && !normalSlots.includes(time);
-      const booking = findBooking(dateStr, time);
-      const isHoliday = findHoliday(dateStr, time);
-      const isSelectedForHoliday = selectedHolidaySlots.some(
-        s => s.giorno === dateStr && s.ora === time
+  async function load() {
+    agendaEl.setAttribute('aria-busy', 'true');
+    try {
+      const { days } = await apiRequest(
+        `/admin/schedule?from=${state.monday}&to=${addDays(state.monday, 6)}`,
+        { sessionRequired: true }
       );
+      state.days = days;
+      render();
+    } catch (error) {
+      agendaEl.innerHTML = `<div class="state"><p>${escapeHtml(error.message)}</p>
+        <button type="button" class="btn" data-retry>Riprova</button></div>`;
+    } finally {
+      agendaEl.removeAttribute('aria-busy');
+    }
+  }
 
-      // Slot dati
-      cell.dataset.date = dateStr;
-      cell.dataset.time = time;
+  function render() {
+    const sunday = addDays(state.monday, 6);
+    $('[data-range]').textContent = `${formatDateShort(state.monday)} – ${formatDateShort(sunday)}`;
+    document.querySelectorAll('[data-view] input').forEach(input => {
+      input.checked = input.value === state.view;
+    });
+    stripEl.hidden = state.view !== 'day';
+    stripEl.innerHTML = AgendaView.strip(state.days, state.day);
+    const opts = { holidayMode: state.holidayMode, selected: state.selected };
+    agendaEl.innerHTML =
+      state.view === 'day'
+        ? AgendaView.day(findDay(state.day), opts)
+        : AgendaView.week(state.days, opts);
+    updateHolidayBar();
+  }
 
-      // Marca slot extra con classe speciale
-      if (isExtraSlot) {
-        cell.classList.add('extra-slot');
+  function goToWeek(delta) {
+    if (delta === 0) {
+      state.monday = mondayOf(todayISO());
+      state.day = todayISO();
+    } else {
+      state.monday = addDays(state.monday, delta * 7);
+      // Si resta sullo stesso giorno della settimana
+      state.day = addDays(state.day, delta * 7);
+    }
+    state.selected.clear();
+    load();
+  }
+
+  document.querySelectorAll('[data-week]').forEach(button => {
+    button.addEventListener('click', () => goToWeek(Number(button.dataset.week)));
+  });
+  document.querySelectorAll('[data-view] input').forEach(input => {
+    input.addEventListener('change', () => {
+      state.view = input.value;
+      try {
+        localStorage.setItem(VIEW_KEY, state.view);
+      } catch (error) {
+        // solo per questa visita
       }
-
-      // Se lo slot non è valido per questo giorno (es. sabato dopo le 23:00)
-      // Removed isValidSlot block for admin freedom
-
-      if (holidayMode) {
-        // ===== MODALITÀ FERIE =====
-        if (isSelectedForHoliday) {
-          cell.classList.add('holiday-selected');
-          cell.innerHTML = '<div class="no-booking">Selezionato</div>';
-        } else if (isHoliday) {
-          cell.classList.add('is-holiday');
-          cell.innerHTML = '<div class="holiday-label">FERIE (rimuovi)</div>';
-        } else if (booking) {
-          // Prenotazione esistente - non può essere ferie
-          cell.classList.add('has-booking');
-          if (booking.tipo === 'ricorrente') cell.classList.add('has-recurring');
-          cell.innerHTML = renderBookingItem(booking, time);
-        } else {
-          cell.innerHTML = '<div class="no-booking">+ Ferie</div>';
-        }
-
-        // Solo celle senza prenotazione possono essere selezionate per ferie
-        if (!booking) {
-          // Drag-select: mousedown inizia il drag
-          cell.addEventListener('mousedown', e => {
-            e.preventDefault();
-            startDrag(dateStr, time, isHoliday);
-          });
-
-          // Drag-select: mouseenter durante il drag
-          cell.addEventListener('mouseenter', () => {
-            if (isDragging) {
-              addToDragSelection(dateStr, time, isHoliday);
-            }
-          });
-
-          // Da tastiera (Invio/Spazio) si seleziona una cella alla volta
-          cell.addEventListener('click', e => {
-            if (e.detail !== 0) return;
-            startDrag(dateStr, time, isHoliday);
-            endDrag();
-          });
-          makeSelectable(
-            cell,
-            `${isHoliday ? 'Rimuovi ferie' : 'Segna come ferie'}: ${formatDate(dateStr)} ore ${time}`
-          );
-        }
-      } else if (isHoliday) {
-        // ===== MODALITÀ NORMALE - FERIE =====
-        cell.classList.add('is-holiday');
-        cell.innerHTML = '<div class="holiday-label">FERIE</div>';
-      } else if (booking) {
-        cell.classList.add('has-booking');
-        if (booking.tipo === 'ricorrente') cell.classList.add('has-recurring');
-        cell.innerHTML = renderBookingItem(booking, time);
-        makeSelectable(
-          cell,
-          `Appuntamento di ${booking.cognome} ${booking.nome}, ${formatDate(dateStr)} ore ${time}`
-        );
-
-        // Drag-and-drop: inizia drag su mousedown sulla prenotazione
-        cell.addEventListener('mousedown', e => {
-          if (holidayMode) return;
-          e.preventDefault();
-          startBookingDrag(booking, e);
-        });
-
-        // Drag-and-drop: supporto TOUCH (Long Press)
-        cell.addEventListener(
-          'touchstart',
-          e => {
-            if (holidayMode) return;
-            if (e.touches.length !== 1) return;
-
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-
-            // Avvia timer per long press (500ms)
-            longPressTimer = setTimeout(() => {
-              e.preventDefault();
-              startBookingDrag(booking, e.touches[0]);
-
-              // Feedback vibratile se supportato
-              if (navigator.vibrate) navigator.vibrate(50);
-            }, 500);
-          },
-          { passive: false }
-        );
-
-        cell.addEventListener(
-          'touchmove',
-          e => {
-            // Se ci si muove troppo prima del long press, annulla
-            if (longPressTimer && !isDraggingBooking) {
-              const moveX = e.touches[0].clientX;
-              const moveY = e.touches[0].clientY;
-              if (Math.abs(moveX - touchStartX) > 10 || Math.abs(moveY - touchStartY) > 10) {
-                clearTimeout(longPressTimer);
-                longPressTimer = null;
-              }
-            }
-          },
-          { passive: false }
-        );
-
-        cell.addEventListener('touchend', () => {
-          if (longPressTimer) {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-          }
-        });
-
-        cell.addEventListener('touchcancel', () => {
-          if (longPressTimer) {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-          }
-        });
-
-        // Click su cella con prenotazione -> mostra dettagli (solo se non era drag)
-        cell.addEventListener('click', e => {
-          if (isDraggingBooking) return;
-          e.stopPropagation();
-          showDetailModal(booking);
-        });
-      } else {
-        // ===== CELLA VUOTA - MODALITÀ NORMALE =====
-        cell.innerHTML = '<div class="no-booking">+ Aggiungi</div>';
-        cell.classList.add('droppable');
-        makeSelectable(cell, `Aggiungi appuntamento: ${formatDate(dateStr)} ore ${time}`);
-
-        // Drop target: evidenzia durante drag
-        cell.addEventListener('mouseenter', () => {
-          if (isDraggingBooking) {
-            cell.classList.add('drop-target');
-          }
-        });
-
-        cell.addEventListener('mouseleave', () => {
-          cell.classList.remove('drop-target');
-        });
-
-        // Drop: rilascia prenotazione
-        cell.addEventListener('mouseup', () => {
-          if (isDraggingBooking && draggedBooking) {
-            dropBooking(dateStr, time);
-          }
-        });
-
-        cell.addEventListener('click', () => {
-          if (isDraggingBooking) return;
-          openBookingModal(dateStr, time);
-        });
-      }
-
-      grid.appendChild(cell);
+      render();
     });
   });
-}
+  stripEl.addEventListener('click', event => {
+    const button = event.target.closest('[data-day]');
+    if (!button) return;
+    state.day = button.dataset.day;
+    render();
+    stripEl.querySelector(`[data-day="${state.day}"]`).focus();
+  });
 
-// Trova ferie per data e ora
-function findHoliday(date, time) {
-  return allHolidays.find(h => h.giorno === date && h.ora === time);
-}
+  // ==================== CLIC NELL'AGENDA ====================
 
-// Trova prenotazione per data e ora
-function findBooking(date, time) {
-  return allBookings.find(b => b.giorno === date && b.ora === time);
-}
+  agendaEl.addEventListener('click', event => {
+    if (event.target.closest('[data-retry]')) return load();
+    if (event.target.closest('[data-new-day]')) return openNew(state.day, null);
+    const booking = event.target.closest('[data-booking]');
+    if (booking) return openBooking(...parseKey(booking.dataset.booking));
+    const add = event.target.closest('[data-add]');
+    if (add) return openNew(...parseKey(add.dataset.add));
+    return undefined;
+  });
 
-// Render singolo appuntamento
-function renderBookingItem(booking, time) {
-  const isRecurring = booking.tipo === 'ricorrente';
-  const itemClass = isRecurring ? 'booking-item booking-item--recurring' : 'booking-item';
-  const recurringBadge = isRecurring ? '<div class="recurring-badge">↻ Ricorrente</div>' : '';
+  agendaEl.addEventListener('change', event => {
+    const box = event.target.closest('[data-hsel]');
+    if (!box) return;
+    if (box.checked) state.selected.add(box.dataset.hsel);
+    else state.selected.delete(box.dataset.hsel);
+    updateHolidayBar();
+  });
 
-  return `
-    <div class="${itemClass}" data-giorno="${escapeHtml(booking.giorno)}" data-ora="${escapeHtml(booking.ora)}">
-      ${recurringBadge}
-      <div class="name">${escapeHtml(booking.nome)} ${escapeHtml(booking.cognome)}</div>
-      <div class="duration">Durata: ${APPOINTMENT_MINUTES} min.</div>
-      <div class="service">Orario: ${escapeHtml(time)}</div>
-      <div class="contact">
-        ${escapeHtml(booking.email)}<br>
-        ${escapeHtml(booking.telefono)}
-      </div>
-    </div>
-  `;
-}
+  // ==================== DETTAGLIO, SPOSTAMENTO, CANCELLAZIONE ====================
 
-// ==================== DRAG-AND-DROP PRENOTAZIONI ====================
-
-function startBookingDrag(booking, event) {
-  isDraggingBooking = true;
-  draggedBooking = booking;
-
-  // Crea elemento ghost che segue il mouse
-  dragGhostElement = document.createElement('div');
-  dragGhostElement.className = 'booking-drag-ghost';
-  dragGhostElement.innerHTML = `
-    <div class="name">${escapeHtml(booking.nome)} ${escapeHtml(booking.cognome)}</div>
-  `;
-  document.body.appendChild(dragGhostElement);
-
-  // Posiziona ghost al mouse
-  updateGhostPosition(event);
-
-  // Aggiungi classe alla cella originale
-  const originalCell = document.querySelector(
-    `[data-date="${booking.giorno}"][data-time="${booking.ora}"]`
-  );
-  if (originalCell) {
-    originalCell.classList.add('dragging-source');
+  function bookingAt(date, time) {
+    const day = findDay(date);
+    return day && day.bookings.find(b => b.ora === time);
   }
 
-  // Aggiungi classe al body per cambiare cursore
-  document.body.classList.add('is-dragging-booking');
-}
-
-function updateGhostPosition(event) {
-  if (dragGhostElement) {
-    dragGhostElement.style.left = event.clientX + 10 + 'px';
-    dragGhostElement.style.top = event.clientY + 10 + 'px';
-  }
-}
-
-function endBookingDrag(snapBack = false) {
-  const sourceCell = document.querySelector('.dragging-source');
-
-  // Snap-back animation se richiesto
-  if (snapBack && sourceCell) {
-    sourceCell.classList.add('snap-back-animation');
-    setTimeout(() => {
-      sourceCell.classList.remove('snap-back-animation');
-    }, 400);
-  }
-
-  isDraggingBooking = false;
-  draggedBooking = null;
-
-  // Rimuovi ghost
-  if (dragGhostElement) {
-    dragGhostElement.remove();
-    dragGhostElement = null;
+  function openBooking(date, time) {
+    const b = bookingAt(date, time);
+    if (!b) return;
+    state.current = b;
+    const series = b.tipo === 'ricorrente';
+    bookingSheet.querySelector('[data-b-name]').textContent = AgendaView.clientName(b);
+    bookingSheet.querySelector('[data-b-kind]').textContent = series
+      ? 'Appuntamento di una serie'
+      : 'Appuntamento';
+    bookingSheet.querySelector('[data-b-day]').textContent = formatDayMonth(b.giorno);
+    bookingSheet.querySelector('[data-b-time]').textContent = b.ora;
+    const contacts = [
+      b.telefono && [
+        'Telefono',
+        `<a href="tel:${escapeHtml(b.telefono.replace(/\s/g, ''))}">${escapeHtml(b.telefono)}</a>`
+      ],
+      b.email && ['Email', `<a href="mailto:${escapeHtml(b.email)}">${escapeHtml(b.email)}</a>`]
+    ].filter(Boolean);
+    bookingSheet.querySelector('[data-b-contacts]').innerHTML = contacts.length
+      ? contacts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')
+      : '<div><dt>Contatti</dt><dd class="muted">Nessun recapito registrato</dd></div>';
+    bookingSheet.querySelector('[data-b-cancel-series]').hidden = !series;
+    bookingSheet.querySelector('[data-b-actions]').hidden = false;
+    moveForm.hidden = true;
+    Sheet.open(bookingSheet);
   }
 
-  // Rimuovi classi
-  document.body.classList.remove('is-dragging-booking');
-  document
-    .querySelectorAll('.dragging-source')
-    .forEach(el => el.classList.remove('dragging-source'));
-  document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
-  document.querySelectorAll('.drop-invalid').forEach(el => el.classList.remove('drop-invalid'));
-}
-
-// Verifica se uno slot e disponibile (non occupato e non in ferie)
-function isSlotAvailable(giorno, ora) {
-  const hasBooking = allBookings.some(b => b.giorno === giorno && b.ora === ora);
-  const hasHoliday = allHolidays.some(h => h.giorno === giorno && h.ora === ora);
-  return !hasBooking && !hasHoliday;
-}
-
-// Mostra feedback visivo per drop non valido
-function showDropFeedback(message, isError = false) {
-  // Crea elemento feedback
-  const feedback = document.createElement('div');
-  feedback.className = `drop-feedback ${isError ? 'error' : 'success'}`;
-  feedback.textContent = message;
-  document.body.appendChild(feedback);
-
-  // Rimuovi dopo animazione
-  setTimeout(() => {
-    feedback.classList.add('fade-out');
-    setTimeout(() => feedback.remove(), 300);
-  }, 1500);
-}
-
-// Sposta l'appuntamento aperto nel dettaglio: alternativa al trascinamento
-async function moveSelectedBooking(event) {
-  event.preventDefault();
-  if (!selectedBooking) return;
-
-  const newGiorno = document.getElementById('move-date').value;
-  const newOra = document.getElementById('move-time').value;
-  if (newGiorno === selectedBooking.giorno && newOra === selectedBooking.ora) {
-    detailModal.close();
-    return;
+  // Orari liberi di un giorno per lo spostamento o l'inserimento (extra compresi)
+  async function freeTimes(date, keep) {
+    const { days } = await apiRequest(`/admin/schedule?from=${date}&to=${date}`, {
+      sessionRequired: true
+    });
+    const [day] = days;
+    const taken = new Set([...day.bookings.map(b => b.ora), ...day.holidays]);
+    return day.slots
+      .filter(t => !taken.has(t) || t === keep)
+      .map(t => ({
+        time: t,
+        extra: !day.standardSlots.includes(t)
+      }));
   }
 
-  try {
+  async function fillTimes(select, date, { keep, selected, allowCustom = false } = {}) {
+    select.innerHTML = '<option value="">Carico gli orari…</option>';
+    select.disabled = true;
+    try {
+      const times = await freeTimes(date, keep);
+      const options = times.map(
+        t =>
+          `<option value="${t.time}"${t.time === selected ? ' selected' : ''}>${t.time}${t.extra ? ' (extra)' : ''}</option>`
+      );
+      if (options.length === 0) options.push('<option value="">Nessun orario libero</option>');
+      if (allowCustom) options.push('<option value="custom">Altro orario…</option>');
+      select.innerHTML = options.join('');
+    } catch (error) {
+      select.innerHTML = `<option value="">${escapeHtml(error.message)}</option>`;
+    } finally {
+      select.disabled = false;
+    }
+  }
+
+  bookingSheet.querySelector('[data-b-move]').addEventListener('click', async () => {
+    const b = state.current;
+    bookingSheet.querySelector('[data-b-actions]').hidden = true;
+    moveForm.hidden = false;
+    showMessage(moveForm.querySelector('[data-move-error]'), '');
+    const dateInput = document.getElementById('move-date');
+    dateInput.value = b.giorno;
+    dateInput.focus();
+    await fillTimes(document.getElementById('move-time'), b.giorno, {
+      keep: b.ora,
+      selected: b.ora
+    });
+  });
+  document.getElementById('move-date').addEventListener('change', event => {
+    if (event.target.value) fillTimes(document.getElementById('move-time'), event.target.value);
+  });
+  moveForm.querySelector('[data-move-cancel]').addEventListener('click', () => {
+    moveForm.hidden = true;
+    bookingSheet.querySelector('[data-b-actions]').hidden = false;
+    bookingSheet.querySelector('[data-b-move]').focus();
+  });
+
+  async function moveBooking(b, newGiorno, newOra) {
     await apiRequest('/admin/bookings', {
-      method: 'PUT',
-      body: JSON.stringify({
-        oldGiorno: selectedBooking.giorno,
-        oldOra: selectedBooking.ora,
-        newGiorno,
-        newOra
-      })
+      ...jsonBody('PUT', { oldGiorno: b.giorno, oldOra: b.ora, newGiorno, newOra }),
+      sessionRequired: true
     });
-    detailModal.close();
-    showToast('Prenotazione spostata', 'success');
-    await loadBookings();
-    renderCalendar();
-    // Il calendario è stato ridisegnato: il focus va sulla cella di arrivo (se visibile)
-    document.querySelector(`.admin-cell[data-date="${newGiorno}"][data-time="${newOra}"]`)?.focus();
-  } catch (error) {
-    showToast('Spostamento non riuscito: ' + error.message);
-  }
-}
-
-async function dropBooking(newGiorno, newOra) {
-  if (!draggedBooking) return;
-
-  const oldGiorno = draggedBooking.giorno;
-  const oldOra = draggedBooking.ora;
-
-  // Se lo slot e lo stesso, non fare nulla
-  if (oldGiorno === newGiorno && oldOra === newOra) {
-    endBookingDrag();
-    return;
-  }
-
-  // Validazione client-side: verifica disponibilita slot
-  if (!isSlotAvailable(newGiorno, newOra)) {
-    // Slot occupato: snap-back con feedback visivo
-    showDropFeedback('Slot occupato', true);
-    endBookingDrag(true); // true = attiva snap-back
-    return;
-  }
-
-  try {
-    // Aggiornamento asincrono del database
-    const response = await apiRequest('/admin/bookings', {
-      method: 'PUT',
-      body: JSON.stringify({
-        oldGiorno,
-        oldOra,
-        newGiorno,
-        newOra
-      })
-    });
-
-    if (response.success) {
-      showDropFeedback('Prenotazione spostata', false);
-      // Haptic feedback on successful drop
-      if (navigator.vibrate) navigator.vibrate(50);
-      endBookingDrag();
-      await loadBookings();
-      renderCalendar();
-    } else {
-      // Errore server: snap-back
-      showDropFeedback(response.error || 'Errore spostamento', true);
-      endBookingDrag(true);
-    }
-  } catch (error) {
-    // Errore connessione: snap-back
-    showDropFeedback('Errore: ' + error.message, true);
-    endBookingDrag(true);
-  }
-}
-
-// Event listener globali per drag prenotazioni
-document.addEventListener('mousemove', e => {
-  if (isDraggingBooking) {
-    updateGhostPosition(e);
-  }
-});
-
-document.addEventListener('mouseup', () => {
-  if (isDraggingBooking) {
-    endBookingDrag();
-  }
-});
-
-// Supporto Touch per Mobile (Global)
-document.addEventListener(
-  'touchmove',
-  e => {
-    if (isDraggingBooking) {
-      e.preventDefault(); // Previene lo scroll
-      updateGhostPosition(e.touches[0]);
-
-      // Identifica manualmente il target del drop
-      const touch = e.touches[0];
-      const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      const cell = target ? target.closest('.admin-cell') : null;
-
-      // Rimuovi highlight precedenti
-      document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
-
-      if (cell && cell.classList.contains('droppable')) {
-        cell.classList.add('drop-target');
-      }
-    }
-  },
-  { passive: false }
-);
-
-document.addEventListener('touchend', e => {
-  if (isDraggingBooking) {
-    e.preventDefault();
-
-    const touch = e.changedTouches[0];
-    const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    const cell = target ? target.closest('.admin-cell') : null;
-
-    if (cell && cell.classList.contains('droppable')) {
-      const date = cell.dataset.date;
-      const time = cell.dataset.time;
-      // Haptic feedback immediato al drop
-      if (navigator.vibrate) navigator.vibrate(50);
-      dropBooking(date, time);
-    } else {
-      // Vibrazione breve per drop non valido
-      if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
-      endBookingDrag(true); // Snap back se drop non valido
-    }
-  }
-});
-
-// ==================== MODAL INSERIMENTO ====================
-
-function openBookingModal(date, time) {
-  selectedSlot = { date, time };
-
-  // Reset form
-  document.getElementById('booking-form').reset();
-  document.getElementById('form-error').classList.add('hidden');
-  document.getElementById('suggestions-list').classList.add('hidden');
-
-  // Reset opzioni ricorrenza (tutte le modalità spente, dropdown nascosto)
-  document.querySelectorAll('.form-recurrence__checkbox').forEach(cb => {
-    cb.checked = false;
-  });
-  document.getElementById('recurrence-options').classList.add('hidden');
-
-  // Imposta titolo e sottotitolo
-  document.getElementById('modal-title').textContent = 'Nuovo Appuntamento';
-  document.getElementById('modal-date-display').textContent = formatDateStringDisplay(date);
-  document.getElementById('modal-time-display').textContent = time;
-
-  // Mostra modal using Modal class
-  bookingModal.open();
-
-  // Focus su cognome
-  setTimeout(() => {
-    document.getElementById('input-cognome').focus();
-  }, 100);
-}
-
-function closeBookingModal() {
-  bookingModal.close();
-}
-
-// ==================== MODAL DETTAGLIO ====================
-
-function showDetailModal(booking) {
-  selectedBooking = booking;
-
-  const tipoRow =
-    booking.tipo === 'ricorrente' ? '<div><strong>Tipo:</strong> Ricorrente</div>' : '';
-
-  document.getElementById('detail-content').innerHTML = `
-    <div><strong>Nome:</strong> ${escapeHtml(booking.nome)} ${escapeHtml(booking.cognome)}</div>
-    <div><strong>Data:</strong> ${escapeHtml(formatDateStringDisplay(booking.giorno))}</div>
-    <div><strong>Ora:</strong> ${escapeHtml(booking.ora)}</div>
-    <div><strong>Email:</strong> ${escapeHtml(booking.email)}</div>
-    <div><strong>Telefono:</strong> ${escapeHtml(booking.telefono)}</div>
-    ${tipoRow}
-  `;
-
-  document.getElementById('move-date').value = booking.giorno;
-  document.getElementById('move-time').value = booking.ora;
-  detailModal.open();
-}
-
-// ==================== MODAL CONFERMA CANCELLAZIONE ====================
-
-function showDeleteConfirmModal() {
-  if (!selectedBooking) return;
-
-  // Popola il modal di conferma
-  document.getElementById('delete-client-name').textContent =
-    `${selectedBooking.nome} ${selectedBooking.cognome}`;
-
-  document.getElementById('delete-booking-details').innerHTML = `
-    <div><strong>Data:</strong> ${escapeHtml(formatDateStringDisplay(selectedBooking.giorno))}</div>
-    <div><strong>Ora:</strong> ${escapeHtml(selectedBooking.ora)}</div>
-  `;
-
-  // Mostra la scelta singolo/serie solo per le prenotazioni ricorrenti
-  const scopeOptions = document.getElementById('delete-scope-options');
-  if (selectedBooking.tipo === 'ricorrente') {
-    const seriesCount = allBookings.filter(
-      b => b.token && b.token === selectedBooking.token && b.tipo === 'ricorrente'
-    ).length;
-    document.getElementById('delete-scope-series-label').textContent =
-      `Tutta la serie ricorrente (${seriesCount} appuntamenti)`;
-    // Default sull'opzione più sicura
-    document.querySelector('input[name="delete-scope"][value="single"]').checked = true;
-    scopeOptions.classList.remove('hidden');
-  } else {
-    scopeOptions.classList.add('hidden');
-  }
-
-  // Chiudi modal dettaglio e apri conferma
-  detailModal.close();
-  deleteConfirmModal.open();
-}
-
-function closeDeleteConfirmModal() {
-  deleteConfirmModal.close();
-}
-
-async function executeDelete() {
-  if (!selectedBooking) return;
-
-  try {
-    const deleteBtn = document.getElementById('delete-confirm');
-    deleteBtn.disabled = true;
-    deleteBtn.textContent = 'Cancellazione...';
-
-    // Determina l'ambito: per le ricorrenti l'admin può scegliere singolo o intera serie
-    const scopeInput = document.querySelector('input[name="delete-scope"]:checked');
-    const deleteSeries =
-      selectedBooking.tipo === 'ricorrente' && scopeInput && scopeInput.value === 'series';
-
-    const body = deleteSeries
-      ? { token: selectedBooking.token, scope: 'series' }
-      : { giorno: selectedBooking.giorno, ora: selectedBooking.ora };
-
-    const response = await apiRequest('/admin/bookings', {
-      method: 'DELETE',
-      body: JSON.stringify(body)
-    });
-
-    if (response.success) {
-      // Riabilita il pulsante prima di chiudere
-      const deleteBtn = document.getElementById('delete-confirm');
-      deleteBtn.disabled = false;
-      deleteBtn.textContent = 'Sì, Cancella';
-
-      // Riepilogo per la cancellazione dell'intera serie ricorrente
-      if (deleteSeries) {
-        showDropFeedback(`Serie ricorrente cancellata: ${response.eliminate} appuntamenti`);
-      }
-
-      closeDeleteConfirmModal();
-      selectedBooking = null;
-      await loadBookings();
-      renderCalendar();
-    }
-  } catch (error) {
-    showToast('Errore nella cancellazione: ' + error.message);
-    const deleteBtn = document.getElementById('delete-confirm');
-    deleteBtn.disabled = false;
-    deleteBtn.textContent = 'Sì, Cancella';
-  }
-}
-
-// ==================== AUTOCOMPLETAMENTO ====================
-
-function setupAutocomplete() {
-  const cognomeInput = document.getElementById('input-cognome');
-  const suggestionsList = document.getElementById('suggestions-list');
-
-  cognomeInput.addEventListener('input', () => {
-    const value = cognomeInput.value.trim().toLowerCase();
-
-    if (value.length < 2) {
-      suggestionsList.classList.add('hidden');
-      return;
-    }
-
-    // Cerca utenti che matchano il cognome
-    const matches = allUsers.filter(
-      user => user.cognome.toLowerCase().includes(value) || user.nome.toLowerCase().includes(value)
+    showToast(
+      `${AgendaView.clientName(b)} spostato a ${formatDateShort(newGiorno)}, ${newOra}`,
+      'success'
     );
+    if (newGiorno < state.monday || newGiorno > addDays(state.monday, 6)) {
+      state.monday = mondayOf(newGiorno);
+    }
+    state.day = newGiorno;
+    await load();
+  }
 
-    if (matches.length === 0) {
-      suggestionsList.classList.add('hidden');
+  moveForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const b = state.current;
+    const newGiorno = document.getElementById('move-date').value;
+    const newOra = document.getElementById('move-time').value;
+    const errorBox = moveForm.querySelector('[data-move-error]');
+    if (!newGiorno || !newOra) {
+      showMessage(errorBox, 'Scegli giorno e orario.');
       return;
     }
+    if (newGiorno === b.giorno && newOra === b.ora) {
+      Sheet.close(bookingSheet);
+      return;
+    }
+    const submit = moveForm.querySelector('[type="submit"]');
+    setBusy(submit, true, 'Sposto…');
+    try {
+      await moveBooking(b, newGiorno, newOra);
+      Sheet.close(bookingSheet);
+    } catch (error) {
+      showMessage(errorBox, error.message);
+    } finally {
+      setBusy(submit, false);
+    }
+  });
 
-    // Mostra suggerimenti
-    // L'indice in `matches` evita di serializzare l'utente in un attributo HTML
-    // (gli apostrofi, es. "D'Amico", spezzavano l'attributo)
-    suggestionsList.innerHTML = matches
+  bookingSheet.querySelector('[data-b-cancel]').addEventListener('click', async event => {
+    const b = state.current;
+    const ok = await Sheet.confirm({
+      title: 'Cancellare l’appuntamento?',
+      message: `${AgendaView.clientName(b)}, ${formatDate(b.giorno)} alle ${b.ora}. Il cliente non riceve avvisi automatici.`,
+      confirmLabel: 'Sì, cancella'
+    });
+    if (!ok) return;
+    const button = event.target;
+    setBusy(button, true, 'Cancello…');
+    try {
+      await apiRequest('/admin/bookings', {
+        ...jsonBody('DELETE', { giorno: b.giorno, ora: b.ora }),
+        sessionRequired: true
+      });
+      Sheet.close(bookingSheet);
+      showToast('Appuntamento cancellato', 'success');
+      await load();
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      setBusy(button, false);
+    }
+  });
+
+  bookingSheet.querySelector('[data-b-cancel-series]').addEventListener('click', async event => {
+    const b = state.current;
+    const button = event.target;
+    let count = '';
+    try {
+      const { bookings } = await apiRequest('/admin/bookings', { sessionRequired: true });
+      count = bookings.filter(x => x.token === b.token && x.tipo === 'ricorrente').length;
+    } catch (error) {
+      // il conteggio è solo informativo
+    }
+    const ok = await Sheet.confirm({
+      title: 'Cancellare tutta la serie?',
+      message: `${count ? `${count} appuntamenti` : 'Tutti gli appuntamenti'} della serie di ${AgendaView.clientName(b)}, compresi quelli già passati.`,
+      confirmLabel: 'Sì, cancella la serie'
+    });
+    if (!ok) return;
+    setBusy(button, true, 'Cancello…');
+    try {
+      const response = await apiRequest('/admin/bookings', {
+        ...jsonBody('DELETE', { token: b.token, scope: 'series' }),
+        sessionRequired: true
+      });
+      Sheet.close(bookingSheet);
+      showToast(`Serie cancellata: ${response.eliminate} appuntamenti`, 'success');
+      await load();
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      setBusy(button, false);
+    }
+  });
+
+  // ==================== TRASCINAMENTO (desktop, vista settimana) ====================
+  // Scorciatoia per il mouse: la stessa operazione è sempre disponibile con "Sposta".
+
+  let dragged = null;
+  agendaEl.addEventListener('dragstart', event => {
+    const cell = event.target.closest('[data-booking]');
+    if (!cell) return;
+    dragged = bookingAt(...parseKey(cell.dataset.booking));
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', cell.dataset.booking);
+    cell.classList.add('is-dragging');
+  });
+  agendaEl.addEventListener('dragend', () => {
+    dragged = null;
+    agendaEl
+      .querySelectorAll('.is-dragging, .is-drop')
+      .forEach(el => el.classList.remove('is-dragging', 'is-drop'));
+  });
+  agendaEl.addEventListener('dragover', event => {
+    const target = event.target.closest('[data-drop]');
+    if (!dragged || !target || !target.querySelector('[data-add]')) return;
+    event.preventDefault();
+    agendaEl.querySelectorAll('.is-drop').forEach(el => el.classList.remove('is-drop'));
+    target.classList.add('is-drop');
+  });
+  agendaEl.addEventListener('drop', async event => {
+    const target = event.target.closest('[data-drop]');
+    if (!dragged || !target) return;
+    event.preventDefault();
+    const b = dragged;
+    const [date, time] = parseKey(target.dataset.drop);
+    try {
+      await moveBooking(b, date, time);
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
+
+  // ==================== NUOVO APPUNTAMENTO ====================
+
+  const newFields = {
+    search: document.getElementById('new-search'),
+    nome: document.getElementById('new-nome'),
+    cognome: document.getElementById('new-cognome'),
+    telefono: document.getElementById('new-telefono'),
+    email: document.getElementById('new-email'),
+    date: document.getElementById('new-date'),
+    time: document.getElementById('new-time'),
+    custom: document.getElementById('new-time-custom'),
+    repeat: document.getElementById('new-repeat'),
+    months: document.getElementById('new-months')
+  };
+  newFields.months.innerHTML = Array.from(
+    { length: 12 },
+    (_, i) => `<option value="${i + 1}">${i + 1} ${i === 0 ? 'mese' : 'mesi'}</option>`
+  ).join('');
+
+  async function openNew(date, time) {
+    newForm.reset();
+    showMessage(newForm.querySelector('[data-new-error]'), '');
+    newForm.querySelector('[data-custom-time]').hidden = true;
+    newForm.querySelector('[data-months]').hidden = true;
+    newForm.querySelector('[data-repeat-hint]').hidden = true;
+    newFields.date.value = date || state.day;
+    Sheet.open(newSheet);
+    newFields.search.focus();
+    await fillTimes(newFields.time, newFields.date.value, { selected: time, allowCustom: true });
+    if (time && newFields.time.value !== time) {
+      // Orario fuori dagli slot (es. riga di una prenotazione già cancellata)
+      newFields.time.value = 'custom';
+      newFields.custom.value = time;
+      newForm.querySelector('[data-custom-time]').hidden = false;
+    }
+  }
+
+  $('[data-new]').addEventListener('click', () => openNew(state.day, null));
+  newFields.date.addEventListener('change', () => {
+    if (newFields.date.value) {
+      fillTimes(newFields.time, newFields.date.value, { allowCustom: true });
+    }
+  });
+  newFields.time.addEventListener('change', () => {
+    newForm.querySelector('[data-custom-time]').hidden = newFields.time.value !== 'custom';
+  });
+  newFields.repeat.addEventListener('change', () => {
+    const repeating = newFields.repeat.value !== '0';
+    newForm.querySelector('[data-months]').hidden = !repeating;
+    newForm.querySelector('[data-repeat-hint]').hidden = !repeating;
+  });
+
+  // Ricerca cliente (combobox): compila nome, cognome, telefono ed email
+  const suggestions = document.getElementById('new-suggestions');
+  let matches = [];
+  try {
+    state.users = (await apiRequest('/admin/users', { sessionRequired: true })).users.filter(
+      u => u.banned !== '1'
+    );
+  } catch (error) {
+    state.users = [];
+  }
+
+  function closeSuggestions() {
+    suggestions.hidden = true;
+    newFields.search.setAttribute('aria-expanded', 'false');
+    newFields.search.removeAttribute('aria-activedescendant');
+  }
+
+  function choose(user) {
+    newFields.nome.value = user.nome;
+    newFields.cognome.value = user.cognome;
+    newFields.telefono.value = user.telefono || '';
+    newFields.email.value = user.email;
+    newFields.search.value = `${user.cognome} ${user.nome}`;
+    closeSuggestions();
+    newFields.date.focus();
+  }
+
+  newFields.search.addEventListener('input', () => {
+    const q = newFields.search.value.trim().toLowerCase();
+    matches =
+      q.length < 2
+        ? []
+        : state.users
+            .filter(u => `${u.nome} ${u.cognome} ${u.cognome} ${u.nome}`.toLowerCase().includes(q))
+            .slice(0, 6);
+    if (matches.length === 0) return closeSuggestions();
+    suggestions.innerHTML = matches
       .map(
-        (user, index) => `
-      <div class="suggestion-item" data-index="${index}">
-        <div class="suggestion-name">${escapeHtml(user.cognome)} ${escapeHtml(user.nome)}</div>
-        <div class="suggestion-details">${escapeHtml(user.email)} | ${escapeHtml(user.telefono)}</div>
-      </div>
-    `
+        (u, i) => `<li role="option" id="sugg-${i}" data-index="${i}" aria-selected="false">
+            <strong>${escapeHtml(`${u.cognome} ${u.nome}`)}</strong>${u.vip ? ' <span class="tag tag--ink">VIP</span>' : ''}
+            <span class="muted">${escapeHtml(u.email)}</span>
+          </li>`
       )
       .join('');
+    suggestions.hidden = false;
+    newFields.search.setAttribute('aria-expanded', 'true');
+    return undefined;
+  });
+  newFields.search.addEventListener('keydown', event => {
+    if (suggestions.hidden) return;
+    const options = [...suggestions.querySelectorAll('[role="option"]')];
+    let index = options.findIndex(o => o.getAttribute('aria-selected') === 'true');
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      index = (index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+      options.forEach((o, i) => o.setAttribute('aria-selected', String(i === index)));
+      newFields.search.setAttribute('aria-activedescendant', options[index].id);
+    } else if (event.key === 'Enter' && index >= 0) {
+      event.preventDefault();
+      choose(matches[index]);
+    } else if (event.key === 'Escape') {
+      event.stopPropagation();
+      event.preventDefault();
+      closeSuggestions();
+    }
+  });
+  suggestions.addEventListener('mousedown', event => event.preventDefault());
+  suggestions.addEventListener('click', event => {
+    const option = event.target.closest('[data-index]');
+    if (option) choose(matches[Number(option.dataset.index)]);
+  });
+  newFields.search.addEventListener('blur', closeSuggestions);
 
-    suggestionsList.classList.remove('hidden');
-
-    // Click su suggerimento
-    suggestionsList.querySelectorAll('.suggestion-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const user = matches[Number(item.dataset.index)];
-        fillUserData(user);
-        suggestionsList.classList.add('hidden');
+  newForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const errorBox = newForm.querySelector('[data-new-error]');
+    const ora = newFields.time.value === 'custom' ? newFields.custom.value : newFields.time.value;
+    if (!newFields.cognome.value.trim()) {
+      showMessage(errorBox, 'Il cognome è obbligatorio.');
+      newFields.cognome.focus();
+      return;
+    }
+    if (!newFields.date.value || !/^\d{2}:\d{2}$/.test(ora || '')) {
+      showMessage(errorBox, 'Scegli giorno e orario.');
+      return;
+    }
+    const repeat = Number(newFields.repeat.value);
+    const body = {
+      nome: newFields.nome.value.trim(),
+      cognome: newFields.cognome.value.trim(),
+      telefono: newFields.telefono.value.trim(),
+      email: newFields.email.value.trim(),
+      giorno: newFields.date.value,
+      ora,
+      ...(repeat
+        ? {
+            ricorrente: true,
+            intervalloSettimane: repeat,
+            mesiRicorrenza: Number(newFields.months.value)
+          }
+        : {})
+    };
+    const submit = newForm.querySelector('[type="submit"]');
+    setBusy(submit, true, 'Aggiungo…');
+    try {
+      const response = await apiRequest('/admin/bookings', {
+        ...jsonBody('POST', body),
+        sessionRequired: true
       });
-    });
-  });
-
-  // Chiudi suggerimenti quando si clicca fuori
-  document.addEventListener('click', e => {
-    if (!cognomeInput.contains(e.target) && !suggestionsList.contains(e.target)) {
-      suggestionsList.classList.add('hidden');
-    }
-  });
-}
-
-function fillUserData(user) {
-  document.getElementById('input-cognome').value = user.cognome;
-  document.getElementById('input-nome').value = user.nome;
-  document.getElementById('input-email').value = user.email;
-  document.getElementById('input-telefono').value = user.telefono;
-}
-
-// ==================== EVENT LISTENERS ====================
-
-function setupModalListeners() {
-  // Initialize Modal instances using the Modal component class
-  bookingModal = new Modal('booking-modal', {
-    onClose: () => {
-      selectedSlot = { date: null, time: null };
+      Sheet.close(newSheet);
+      showToast(
+        response.ricorrente
+          ? `Serie creata: ${response.inserite} appuntamenti${response.saltate ? `, ${response.saltate} date saltate perché occupate o in ferie` : ''}`
+          : 'Appuntamento aggiunto',
+        'success'
+      );
+      state.day = body.giorno;
+      if (body.giorno < state.monday || body.giorno > addDays(state.monday, 6)) {
+        state.monday = mondayOf(body.giorno);
+      }
+      await load();
+    } catch (error) {
+      showMessage(errorBox, error.message);
+    } finally {
+      setBusy(submit, false);
     }
   });
 
-  detailModal = new Modal('detail-modal', {
-    onClose: () => {
-      // Keep selectedBooking for delete flow
-    }
+  // ==================== FERIE ====================
+
+  function setHolidayMode(on) {
+    state.holidayMode = on;
+    state.selected.clear();
+    holidayButton.setAttribute('aria-pressed', String(on));
+    holidayButton.textContent = on ? 'Esci dalle ferie' : 'Ferie';
+    $('[data-new]').hidden = on;
+    $('[data-hint]').textContent = on
+      ? 'Seleziona gli orari da chiudere (liberi) o da riaprire (ferie), poi salva.'
+      : 'Tocca un appuntamento per vederlo, spostarlo o cancellarlo; tocca un orario libero per aggiungerne uno.';
+    holidayBar.hidden = !on;
+    render();
+  }
+
+  function updateHolidayBar() {
+    if (!state.holidayMode) return;
+    const holidays = new Set(state.days.flatMap(d => d.holidays.map(h => `${d.date}|${h}`)));
+    const toClose = [...state.selected].filter(k => !holidays.has(k)).length;
+    const toOpen = state.selected.size - toClose;
+    const parts = [toClose && `${toClose} da chiudere`, toOpen && `${toOpen} da riaprire`].filter(
+      Boolean
+    );
+    $('[data-holiday-count]').innerHTML = parts.length
+      ? `${parts.join(' · ')}<span>Salva per applicare</span>`
+      : 'Nessun orario selezionato<span>Tocca gli orari da chiudere o riaprire</span>';
+    $('[data-holiday-save]').disabled = state.selected.size === 0;
+    $('[data-holiday-day]').hidden = state.view !== 'day';
+  }
+
+  holidayButton.addEventListener('click', () => setHolidayMode(!state.holidayMode));
+
+  // Tutto il giorno: seleziona ogni orario libero del giorno mostrato
+  $('[data-holiday-day]').addEventListener('click', () => {
+    AgendaView.rowsOf(findDay(state.day))
+      .filter(r => !r.booking && !r.holiday)
+      .forEach(r => state.selected.add(`${r.date}|${r.time}`));
+    render();
   });
 
-  deleteConfirmModal = new Modal('delete-confirm-modal', {
-    onClose: () => {
-      // selectedBooking is cleared after delete
-    }
-  });
-
-  // Button handlers (Modal handles overlay click and escape key automatically)
-  document.getElementById('modal-cancel').addEventListener('click', () => bookingModal.close());
-  document.getElementById('detail-close').addEventListener('click', () => detailModal.close());
-  document.getElementById('detail-delete').addEventListener('click', showDeleteConfirmModal);
-  document.getElementById('move-form').addEventListener('submit', moveSelectedBooking);
-  document
-    .getElementById('delete-cancel')
-    .addEventListener('click', () => deleteConfirmModal.close());
-  document.getElementById('delete-confirm').addEventListener('click', executeDelete);
-
-  // Opzioni ricorrenza mutuamente esclusive: selezionandone una si deselezionano le altre.
-  // Il dropdown dei mesi appare se almeno una modalità è attiva.
-  const recurrenceCheckboxes = document.querySelectorAll('.form-recurrence__checkbox');
-  recurrenceCheckboxes.forEach(cb => {
-    cb.addEventListener('change', e => {
-      if (e.target.checked) {
-        recurrenceCheckboxes.forEach(other => {
-          if (other !== e.target) other.checked = false;
+  $('[data-holiday-save]').addEventListener('click', async event => {
+    const button = event.currentTarget;
+    const holidays = new Set(state.days.flatMap(d => d.holidays.map(h => `${d.date}|${h}`)));
+    const toSlot = k => {
+      const [giorno, ora] = parseKey(k);
+      return { giorno, ora };
+    };
+    const add = [...state.selected].filter(k => !holidays.has(k)).map(toSlot);
+    const remove = [...state.selected].filter(k => holidays.has(k)).map(toSlot);
+    setBusy(button, true, 'Salvo…');
+    try {
+      if (add.length) {
+        await apiRequest('/admin/holidays', {
+          ...jsonBody('POST', { slots: add }),
+          sessionRequired: true
         });
       }
-      const anyChecked = Array.from(recurrenceCheckboxes).some(c => c.checked);
-      document.getElementById('recurrence-options').classList.toggle('hidden', !anyChecked);
-    });
-  });
-
-  // Submit form inserimento
-  document.getElementById('booking-form').addEventListener('submit', async e => {
-    e.preventDefault();
-
-    // Modalità ricorrente selezionata (se presente) e relativo intervallo in settimane
-    const selectedRecurrence = document.querySelector('.form-recurrence__checkbox:checked');
-    const ricorrente = !!selectedRecurrence;
-    const intervalloSettimane = selectedRecurrence
-      ? parseInt(selectedRecurrence.dataset.interval, 10)
-      : 1;
-    const mesiRicorrenza = parseInt(document.getElementById('input-mesi').value, 10);
-
-    const formData = {
-      nome: document.getElementById('input-nome').value.trim(),
-      cognome: document.getElementById('input-cognome').value.trim(),
-      email: document.getElementById('input-email').value.trim(),
-      telefono: document.getElementById('input-telefono').value.trim(),
-      giorno: selectedSlot.date,
-      ora: selectedSlot.time,
-      ricorrente,
-      mesiRicorrenza: ricorrente ? mesiRicorrenza : null,
-      intervalloSettimane: ricorrente ? intervalloSettimane : null
-    };
-
-    // Validazione (solo cognome obbligatorio per admin)
-    if (!formData.cognome) {
-      document.getElementById('form-error').textContent = 'Il cognome è obbligatorio';
-      document.getElementById('form-error').classList.remove('hidden');
-      return;
-    }
-
-    // Validazione ricorrenza: numero di mesi valido (1-12)
-    if (
-      ricorrente &&
-      (!Number.isInteger(mesiRicorrenza) || mesiRicorrenza < 1 || mesiRicorrenza > 12)
-    ) {
-      document.getElementById('form-error').textContent =
-        'Seleziona per quanti mesi ripetere la prenotazione';
-      document.getElementById('form-error').classList.remove('hidden');
-      return;
-    }
-
-    try {
-      const saveBtn = document.getElementById('modal-save');
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Salvataggio...';
-
-      const response = await apiRequest('/admin/bookings', {
-        method: 'POST',
-        body: JSON.stringify(formData)
-      });
-
-      if (response.success) {
-        // Riabilita il pulsante prima di chiudere
-        const saveBtn = document.getElementById('modal-save');
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Conferma';
-
-        // Riepilogo per le prenotazioni ricorrenti (inserite / saltate per sovrapposizione)
-        if (response.ricorrente) {
-          const saltateMsg =
-            response.saltate > 0 ? `, ${response.saltate} saltate per sovrapposizione` : '';
-          showDropFeedback(`Ricorrente: ${response.inserite} occorrenze inserite${saltateMsg}`);
-        }
-
-        closeBookingModal();
-        await loadBookings();
-        renderCalendar();
-      } else {
-        const saveBtn = document.getElementById('modal-save');
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Conferma';
+      if (remove.length) {
+        await apiRequest('/admin/holidays', {
+          ...jsonBody('DELETE', { slots: remove }),
+          sessionRequired: true
+        });
       }
+      showToast(
+        [add.length && `${add.length} orari chiusi`, remove.length && `${remove.length} riaperti`]
+          .filter(Boolean)
+          .join(', '),
+        'success'
+      );
+      state.selected.clear();
+      await load();
     } catch (error) {
-      document.getElementById('form-error').textContent = error.message;
-      document.getElementById('form-error').classList.remove('hidden');
-      const saveBtn = document.getElementById('modal-save');
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Salva Appuntamento';
-    }
-  });
-}
-
-// Navigazione settimana precedente
-document.getElementById('prev-week').addEventListener('click', async () => {
-  currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-  await loadBookings();
-  renderCalendar();
-});
-
-// Navigazione settimana successiva
-document.getElementById('next-week').addEventListener('click', async () => {
-  currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-  await loadBookings();
-  renderCalendar();
-});
-
-// Torna rapidamente alla settimana che ospita il giorno di oggi
-document.getElementById('today-week').addEventListener('click', async () => {
-  currentWeekStart = getMonday(new Date());
-  await loadBookings();
-  renderCalendar();
-});
-
-// ==================== SIDEBAR MENU ====================
-
-// ==================== GESTIONE FERIE ====================
-
-function setupHolidayMode() {
-  const holidayToggle = document.getElementById('holiday-mode-toggle');
-  const saveBtn = document.getElementById('save-holidays-btn');
-  const cancelBtn = document.getElementById('cancel-holidays-btn');
-
-  // Toggle modalità ferie
-  holidayToggle.addEventListener('click', () => {
-    if (!holidayMode) {
-      enterHolidayMode();
+      showToast(error.message);
+    } finally {
+      setBusy(button, false);
+      updateHolidayBar();
     }
   });
 
-  // Salva ferie
-  saveBtn.addEventListener('click', saveHolidays);
-
-  // Annulla modalità ferie
-  cancelBtn.addEventListener('click', exitHolidayMode);
-}
-
-function enterHolidayMode() {
-  holidayMode = true;
-  document.getElementById('holiday-mode-toggle').setAttribute('aria-pressed', 'true');
-  selectedHolidaySlots = [];
-
-  document.getElementById('holiday-mode-toggle').classList.add('active');
-  document.getElementById('holiday-mode-indicator').classList.remove('hidden');
-  document.querySelector('.admin-calendar').classList.add('holiday-mode');
-
-  renderCalendar();
-}
-
-function exitHolidayMode() {
-  holidayMode = false;
-  document.getElementById('holiday-mode-toggle').setAttribute('aria-pressed', 'false');
-  selectedHolidaySlots = [];
-
-  document.getElementById('holiday-mode-toggle').classList.remove('active');
-  document.getElementById('holiday-mode-indicator').classList.add('hidden');
-  document.querySelector('.admin-calendar').classList.remove('holiday-mode');
-
-  renderCalendar();
-}
-
-async function saveHolidays() {
-  if (selectedHolidaySlots.length === 0) {
-    exitHolidayMode();
-    return;
-  }
-
-  const saveBtn = document.getElementById('save-holidays-btn');
-  saveBtn.disabled = true;
-  saveBtn.textContent = 'Salvataggio...';
-
-  try {
-    // Separa slot da aggiungere e da rimuovere
-    const toAdd = selectedHolidaySlots
-      .filter(s => !s.isRemove)
-      .map(s => ({ giorno: s.giorno, ora: s.ora }));
-    const toRemove = selectedHolidaySlots
-      .filter(s => s.isRemove)
-      .map(s => ({ giorno: s.giorno, ora: s.ora }));
-
-    // Aggiungi nuove ferie
-    if (toAdd.length > 0) {
-      await apiRequest('/admin/holidays', {
-        method: 'POST',
-        body: JSON.stringify({ slots: toAdd })
-      });
-    }
-
-    // Rimuovi ferie esistenti
-    if (toRemove.length > 0) {
-      await apiRequest('/admin/holidays', {
-        method: 'DELETE',
-        body: JSON.stringify({ slots: toRemove })
-      });
-    }
-
-    // Ricarica ferie e esci dalla modalità
-    await loadHolidays();
-    exitHolidayMode();
-  } catch (error) {
-    console.error('Errore salvataggio ferie:', error);
-    showToast('Errore nel salvataggio delle ferie: ' + error.message);
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.textContent = 'Salva Ferie';
-  }
-}
-
-// ==================== DRAG-SELECT FERIE ====================
-
-function startDrag(date, time, isHoliday) {
-  isDragging = true;
-
-  // Determina la modalità: se clicco su ferie esistente -> rimuovo, altrimenti -> aggiungo
-  dragMode = isHoliday ? 'remove' : 'add';
-
-  // Aggiungi la prima cella alla selezione
-  addToDragSelection(date, time, isHoliday);
-}
-
-function addToDragSelection(date, time, isHoliday) {
-  // Verifica se lo slot è già selezionato
-  const alreadySelected = selectedHolidaySlots.some(s => s.giorno === date && s.ora === time);
-
-  if (!alreadySelected) {
-    // In base alla modalità drag, aggiungi o rimuovi
-    if (dragMode === 'add' && !isHoliday) {
-      // Aggiungi nuova ferie
-      selectedHolidaySlots.push({ giorno: date, ora: time, isRemove: false });
-      updateCellVisual(date, time, true);
-    } else if (dragMode === 'remove' && isHoliday) {
-      // Rimuovi ferie esistente
-      selectedHolidaySlots.push({ giorno: date, ora: time, isRemove: true });
-      updateCellVisual(date, time, true);
-    }
-  }
-}
-
-function endDrag() {
-  isDragging = false;
-  dragMode = null;
-}
-
-function updateCellVisual(date, time, isSelected) {
-  // Trova la cella nel DOM e aggiorna visualmente
-  const cells = document.querySelectorAll('.admin-cell');
-  cells.forEach(cell => {
-    if (cell.dataset.date === date && cell.dataset.time === time) {
-      if (isSelected) {
-        cell.classList.add('holiday-selected');
-        cell.innerHTML = '<div class="no-booking">Selezionato</div>';
-      }
-    }
-  });
-}
-
-// Event listener globale per mouseup (fine drag)
-document.addEventListener('mouseup', () => {
-  if (isDragging) {
-    endDrag();
-  }
-});
-
-// Previeni selezione testo durante il drag
-document.addEventListener('selectstart', e => {
-  if (isDragging) {
-    e.preventDefault();
-  }
-});
-
-// Avvia inizializzazione
-init();
+  load();
+})();

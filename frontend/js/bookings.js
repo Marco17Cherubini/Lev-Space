@@ -1,155 +1,111 @@
-let currentUser = null;
+// I tuoi appuntamenti: i prossimi con Sposta e Cancella, i passati in sola lettura
+(async function () {
+  const user = await requireAuth();
+  if (!user) return;
 
-// Inizializzazione
-async function init() {
-  try {
-    currentUser = await requireAuth();
-    if (!currentUser) return;
+  const upcomingEl = document.querySelector('[data-upcoming]');
+  const pastWrap = document.querySelector('[data-past-wrap]');
+  const heading = document.querySelector('h1');
+  heading.setAttribute('tabindex', '-1');
 
-    // Carica prenotazioni
-    await loadBookings();
-  } catch (error) {
-    console.error('Errore inizializzazione:', error);
-    redirectToLogin();
+  async function load() {
+    upcomingEl.setAttribute('aria-busy', 'true');
+    try {
+      const { bookings } = await apiRequest('/bookings', { sessionRequired: true });
+      render(
+        groupBookings(bookings.filter(isUpcoming)),
+        groupBookings(bookings.filter(b => !isUpcoming(b)))
+      );
+    } catch (error) {
+      upcomingEl.innerHTML = `<div class="state"><p>${escapeHtml(error.message)}</p>
+        <button type="button" class="btn" data-retry>Riprova</button></div>`;
+    } finally {
+      upcomingEl.removeAttribute('aria-busy');
+    }
   }
-}
 
-// Carica prenotazioni utente
-async function loadBookings() {
-  try {
-    const response = await apiRequest('/bookings');
+  function item(b, past = false) {
+    const date = parseISO(b.giorno);
+    const tags = [b.persone > 1 ? `${b.persone} persone` : '', b.ricorrente ? 'Serie' : '']
+      .filter(Boolean)
+      .map(t => `<span class="tag">${t}</span>`)
+      .join('');
+    const move = new URLSearchParams({ sposta: b.giorno, dalle: b.ora, persone: b.persone });
+    const actions = past
+      ? ''
+      : `<div class="appt__actions">
+          <a class="btn btn--sm" href="/dashboard?${move}" aria-label="Sposta l'appuntamento di ${escapeHtml(formatDayMonth(b.giorno))} alle ${escapeHtml(b.ora)}">Sposta</a>
+          <button type="button" class="btn btn--danger btn--sm" data-cancel data-giorno="${escapeHtml(b.giorno)}" data-ora="${escapeHtml(b.ora)}" data-persone="${b.persone}" aria-label="Cancella l'appuntamento di ${escapeHtml(formatDayMonth(b.giorno))} alle ${escapeHtml(b.ora)}">Cancella</button>
+        </div>`;
+    return `<li class="appt${past ? ' appt--past' : ''}">
+        <p class="appt__date" aria-hidden="true"><span>${date.getDate()}</span>${MONTHS_IT[date.getMonth()].slice(0, 3)}</p>
+        <div class="appt__body">
+          <p class="appt__when"><span class="visually-hidden">${escapeHtml(formatDate(b.giorno))}, ore </span><span aria-hidden="true">${DAYS_IT[date.getDay()]}</span> <strong class="num">${escapeHtml(b.ora)}</strong></p>
+          ${tags ? `<p class="appt__meta">${tags}</p>` : ''}
+        </div>
+        ${actions}
+      </li>`;
+  }
 
-    const bookingsList = document.getElementById('bookings-list');
-    const noBookings = document.getElementById('no-bookings');
-
-    // Filtra solo prenotazioni future
-    const now = new Date();
-    const activeBookings = response.bookings
-      .filter(booking => {
-        // Costruisci data appuntamento (es. "2023-10-25T14:30:00")
-        const bookingDate = new Date(`${booking.giorno}T${booking.ora}:00`);
-        return bookingDate >= now;
-      })
-      .sort((a, b) => {
-        // Ordina per data crescente (più vicini prima)
-        return new Date(`${a.giorno}T${a.ora}:00`) - new Date(`${b.giorno}T${b.ora}:00`);
+  function render(upcoming, past) {
+    if (upcoming.length === 0) {
+      upcomingEl.innerHTML = `<div class="state"><p>Non hai appuntamenti in programma.</p>
+        <a class="btn btn--primary" href="/dashboard">Prenota</a></div>`;
+    } else {
+      // Raggruppati per mese, come le pagine di un'agenda
+      const months = new Map();
+      upcoming.forEach(b => {
+        const key = b.giorno.slice(0, 7);
+        months.set(key, [...(months.get(key) || []), b]);
       });
+      upcomingEl.innerHTML = [...months.entries()]
+        .map(([key, list]) => {
+          const [y, m] = key.split('-').map(Number);
+          return `<section class="month" aria-labelledby="month-${key}">
+              <h2 class="month__title" id="month-${key}">${MONTHS_IT[m - 1]} <span class="muted">${y}</span></h2>
+              <ul class="appts">${list.map(b => item(b)).join('')}</ul>
+            </section>`;
+        })
+        .join('');
+    }
+    pastWrap.hidden = past.length === 0;
+    pastWrap.querySelector('[data-past-count]').textContent =
+      `Appuntamenti passati (${past.length})`;
+    pastWrap.querySelector('[data-past]').innerHTML = past
+      .reverse()
+      .map(b => item(b, true))
+      .join('');
+  }
 
-    if (activeBookings.length === 0) {
-      bookingsList.classList.add('hidden');
-      noBookings.classList.remove('hidden');
+  upcomingEl.addEventListener('click', async event => {
+    if (event.target.closest('[data-retry]')) {
+      load();
       return;
     }
-
-    bookingsList.innerHTML = activeBookings
-      .map(booking => {
-        return `
-      <div class="card booking-card" data-giorno="${escapeHtml(booking.giorno)}" data-ora="${escapeHtml(booking.ora)}">
-        <div class="booking-info">
-          <div class="card-title">Appuntamento</div>
-          <div class="booking-details">
-            <div><strong>Data:</strong> ${escapeHtml(formatDate(booking.giorno))}</div>
-            <div><strong>Orario:</strong> ${escapeHtml(booking.ora)}</div>
-          </div>
-        </div>
-        <div class="booking-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button type="button" class="btn btn-edit" data-action="edit">
-            Modifica
-          </button>
-          <button type="button" class="btn btn-cancel" data-action="delete">
-            Cancella
-          </button>
-        </div>
-      </div>
-    `;
-      })
-      .join('');
-  } catch (error) {
-    console.error('Errore caricamento prenotazioni:', error);
-    document.getElementById('bookings-list').innerHTML =
-      '<div class="alert">Errore nel caricamento delle prenotazioni</div>';
-  }
-}
-
-// Pulsanti Modifica/Cancella delle card (delegazione: le card vengono ridisegnate)
-document.getElementById('bookings-list').addEventListener('click', event => {
-  const button = event.target.closest('button[data-action]');
-  if (!button) return;
-  const { giorno, ora } = button.closest('.booking-card').dataset;
-  if (button.dataset.action === 'edit') {
-    editBooking(giorno, ora);
-  } else {
-    showDeleteConfirm(giorno, ora);
-  }
-});
-
-// Funzione per modificare una prenotazione
-function editBooking(giorno, ora) {
-  // Salva la prenotazione da modificare in sessionStorage
-  sessionStorage.setItem('editingBooking', JSON.stringify({ giorno, ora }));
-
-  // Reindirizza al calendario per selezionare nuovo appuntamento
-  window.location.href = '/dashboard';
-}
-
-// Variabili per la cancellazione
-let bookingToDelete = null;
-
-// Mostra modal di conferma cancellazione
-function showDeleteConfirm(giorno, ora) {
-  bookingToDelete = { giorno, ora };
-
-  // Popola i dettagli
-  document.getElementById('delete-booking-details').innerHTML = `
-    <div><strong>Data:</strong> ${escapeHtml(formatDate(giorno))}</div>
-    <div><strong>Orario:</strong> ${escapeHtml(ora)}</div>
-  `;
-
-  // Mostra modal
-  document.getElementById('delete-confirm-modal').classList.remove('hidden');
-}
-
-// Chiudi modal
-function closeDeleteModal() {
-  document.getElementById('delete-confirm-modal').classList.add('hidden');
-  bookingToDelete = null;
-}
-
-// Event listeners per i pulsanti del modal
-document.getElementById('delete-cancel').addEventListener('click', closeDeleteModal);
-document.getElementById('delete-confirm').addEventListener('click', executeDelete);
-
-// Chiudi modal cliccando sull'overlay
-document
-  .querySelector('#delete-confirm-modal .modal-overlay')
-  .addEventListener('click', closeDeleteModal);
-
-// Esegui cancellazione
-async function executeDelete() {
-  if (!bookingToDelete) return;
-
-  const deleteBtn = document.getElementById('delete-confirm');
-  deleteBtn.disabled = true;
-  deleteBtn.textContent = 'Cancellazione...';
-
-  try {
-    await apiRequest('/bookings', {
-      method: 'DELETE',
-      body: JSON.stringify(bookingToDelete)
+    const button = event.target.closest('[data-cancel]');
+    if (!button) return;
+    const { giorno, ora, persone } = button.dataset;
+    const group = Number(persone) > 1 ? `, per ${persone} persone: si liberano tutti i posti` : '';
+    const ok = await Sheet.confirm({
+      title: 'Cancellare l’appuntamento?',
+      message: `${formatDate(giorno)} alle ${ora}${group}. Il posto torna disponibile per gli altri clienti.`,
+      confirmLabel: 'Sì, cancella'
     });
+    if (!ok) return;
+    setBusy(button, true, 'Cancello…');
+    try {
+      await apiRequest('/bookings', {
+        ...jsonBody('DELETE', { giorno, ora }),
+        sessionRequired: true
+      });
+      showToast('Appuntamento cancellato', 'success');
+      await load();
+      heading.focus({ preventScroll: true });
+    } catch (error) {
+      showToast(error.message);
+      setBusy(button, false);
+    }
+  });
 
-    // Chiudi modal e ricarica lista
-    deleteBtn.disabled = false;
-    deleteBtn.textContent = 'Sì, Cancella';
-    closeDeleteModal();
-    await loadBookings();
-  } catch (error) {
-    console.error('Errore cancellazione:', error);
-    showToast('Errore nella cancellazione: ' + error.message);
-    deleteBtn.disabled = false;
-    deleteBtn.textContent = 'Sì, Cancella';
-  }
-}
-
-// Avvia inizializzazione
-init();
+  load();
+})();

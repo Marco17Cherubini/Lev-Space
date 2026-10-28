@@ -2,103 +2,173 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Registrazione - Lev Space</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta
+      name="description"
+      content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
+    />
+    <meta name="theme-color" content="#ece8df" />
+    <title>Crea un account · Lev Space</title>
+    <link
+      rel="preload"
+      href="/fonts/libre-franklin-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/styles/app.css" />
+    <link rel="stylesheet" href="/styles/pages.css" />
     <script src="/js/theme-init.js"></script>
   </head>
 
-  <body>
-    <main class="center-container">
-      <div class="form">
-        <h1 class="text-center h2">Registrazione</h1>
+  <body class="no-tabbar">
+    <a class="skip-link" href="#main">Vai al contenuto</a>
+    <header class="appbar">
+      <a class="wordmark" href="/">Lev Space</a>
+      <button
+        type="button"
+        class="btn btn--icon"
+        data-theme-toggle
+        aria-pressed="false"
+        aria-label="Tema scuro"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 4a8 8 0 010 16z" fill="currentColor" />
+        </svg>
+      </button>
+    </header>
 
-        <div id="error-message" role="alert" class="form-error hidden"></div>
-
-        <form id="register-form">
-          <div class="form-group">
-            <label for="nome" class="form-label">Nome</label>
-            <input
-              type="text"
-              id="nome"
-              name="nome"
-              class="form-input"
-              required
-              placeholder="Mario"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="cognome" class="form-label">Cognome</label>
-            <input
-              type="text"
-              id="cognome"
-              name="cognome"
-              class="form-input"
-              required
-              placeholder="Rossi"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="email" class="form-label">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              class="form-input"
-              required
-              placeholder="mario.rossi@example.com"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="telefono" class="form-label">Telefono</label>
-            <input
-              type="tel"
-              id="telefono"
-              name="telefono"
-              class="form-input"
-              required
-              placeholder="+39 123 456 7890"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="password" class="form-label">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              class="form-input"
-              required
-              minlength="8"
-              placeholder="Minimo 8 caratteri"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="confirm-password" class="form-label">Conferma Password</label>
-            <input
-              type="password"
-              id="confirm-password"
-              name="confirm-password"
-              class="form-input"
-              required
-              minlength="8"
-              placeholder="Ripeti la password"
-            />
-          </div>
-
-          <button type="submit" class="btn btn-full">Registrati</button>
-        </form>
-
-        <p class="text-center mt-2">Hai già un account? <a href="/login" class="link">Accedi</a></p>
+    <main id="main" class="page page--narrow">
+      <div class="ticket auth">
+        <div class="ticket__body stack">
+          <h1>Crea un account</h1>
+          <p class="serif muted">
+            Ritrovi i tuoi appuntamenti, prenoti "il solito" con un tocco e fissi più settimane
+            insieme.
+          </p>
+          <form id="register-form" class="stack" novalidate>
+            <div class="field-pair">
+              <div class="field">
+                <label for="nome">Nome</label>
+                <input
+                  class="input"
+                  id="nome"
+                  name="nome"
+                  autocomplete="given-name"
+                  autocapitalize="words"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="cognome">Cognome</label>
+                <input
+                  class="input"
+                  id="cognome"
+                  name="cognome"
+                  autocomplete="family-name"
+                  autocapitalize="words"
+                  required
+                />
+              </div>
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input
+                class="input"
+                id="email"
+                name="email"
+                type="email"
+                autocomplete="email"
+                inputmode="email"
+                autocapitalize="off"
+                spellcheck="false"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="telefono">Telefono</label>
+              <input
+                class="input"
+                id="telefono"
+                name="telefono"
+                type="tel"
+                autocomplete="tel"
+                inputmode="tel"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <div class="password-field">
+                <input
+                  class="input"
+                  id="password"
+                  name="password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  minlength="8"
+                  aria-describedby="password-hint"
+                />
+                <button
+                  type="button"
+                  class="btn btn--quiet"
+                  data-reveal="password"
+                  aria-pressed="false"
+                  aria-label="Mostra password"
+                >
+                  Mostra
+                </button>
+              </div>
+              <p class="hint" id="password-hint">Almeno 8 caratteri.</p>
+            </div>
+            <div class="field">
+              <label for="confirm-password">Ripeti la password</label>
+              <div class="password-field">
+                <input
+                  class="input"
+                  id="confirm-password"
+                  name="confirm-password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="btn btn--quiet"
+                  data-reveal="confirm-password"
+                  aria-pressed="false"
+                  aria-label="Mostra password"
+                >
+                  Mostra
+                </button>
+              </div>
+            </div>
+            <p class="notice notice--error" id="form-error" role="alert" hidden></p>
+            <button class="btn btn--primary btn--block" type="submit">Crea account</button>
+          </form>
+        </div>
+        <div class="ticket__stub">
+          <p>Hai già un account? <a href="/login">Accedi</a></p>
+        </div>
       </div>
     </main>
 
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
-    <script src="/js/register.js"></script>
+    <script src="/js/auth.js"></script>
   </body>
 </html>

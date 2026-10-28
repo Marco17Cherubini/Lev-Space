@@ -2,104 +2,202 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Resoconto Clientela - Lev Space</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta
+      name="description"
+      content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
+    />
+    <meta name="theme-color" content="#ece8df" />
+    <title>Report · Lev Space</title>
+    <link
+      rel="preload"
+      href="/fonts/libre-franklin-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/styles/app.css" />
+    <link rel="stylesheet" href="/styles/admin.css" />
     <script src="/js/theme-init.js"></script>
   </head>
 
-  <body>
-    <!-- Sidebar Overlay -->
-    <div id="sidebar-overlay" class="sidebar-overlay"></div>
-
-    <!-- Sidebar Menu -->
-    <aside id="sidebar" class="sidebar" aria-label="Menu">
-      <div class="sidebar-header">
-        <span>Menu Admin</span>
-        <button type="button" id="close-sidebar" class="sidebar-close" aria-label="Chiudi menu">
-          &times;
-        </button>
-      </div>
-      <nav class="sidebar-nav">
-        <a href="/admin" class="sidebar-item">Menu Admin</a>
-        <a href="/admin/clienti" class="sidebar-item">Gestione Clienti</a>
-        <a href="/admin/orari" class="sidebar-item">
-          <span>Gestione Oraria</span>
-        </a>
-        <button id="sidebar-logout" class="sidebar-item sidebar-logout">Logout</button>
+  <body class="">
+    <a class="skip-link" href="#main">Vai al contenuto</a>
+    <header class="appbar">
+      <a class="wordmark" href="/admin">Lev Space</a>
+      <nav class="appbar__nav" aria-label="Sezioni">
+        <a href="/admin"><span>Agenda</span></a>
+        <a href="/admin/clienti"><span>Clienti</span></a>
+        <a href="/admin/orari"><span>Orari</span></a>
+        <a href="/admin/reports"><span>Report</span></a>
       </nav>
-    </aside>
-
-    <header class="header">
-      <div class="header-left">
-        <button
-          type="button"
-          id="hamburger-btn"
-          class="hamburger-btn"
-          aria-label="Apri menu"
-          aria-controls="sidebar"
-          aria-expanded="false"
+      <button
+        type="button"
+        class="btn btn--icon"
+        data-theme-toggle
+        aria-pressed="false"
+        aria-label="Tema scuro"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
         >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        <div class="header-title">Lev Space</div>
-      </div>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 4a8 8 0 010 16z" fill="currentColor" />
+        </svg>
+      </button>
+      <button type="button" class="btn btn--quiet btn--sm" data-logout>Esci</button>
     </header>
 
-    <main class="container">
-      <h1 class="page-title h2">Resoconto Clientela</h1>
-      <p class="page-subtitle">Statistiche prenotazioni e tagli effettuati</p>
-
-      <div class="reports-container">
-        <div class="filter-container">
-          <span class="filter-label">Periodo:</span>
+    <main id="main" class="page">
+      <div class="page-head">
+        <h1>Report</h1>
+        <p>Tagli registrati in agenda per giorno.</p>
+      </div>
+      <div class="report-tools">
+        <div class="segmented" data-period>
+          <label><input type="radio" name="periodo" value="weekly" checked />7 giorni</label>
+          <label><input type="radio" name="periodo" value="monthly" />30 giorni</label>
+        </div>
+        <div class="report-nav">
           <button
-            id="previous-period"
-            class="period-nav"
             type="button"
+            class="btn btn--icon"
+            data-step="-1"
             aria-label="Periodo precedente"
-            title="Periodo precedente"
           >
-            &larr;
+            <svg
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
           </button>
-          <select id="period-filter" class="filter-select">
-            <option value="weekly">Settimana</option>
-            <option value="monthly">Mese</option>
-          </select>
-          <button
-            id="next-period"
-            class="period-nav"
-            type="button"
-            aria-label="Periodo successivo"
-            title="Periodo successivo"
-          >
-            &rarr;
+          <p class="report-nav__label" data-range aria-live="polite"></p>
+          <button type="button" class="btn btn--icon" data-step="1" aria-label="Periodo successivo">
+            <svg
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M9 5l7 7-7 7" />
+            </svg>
           </button>
-        </div>
-
-        <div class="chart-container">
-          <canvas id="bookings-chart"></canvas>
-        </div>
-
-        <div class="stats-summary">
-          <div class="stat-card">
-            <div id="total-bookings" class="stat-value">0</div>
-            <div class="stat-label">Totale Tagli</div>
-          </div>
-          <div class="stat-card">
-            <div id="avg-bookings" class="stat-value">0</div>
-            <div class="stat-label">Media Giornaliera</div>
-          </div>
-          <div class="stat-card">
-            <div id="max-bookings" class="stat-value">0</div>
-            <div class="stat-label">Giorno Migliore</div>
-          </div>
         </div>
       </div>
+      <dl class="report-facts" data-facts>
+        <div>
+          <dt>Tagli</dt>
+          <dd data-total>–</dd>
+        </div>
+        <div>
+          <dt>Media al giorno</dt>
+          <dd data-avg>–</dd>
+        </div>
+        <div>
+          <dt>Giorno migliore</dt>
+          <dd data-best>–</dd>
+        </div>
+      </dl>
+      <figure class="report-chart">
+        <div class="report-chart__canvas">
+          <canvas id="bookings-chart" role="img" aria-label="Grafico dei tagli per giorno"></canvas>
+        </div>
+        <figcaption class="muted" data-caption></figcaption>
+      </figure>
+      <details class="report-table">
+        <summary>Mostra i dati come tabella</summary>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Giorno</th>
+              <th scope="col">Tagli</th>
+            </tr>
+          </thead>
+          <tbody data-table></tbody>
+        </table>
+      </details>
     </main>
 
+    <nav class="tabbar" aria-label="Sezioni">
+      <a href="/admin"
+        ><svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <path d="M5 3h14v18H5z" />
+          <path d="M9 8h6M9 12h6M9 16h4" /></svg
+        ><span>Agenda</span></a
+      >
+      <a href="/admin/clienti"
+        ><svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg
+        ><span>Clienti</span></a
+      >
+      <a href="/admin/orari"
+        ><svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 2" /></svg
+        ><span>Orari</span></a
+      >
+      <a href="/admin/reports"
+        ><svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <path d="M4 20h16M7 16V10M12 16V5M17 16v-4" /></svg
+        ><span>Report</span></a
+      >
+    </nav>
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/layout.js"></script>

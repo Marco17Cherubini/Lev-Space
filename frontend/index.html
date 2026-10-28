@@ -2,29 +2,109 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lev Space</title>
-    <!-- Preload logo images to prevent flash/lag -->
-    <link rel="preload" href="/images/off_w_Lev_webp.webp" as="image" />
-    <link rel="preload" href="/images/off_b_Lev_webp.webp" as="image" />
-    <link rel="stylesheet" href="/styles.css" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta
+      name="description"
+      content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
+    />
+    <meta name="theme-color" content="#ece8df" />
+    <title>Lev Space · Barberia su appuntamento</title>
+    <link
+      rel="preload"
+      href="/fonts/libre-franklin-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/styles/app.css" />
+    <link rel="stylesheet" href="/styles/pages.css" />
     <script src="/js/theme-init.js"></script>
   </head>
 
-  <body>
-    <main class="center-container">
-      <div class="text-center">
-        <h1 style="margin-bottom: 0.5rem">Benvenuto da</h1>
-        <div style="margin-bottom: 1.5rem">
-          <div class="brand-logo" role="img" aria-label="Lev Space Logo"></div>
+  <body class="no-tabbar entry">
+    <a class="skip-link" href="#main">Vai al contenuto</a>
+    <header class="appbar">
+      <a class="wordmark" href="/">Lev Space</a>
+      <button
+        type="button"
+        class="btn btn--icon"
+        data-theme-toggle
+        aria-pressed="false"
+        aria-label="Tema scuro"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 4a8 8 0 010 16z" fill="currentColor" />
+        </svg>
+      </button>
+    </header>
+
+    <main id="main" class="entry__main">
+      <section class="ticket entry__ticket" aria-labelledby="entry-title">
+        <div class="ticket__body entry__body">
+          <h1 id="entry-title" class="entry__title">
+            <img
+              class="entry__logo entry__logo--light"
+              src="/images/off_w_Lev_webp.webp"
+              width="1792"
+              height="1976"
+              alt="Lev Space"
+            />
+            <img
+              class="entry__logo entry__logo--dark"
+              src="/images/off_b_Lev_webp.webp"
+              width="1792"
+              height="1976"
+              alt="Lev Space"
+              loading="lazy"
+            />
+          </h1>
+          <p class="entry__motto">Il tuo spazio. Il tuo momento.</p>
+          <p class="entry__what serif">
+            Barberia su appuntamento. Scegli giorno e ora, la conferma arriva per email.
+          </p>
         </div>
-        <div class="btn-group" style="margin-bottom: 1rem">
-          <a href="/login" class="btn">Accedi</a>
-          <a href="/register" class="btn">Registrati</a>
-          <a href="/guest-home" class="btn">Ospite</a>
+        <div class="ticket__stub entry__stub" data-first aria-live="polite">
+          <p class="ticket__kind">Primo posto libero</p>
+          <p class="ticket__day" data-first-day>Cerco il primo orario libero…</p>
+          <p class="ticket__time" data-first-time aria-hidden="true">--:--</p>
+          <a class="btn btn--accent btn--block" href="/guest-booking" data-first-link
+            >Prenota un orario</a
+          >
         </div>
-      </div>
+      </section>
+
+      <nav class="entry__ways" aria-label="Accesso">
+        <a class="btn btn--primary btn--block" href="/login" data-login-link>Accedi</a>
+        <a class="btn btn--block" href="/register">Crea un account</a>
+        <a class="btn btn--quiet" href="/guest-booking">Prenota senza account</a>
+      </nav>
+
+      <section class="hours" aria-labelledby="hours-title">
+        <h2 id="hours-title">Orari di apertura</h2>
+        <dl class="hours__list" data-hours><p class="loading">Carico gli orari…</p></dl>
+      </section>
     </main>
+    <footer class="entry__footer">
+      <p class="entry__footer-name">Lev Space</p>
+      <p class="muted">Prenota, sposta o cancella da qui: niente messaggi, niente attese.</p>
+    </footer>
+
     <script src="/js/theme.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/components/booking-picker.js"></script>
+    <script src="/js/entry.js"></script>
   </body>
 </html>

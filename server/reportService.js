@@ -41,7 +41,14 @@ function getBookingStats(period = 'weekly', offset = 0) {
     counts.push(countsByDay.get(toDateString(day)) || 0);
   }
 
-  return { labels, counts, period };
+  // from/to: estremi della finestra, per mostrare il periodo esatto nel pannello
+  return {
+    labels,
+    counts,
+    period,
+    from: toDateString(start),
+    to: toDateString(new Date(start.getFullYear(), start.getMonth(), start.getDate() + days - 1))
+  };
 }
 
 module.exports = { getBookingStats };

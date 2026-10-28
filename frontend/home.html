@@ -2,32 +2,134 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Home - Lev Space</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta
+      name="description"
+      content="Lev Space, barberia su appuntamento: prenota il tuo taglio online."
+    />
+    <meta name="theme-color" content="#ece8df" />
+    <title>Home · Lev Space</title>
+    <link
+      rel="preload"
+      href="/fonts/libre-franklin-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/styles/app.css" />
+    <link rel="stylesheet" href="/styles/pages.css" />
     <script src="/js/theme-init.js"></script>
   </head>
 
-  <body>
-    <header class="header">
-      <div class="header-title">Lev Space</div>
-      <button id="logout-btn" class="btn header-btn">Logout</button>
+  <body class="">
+    <a class="skip-link" href="#main">Vai al contenuto</a>
+    <header class="appbar">
+      <a class="wordmark" href="/home">Lev Space</a>
+      <nav class="appbar__nav" aria-label="Sezioni">
+        <a href="/home"><span>Home</span></a>
+        <a href="/dashboard" data-match="^/(dashboard|subscriptions)"><span>Prenota</span></a>
+        <a href="/bookings"><span>Appuntamenti</span></a>
+      </nav>
+      <button
+        type="button"
+        class="btn btn--icon"
+        data-theme-toggle
+        aria-pressed="false"
+        aria-label="Tema scuro"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 4a8 8 0 010 16z" fill="currentColor" />
+        </svg>
+      </button>
+      <button type="button" class="btn btn--quiet btn--sm" data-logout>Esci</button>
     </header>
 
-    <main class="center-container">
-      <div class="text-center">
-        <h1 id="welcome-message" class="h2">Bentornato</h1>
-
-        <div class="btn-group-vertical mt-3">
-          <a href="/dashboard" class="btn btn-large">Prenota</a>
-          <a href="/bookings" class="btn btn-large">Gestisci Prenotazioni</a>
-          <a href="/subscriptions" class="btn btn-large">Prenotazioni di lungo periodo</a>
+    <main id="main" class="page">
+      <div class="page-head">
+        <h1 data-greeting>Ciao</h1>
+      </div>
+      <div class="home__layout">
+        <section class="stack" aria-labelledby="next-title">
+          <h2 id="next-title">Il prossimo appuntamento</h2>
+          <div data-next><p class="loading">Carico i tuoi appuntamenti…</p></div>
+        </section>
+        <div class="stack-lg">
+          <section class="usual" data-usual hidden aria-labelledby="usual-title"></section>
+          <section class="stack" aria-labelledby="actions-title">
+            <h2 id="actions-title" class="visually-hidden">Cosa vuoi fare</h2>
+            <div class="actions">
+              <a class="btn btn--primary btn--block" href="/dashboard">Prenota un appuntamento</a>
+              <a class="btn btn--block" href="/subscriptions">Prenota più settimane</a>
+              <a class="btn btn--quiet" href="/bookings">Tutti i tuoi appuntamenti</a>
+            </div>
+          </section>
         </div>
       </div>
     </main>
 
+    <nav class="tabbar" aria-label="Sezioni">
+      <a href="/home"
+        ><svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" /></svg
+        ><span>Home</span></a
+      >
+      <a href="/dashboard" data-match="^/(dashboard|subscriptions)"
+        ><svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <path d="M4 5h16v15H4z" />
+          <path d="M4 10h16M9 3v4M15 3v4" /></svg
+        ><span>Prenota</span></a
+      >
+      <a href="/bookings"
+        ><svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="square"
+          aria-hidden="true"
+        >
+          <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg
+        ><span>Appuntamenti</span></a
+      >
+    </nav>
     <script src="/js/theme.js"></script>
     <script src="/js/utils.js"></script>
+    <script src="/js/layout.js"></script>
+    <script src="/js/components/sheet.js"></script>
+    <script src="/js/components/booking-picker.js"></script>
     <script src="/js/home.js"></script>
   </body>
 </html>

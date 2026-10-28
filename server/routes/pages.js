@@ -12,23 +12,31 @@ const PAGES = {
   '/reset-password': 'reset-password.html',
   '/new-password': 'new-password.html',
   '/guest-booking': 'guest-booking.html',
-  '/guest-home': 'guest-home.html',
   '/home': 'home.html',
   '/dashboard': 'dashboard.html',
   '/bookings': 'bookings.html',
-  '/summary': 'summary.html',
   '/subscriptions': 'subscriptions.html',
-  '/subscription-booking': 'subscription-booking.html',
   '/admin': 'admin.html',
   '/admin/clienti': 'admin-clienti.html',
   '/admin/orari': 'admin-orari.html',
   '/admin/reports': 'admin-reports.html'
 };
 
+// Pagine unite ad altre nel redesign: i vecchi link (segnalibri, email) continuano a funzionare
+const REDIRECTS = {
+  '/guest-home': '/guest-booking',
+  '/summary': '/dashboard',
+  '/subscription-booking': '/subscriptions'
+};
+
 const router = express.Router();
 
 for (const [url, file] of Object.entries(PAGES)) {
   router.get(url, (req, res) => res.sendFile(path.join(FRONTEND_DIR, file)));
+}
+
+for (const [from, to] of Object.entries(REDIRECTS)) {
+  router.get(from, (req, res) => res.redirect(301, to));
 }
 
 module.exports = { router, FRONTEND_DIR };
