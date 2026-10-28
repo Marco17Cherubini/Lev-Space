@@ -28,3 +28,6 @@ Thumbs.db
 
 # Output degli strumenti di verifica (screenshot, snapshot Playwright)
 .playwright-mcp/
+
+# File di lavoro delle skill di design
+.taste-skill/
